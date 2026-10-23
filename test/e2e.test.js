@@ -60,3 +60,13 @@ test('every run writes a full log file with the export and the per-round trace',
   const t = fs.readFileSync(path.join(d, f), 'utf8');
   assert.ok(/--- export ---/.test(t) && /-- Round 1: all options/.test(t) && /validated upgrade sets/.test(t) && />> Finished\./.test(t));
 });
+
+test('top gear: bag items fully upgraded and consumables ranked on the best combination', async () => {
+  logs.length = 0;
+  const text = 'warrior="Bob"\nspec=fury\nlevel=90\nhead=,id=10\nfinger1=,id=12\nfinger2=,id=13\n# Helm B (311)\n# head=,id=20,bonus_id=12843\n';
+  const r = await H['sim:topgear']({}, { text, threads: 1, topN: 5, fight: { fightStyle: 'Patchwerk' }, precision: 'fast', report: false, upgradeBags: 'bags',
+    consumables: { flask: ['flask_a', 'flask_b'] } });
+  assert.ok(logs.some(l => /Helm B 311 → 321 \(Hero 6\/6\)/.test(l)), 'upgrade logged');
+  assert.ok(r.rows.some(x => x.items.some(t => /Helm B \(311 → 321\)/.test(t.label))));
+  assert.strictEqual(r.consumablesRank.length, 1); assert.strictEqual(r.consumablesRank[0].options.length, 2);
+});

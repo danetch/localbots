@@ -194,3 +194,19 @@ test('loot: older copy of a remade item and Azerite-style items are left out', (
   const I = require('../lib/items'), m = I.make(require('../data/items.json'));
   assert.ok(m.noSec(159236) && !m.noSec(239047) && !m.noSec(271874), 'bundled data flags the Azerite budget only');
 });
+
+test('upgrade: bag items raised to their track maximum (Hero / Myth 6/6), nothing above it, unknown tracks untouched', () => {
+  const U = require('../lib/upgrade'), tg = require('../lib/topgear'), db = require('../data/enhance.json'), P = require('../data/progression.json');
+  assert.deepStrictEqual(U.upgradeItem(',id=1,bonus_id=6652/12843', 'Cloak (311)', db.upgrade, P), { item: ',id=1,bonus_id=6652/12843,ilevel=321', from: 311, to: 321, label: 'Hero 6/6' });
+  assert.strictEqual(U.upgradeItem(',id=1,bonus_id=12849,ilevel=318', '', db.upgrade, P).item, ',id=1,bonus_id=12849,ilevel=334');
+  assert.strictEqual(U.upgradeItem(',id=1,bonus_id=13848,ilevel=344', '', db.upgrade, P), null, 'Myth 9/6 (344) stays');
+  assert.strictEqual(U.upgradeItem(',id=1,bonus_id=12846', 'X (321)', db.upgrade, P), null, 'already 6/6');
+  assert.strictEqual(U.upgradeItem(',id=1,crafted_stats=32/40', 'Crafted (331)', db.upgrade, P), null);
+  const text = 'warlock="a"\nhead=,id=10,bonus_id=12843\n# Hood (311)\n# head=,id=11,bonus_id=12841\n';
+  const p1 = tg.parse(text), up = U.upgradePools(p1, 'bags', db.upgrade, P);
+  assert.deepStrictEqual(up.map(u => [u.from, u.to]), [[311, 321]]);
+  assert.ok(p1.pools.head.includes(',id=11,bonus_id=12841,ilevel=321') && p1.labels[',id=11,bonus_id=12841,ilevel=321'] === 'Hood (311 → 321)');
+  assert.ok(p1.pools.head.includes(',id=10,bonus_id=12843'), 'equipped untouched with "bags"');
+  const p2 = tg.parse('warlock="a"\n# Helm (311)\nhead=,id=10,bonus_id=12843\n'); U.upgradePools(p2, 'all', db.upgrade, P);
+  assert.deepStrictEqual(p2.equipped.head, [',id=10,bonus_id=12843,ilevel=321']);
+});

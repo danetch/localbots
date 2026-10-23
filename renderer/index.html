@@ -47,6 +47,15 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .st{color:var(--mute)}a.wh{color:inherit;text-decoration:none;border-bottom:1px dotted var(--mute)}a.wh:hover{color:var(--acc)}#ubanner{display:flex;align-items:center;gap:10px;margin:0 12px 8px;padding:7px 12px;border:1px solid var(--acc);border-radius:8px;background:var(--panel);font-size:13px}.go2{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}.rk{display:inline-block;min-width:1.6em;color:var(--mute)}
 table{border-collapse:collapse;width:100%;font-size:13px}td,th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:11px;text-transform:uppercase;color:var(--mute)}
 tr.chg td{background:var(--hl)}
+/* item with its Wowhead icon on the left and all its text on the right (tooltips.js inserts the icon as the link's first child) */
+a.wh.blk{display:flex;align-items:flex-start;gap:6px;border:0;min-width:0}a.wh.blk>:not(.tx){flex:none;margin-top:1px}
+.tx{display:flex;flex-direction:column;min-width:0}.tx .nm{border-bottom:1px dotted var(--mute);align-self:flex-start}a.wh.blk:hover .nm{color:var(--acc)}
+.tx .sub{color:var(--mute);font-size:12px}
+/* character-sheet layout: left column head..weapons, right column hands..trinkets */
+.sheet{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}.sheet .side{display:flex;flex-direction:column;gap:4px;min-width:0}
+.slot{display:grid;grid-template-columns:74px 1fr;gap:6px;padding:5px 6px;border-radius:5px;border:1px solid transparent}.slot.chg{background:var(--hl);border-color:var(--line)}
+.slot .sl{font-size:11px;text-transform:uppercase;color:var(--mute);padding-top:2px}.slot .meta{font-size:12px;color:var(--mute)}
+@media(max-width:1250px){.sheet{grid-template-columns:1fr}}
 /* ---- layout: header (mode + run) / progress strip / setup accordion | results with tabs ---- */
 header{display:flex;align-items:center;gap:12px;padding:10px 12px 8px}
 .brand{font-weight:700;font-size:16px;letter-spacing:.02em;margin-right:4px}
@@ -100,7 +109,8 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
  <details class="card sec" id="s_opt" open><summary><span class="n"></span>Options<span class="sm" id="sm_opt"></span></summary>
   <div class="it" id="mdesc"></div>
   <label class="in" style="margin:4px 0"><input type="checkbox" id="rep_on" checked>Create the simc HTML report of the best result (adds some time)</label>
-  <div class="row" data-modes="top"><label>Finalists (pass 2)<input id="top" type="number" min="1" value="30"></label></div>
+  <div class="row" data-modes="top"><label>Finalists (pass 2)<input id="top" type="number" min="1" value="30"></label>
+   <label title="Items with a known upgrade track (Champion / Hero / Myth) are raised to its last level (6/6). Crafted items and items already at or above it are left as they are.">Upgrades<select id="tgup"><option value="none">As they are</option><option value="bags">Bag items fully upgraded</option><option value="all">All items fully upgraded</option></select></label></div>
   <div class="row" data-modes="bis"><label>Max rounds<input id="rounds" type="number" min="1" max="12" value="5"></label>
    <label title="Round 1 settles the gear; consumables, enchants and gems are added from this round on">Consumables, enchants &amp; gems from round<input id="consfrom" type="number" min="1" max="12" value="2"></label></div>
   <div class="row" data-modes="top drop bis"><label class="in"><input type="checkbox" id="cat">Include Catalyst (tier) versions</label>
@@ -152,10 +162,10 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
   <div class="row"><button id="cr_edit">Edit crafted rules…</button></div>
   <div class="it">Only embellished pieces count toward the limit of 2. Many options multiply fast: in Top Gear tick few stat pairs.</div></details>
 
- <details class="card sec" id="s_cons" data-modes="bis"><summary><span class="n"></span>Consumables to compare<span class="sm" id="sm_cons"></span></summary>
-  <div class="it" style="margin-bottom:6px">Tick the flasks, food, potions and runes to consider. Best in Slot picks the best of each category alongside your gear. Leave a category empty to keep your current setup.</div>
+ <details class="card sec" id="s_cons" data-modes="top bis"><summary><span class="n"></span>Consumables to compare<span class="sm" id="sm_cons"></span></summary>
+  <div class="it" style="margin-bottom:6px">Tick the flasks, food, potions and runes to consider. Best in Slot picks the best of each category alongside your gear; Top Gear ranks them on its best combination and, if one beats your current setup, simulates the finalists again with it. Leave a category empty to keep your current setup.</div>
   <div id="consBox"></div><div class="it" id="combo"></div>
-  <div class="it" style="margin-top:6px">Secondary stats lose value past 30&nbsp;% from rating (diminishing returns). When a flask or food and a gear, enchant or gem change push the same stat into that zone, Best in Slot simulates them together instead of adding up their separate gains.</div></details>
+  <div class="it" style="margin-top:6px">Secondary stats lose value past 30&nbsp;% from rating (diminishing returns). Best in Slot: when a flask or food and a gear, enchant or gem change push the same stat into that zone, they are simulated together instead of adding up their separate gains.</div></details>
 
  <details class="card sec" id="s_enh" data-modes="bis"><summary><span class="n"></span>Enchants &amp; gems<span class="sm" id="sm_enh"></span></summary>
   <label class="in"><input type="checkbox" id="en_on">Find the best enchants (rings, chest, legs, weapons)</label>
@@ -310,24 +320,38 @@ let curReport=null;
 function setRep(f){curReport=f||null;$('rep').hidden=!curReport;$('rep').textContent='Open simc report'}
 $('rep').onclick=async()=>{const ok=await api.openReport(curReport).catch(()=>false);if(!ok)$('rep').textContent='Report file not found'};
 const CONSN={flask:'Flask',food:'Food',potion:'Potion',augmentation:'Augment rune'};
-const consBlock=r=>r.consumablesRank&&r.consumablesRank.length?'<h1 style="margin-top:14px">Consumables (best first)</h1>'+r.consumablesRank.map(c=>`<div class="r"><b>${esc(CONSN[c.slot]||c.slot)}</b>: ${wl(c.current,c.wh)} <span class="it">(chosen)</span>${c.options.length?`<div class="it" style="padding-left:1.2em">${c.options.map(o=>`${wl(o.label,o.wh)} <span class="${o.delta>=0?'pos':'neg'}">${sgn(o.delta)} (${o.pct.toFixed(2)} %)</span>`).join('<br>')}</div>`:''}</div>`).join(''):'';
+const consBlock=r=>r.consumablesRank&&r.consumablesRank.length?'<h1 style="margin-top:14px">Consumables (best first)</h1>'+r.consumablesRank.map(c=>`<div class="r"><b>${esc(CONSN[c.slot]||c.slot)}</b>: ${wl(c.current,c.wh)} <span class="it">${c.switched?'(current setup; finalists re-simulated with the first option below)':'(chosen)'}</span>${c.options.length?`<div class="it" style="padding-left:1.2em">${c.options.map(o=>`${wl(o.label,o.wh)} <span class="${o.delta>=0?'pos':'neg'}">${sgn(o.delta)} (${o.pct.toFixed(2)} %)</span>`).join('<br>')}</div>`:''}</div>`).join(''):'';
 const consCopy=r=>(r.consumablesRank||[]).map(c=>`\n${CONSN[c.slot]||c.slot}: ${c.current} (chosen); others: `+c.options.map(o=>`${o.label} ${sgn(o.delta)}`).join(', ')).join('');
 let copyText='',fightLabel='';
 const gainBar=(d,max)=>`<div class="gain ${d<0?'neg':''}" style="width:${max>0?Math.max(2,Math.min(100,Math.abs(d)/max*100)):2}%"></div>`;
 function setCopy(t){copyText=t;$('copy').hidden=!t}
-function showTop(r){setRep(r.report);const mx=Math.max(...r.rows.map(x=>Math.abs(x.delta)),0);$('sum').textContent=`Baseline ${fmt(r.base)} DPS · ${r.total} combinations tested${fightLabel}`;
- $('res').innerHTML=r.rows.map((x,i)=>`<div class="r"><b><span class="rk">${i+1}.</span>${fmt(x.mean)} DPS</b> <span class="${x.delta>=0?'pos':'neg'}">${sgn(x.delta)}</span> <span class="it">±${fmt(x.err)}</span><div class="it" style="padding-left:1.6em">${x.items.map(t=>`${t.slot}: ${wl(t.label,t.wh)}${t.stats?` <span class="st">· ${statTxt(t.stats)}</span>`:''}`).join('<br>')}</div>${gainBar(x.delta,mx)}</div>`).join('')||'<div class="empty">No result.</div>';
- setCopy(`Top Gear · baseline ${fmt(r.base)} DPS${fightLabel}\n`+r.rows.map((x,i)=>`${i+1}. ${fmt(x.mean)} DPS (${sgn(x.delta)})\n`+x.items.map(t=>`   ${t.slot}: ${t.label}${t.stats?' ('+statTxt(t.stats).replace(/&amp;/g,'&')+')':''}`).join('\n')).join('\n'))}
+// Game order and character-sheet sides (left: head..weapons, right: hands..trinkets).
+const LEFT=['head','neck','shoulder','shoulders','back','chest','shirt','tabard','wrist','wrists','main_hand','off_hand'],RIGHT=['hands','waist','legs','feet','finger1','finger2','trinket1','trinket2'];
+const ORDER=[...LEFT,...RIGHT],ordOf=s=>{const i=ORDER.indexOf(s);return i<0?99:i},byGame=(a,b)=>ordOf(a.slot)-ordOf(b.slot);
+const SLOTN={head:'Head',neck:'Neck',shoulder:'Shoulders',shoulders:'Shoulders',back:'Cloak',chest:'Chest',wrist:'Bracers',wrists:'Bracers',main_hand:'Main hand',off_hand:'Off hand',hands:'Hands',waist:'Waist',legs:'Legs',feet:'Feet',finger1:'Ring 1',finger2:'Ring 2',trinket1:'Trinket 1',trinket2:'Trinket 2',flask:'Flask',food:'Food',potion:'Potion',augmentation:'Augment rune'};
+const slotN=s=>SLOTN[s]||s;
+// One item: icon (Wowhead) on the left, name and detail lines on the right.
+const itemCell=(label,wh,subs)=>{const sub=(subs||[]).filter(Boolean).map(x=>`<span class="sub">${x}</span>`).join('');
+ return wh?`<a class="wh blk" href="https://www.wowhead.com/${esc(wh.split('&')[0])}" data-wowhead="${esc(wh)}" target="_blank" rel="noopener"><span class="tx"><span class="nm">${esc(label)}</span>${sub}</span></a>`:`<span class="tx"><span class="nm" style="border:0">${esc(label)}</span>${sub}</span>`};
+const slotBox=(x,cls)=>`<div class="slot ${cls||''}"><span class="sl">${esc(slotN(x.slot))}</span>${itemCell(x.label,x.wh,x.subs)}</div>`;
+// Two columns (left side / right side), each in game order; one column when only one side has items.
+function sheet(items){const L=items.filter(x=>LEFT.includes(x.slot)).sort(byGame),R=items.filter(x=>!LEFT.includes(x.slot)).sort(byGame);
+ const col=a=>`<div class="side">${a.map(x=>slotBox(x,x.changed?'chg':'')).join('')}</div>`;return L.length&&R.length?`<div class="sheet">${col(L)}${col(R)}</div>`:col(L.length?L:R)}
+function showTop(r){setRep(r.report);const mx=Math.max(...r.rows.map(x=>Math.abs(x.delta)),0);$('sum').textContent=`Baseline ${fmt(r.base)} DPS · ${r.total} combinations tested${fightLabel}${r.consNote?' · finalists with '+r.consNote:''}`;
+ $('res').innerHTML=(r.rows.map((x,i)=>`<div class="r"><b><span class="rk">${i+1}.</span>${fmt(x.mean)} DPS</b> <span class="${x.delta>=0?'pos':'neg'}">${sgn(x.delta)}</span> <span class="it">±${fmt(x.err)}</span><div style="margin-top:4px">${sheet(x.items.map(t=>({slot:t.slot,label:t.label,wh:t.wh,subs:[t.stats?statTxt(t.stats):'']})))}</div>${gainBar(x.delta,mx)}</div>`).join('')||'<div class="empty">No result.</div>')+consBlock(r);
+ setCopy(`Top Gear · baseline ${fmt(r.base)} DPS${fightLabel}\n`+r.rows.map((x,i)=>`${i+1}. ${fmt(x.mean)} DPS (${sgn(x.delta)})\n`+[...x.items].sort(byGame).map(t=>`   ${slotN(t.slot)}: ${t.label}${t.stats?' ('+statTxt(t.stats).replace(/&amp;/g,'&')+')':''}`).join('\n')).join('\n')+consCopy(r))}
 function showDrop(r){setRep(r.report);const mx=Math.max(...r.rows.map(x=>Math.abs(x.delta)),0);$('sum').textContent=`Baseline ${fmt(r.base)} DPS · ${r.total} simulations${fightLabel}`;
- $('res').innerHTML=r.rows.map((x,i)=>`<div class="r"><b><span class="rk">${i+1}.</span>${wl(x.name,x.wh)}</b> <span class="${x.delta>=0?'pos':'neg'}">${sgn(x.delta)} (${x.pct>=0?'+':''}${x.pct.toFixed(2)} %)</span> <span class="it">±${fmt(x.err)}</span><div class="it" style="padding-left:1.6em">${esc(x.slot)} · ${x.sources.map(esc).join(', ')}${x.stats?`<br>${statTxt(x.stats)}`:''}</div>${gainBar(x.delta,mx)}</div>`).join('')||'<div class="empty">No result.</div>';
+ $('res').innerHTML=r.rows.map((x,i)=>`<div class="r"><b><span class="rk">${i+1}.</span></b><span class="${x.delta>=0?'pos':'neg'}">${sgn(x.delta)} (${x.pct>=0?'+':''}${x.pct.toFixed(2)} %)</span> <span class="it">±${fmt(x.err)}</span><div style="margin-top:3px">${slotBox({slot:x.slot,label:x.name,wh:x.wh,subs:[x.sources.map(esc).join(', '),x.stats?statTxt(x.stats):'']})}</div>${gainBar(x.delta,mx)}</div>`).join('')||'<div class="empty">No result.</div>';
  setCopy(`Droptimizer · baseline ${fmt(r.base)} DPS${fightLabel}\n`+r.rows.map((x,i)=>`${i+1}. ${x.name} (${x.slot}) ${sgn(x.delta)} (${x.pct.toFixed(2)} %) — ${x.sources.join(', ')}`).join('\n'))}
 const slotName=s=>s==='gems'?'gems':/^ench:/.test(s)?sln(s.slice(5))+' enchant':s;
 const STN={crit:'Critical strike',haste:'Haste',mastery:'Mastery',versatility:'Versatility'};
 const drBlock=r=>r.dr&&r.dr.length?'<h1 style="margin-top:14px">Secondary stats &amp; diminishing returns</h1><table><tr><th>Stat</th><th>Rating</th><th>% from rating</th><th>After DR</th><th>Next point worth</th></tr>'+r.dr.map(d=>`<tr><td>${STN[d.stat]}</td><td>${fmt(d.rating)}</td><td>${d.raw.toFixed(1)} %</td><td>${d.eff.toFixed(1)} %</td><td class="${d.slope<1?'neg':''}">${Math.round(d.slope*100)} %</td></tr>`).join('')+'</table><div class="it">Diminishing returns start at 30 % from rating (90 % value up to 40 %, then 80, 70, 60, 50 %). Base and talent percentages are not affected.</div>':'';
 const SN={crit:'Crit',haste:'Haste',mastery:'Mastery',vers:'Vers'};
 const statTxt=s=>s?Object.entries(s).map(([k,v])=>{if(k==='ilvl')return 'ilvl '+v;const x=Object.keys(SN).find(n=>k.toLowerCase().includes(n));return `${x?SN[x]:esc(k)} ${fmt(v)}`}).join(' · '):'';
-function showBis(r){setRep(r.report);const g=r.final-r.start;setCopy(`Best in Slot · ${fmt(r.start)} → ${fmt(r.final)} DPS (${sgn(g)})${fightLabel}\n`+r.set.map(s=>`${s.slot}: ${s.label}${s.changed?` (replaces ${s.from})`:''}${s.enh?` [${s.enh}]`:''}`).join('\n')+consCopy(r));$('sum').innerHTML=`<b>${fmt(r.start)} → ${fmt(r.final)} DPS</b> <span class="${g>=0?'pos':'neg'}">${sgn(g)} (${(g/r.start*100).toFixed(2)} %)</span> · ${r.rounds.length} round(s)`+(r.statsNote?`<div class="it" style="margin-top:4px">${esc(r.statsNote)}</div>`:'');
- $('res').innerHTML=`<table><tr><th>Slot</th><th>Item</th><th>Source</th><th>Replaces</th></tr>${r.set.map(s=>`<tr class="${s.changed?'chg':''}"><td>${esc(s.slot)}</td><td>${wl(s.label,s.wh)}${s.stats?`<div class="it">${statTxt(s.stats)}</div>`:''}${s.enh?`<div class="it">${s.enhChanged?'<b class="pos">●</b> ':''}${esc(s.enh)}</div>`:''}</td><td class="it">${esc(s.src)}</td><td class="it">${s.changed?esc(s.from):''}</td></tr>`).join('')}</table>`+
+function showBis(r){setRep(r.report);const g=r.final-r.start;setCopy(`Best in Slot · ${fmt(r.start)} → ${fmt(r.final)} DPS (${sgn(g)})${fightLabel}\n`+[...r.set].sort(byGame).map(s=>`${slotN(s.slot)}: ${s.label}${s.changed?` (replaces ${s.from})`:''}${s.enh?` [${s.enh}]`:''}`).join('\n')+consCopy(r));$('sum').innerHTML=`<b>${fmt(r.start)} → ${fmt(r.final)} DPS</b> <span class="${g>=0?'pos':'neg'}">${sgn(g)} (${(g/r.start*100).toFixed(2)} %)</span> · ${r.rounds.length} round(s)`+(r.statsNote?`<div class="it" style="margin-top:4px">${esc(r.statsNote)}</div>`:'');
+ const CKS=['flask','food','potion','augmentation'],gear=r.set.filter(s=>!CKS.includes(s.slot)),cons=r.set.filter(s=>CKS.includes(s.slot));
+ const sub=s=>[s.stats?statTxt(s.stats):'',s.enh?(s.enhChanged?'<b class="pos">●</b> ':'')+esc(s.enh):'',[s.src?esc(s.src):'',s.changed?'replaces '+esc(s.from):''].filter(Boolean).join(' · ')];
+ $('res').innerHTML=sheet(gear.map(s=>({slot:s.slot,label:s.label,wh:s.wh,changed:s.changed||s.enhChanged,subs:sub(s)})))+(cons.length?'<div style="margin-top:8px">'+sheet(cons.map(s=>({slot:s.slot,label:s.label,wh:s.wh,changed:s.changed,subs:[s.changed?'replaces '+esc(s.from):'']})))+'</div>':'')+
  consBlock(r)+drBlock(r)+(r.rounds.length?'<h1 style="margin-top:14px">Iteration history</h1>'+r.rounds.map(x=>`<div class="r"><b>Round ${x.round}</b> <span class="pos">${sgn(x.to-x.from)} DPS</span><div class="it">${x.changes.map(c=>`${esc(slotName(c.slot))}: ${esc(c.from)} → ${esc(c.to)}${c.src?` <i>(${esc(c.src)})</i>`:''}`).join('<br>')}</div></div>`).join(''):'<div class="empty">No upgrade found: your current set is already the best available.</div>')}
 
 
@@ -425,7 +449,7 @@ function updSum(){const set=(k,t)=>{const e=$('sm_'+k);if(e)e.textContent=t};
  set('buff',[{full:'full raid buffs',none:'no raid buffs',custom:'custom raid buffs'}[$('raid').value],$('nocons').checked?'no consumables':ov?`${ov} override${ov>1?'s':''}`:'',$('extra').value.trim()?'extra options':''].filter(Boolean).join(' · '));
  const ni=document.querySelectorAll('.ins:checked').length;set('loot',ni?`${ni} instance${ni>1?'s':''}`+($('upg').value==='max'?' · fully upgraded':''):mode==='bis'?'bag items only':'pick instances');
  set('craft',$('cr_on').checked?(window.__crTotal!=null?`${window.__crTotal} variants`:'on'):'off');
- const nc=Object.values(consSel).reduce((a,x)=>a+x.size,0);set('cons',(nc?`${nc} option${nc>1?'s':''}`:'keep current')+` · from round ${$('consfrom').value}`);
+ const nc=Object.values(consSel).reduce((a,x)=>a+x.size,0);set('cons',(nc?`${nc} option${nc>1?'s':''}`:'keep current')+(mode==='bis'?` · from round ${$('consfrom').value}`:''));
  const eo=getEnh();set('enh',[eo.ench?'enchants':'',eo.gems?'gems'+(eo.add.length?` (+${eo.add.length} socket${eo.add.length>1?'s':''})`:''):''].filter(Boolean).join(' · ')||'keep current')}
 ['input','change','click'].forEach(ev=>document.addEventListener(ev,()=>setTimeout(updSum,0)));
 // Pasting a recognisable export folds the Character section away (its summary line stays); typing never folds it.
@@ -435,7 +459,7 @@ $('go').onclick=async()=>{
  $('go').disabled=true;$('stop').disabled=false;$('log').textContent='';$('sum').textContent='';$('res').innerHTML='<div class="empty">Simulation running…</div>';startProg();let ok=false;
  const base={text:$('txt').value,threads:thrCount(),reserve:thrRes(),report:$('rep_on').checked,fight:getFight(),precision:$('prec').value,catalyst:{on:$('cat').checked,max:$('catmax').value===''?null:+$('catmax').value},crafted:getCrafted(),builds:talArgs()};
  try{
-  if(mode==='top'){const r=await api.run({...base,topN:+$('top').value});showAny('top',r);pushHist('Top Gear',r.builds?r.builds.length+' talent builds':r.rows[0]?`${fmt(r.rows[0].mean)} (${sgn(r.rows[0].delta)})`:'no result',r)}
+  if(mode==='top'){const r=await api.run({...base,topN:+$('top').value,upgradeBags:$('tgup').value,consumables:Object.fromEntries(Object.entries(consSel).map(([k,s])=>[k,[...s]]))});showAny('top',r);pushHist('Top Gear',r.builds?r.builds.length+' talent builds':r.rows[0]?`${fmt(r.rows[0].mean)} (${sgn(r.rows[0].delta)})`:'no result',r)}
   else if(mode==='drop'){const r=await api.drop({...base,...lootArgs()});showAny('drop',r);pushHist('Droptimizer',r.builds?r.builds.length+' talent builds':r.rows[0]?`${r.rows[0].name} ${sgn(r.rows[0].delta)}`:'no result',r)}
   else{const r=await api.bis({...base,...lootArgs(),consumables:Object.fromEntries(Object.entries(consSel).map(([k,s])=>[k,[...s]])),maxRounds:+$('rounds').value||5,consFrom:+$('consfrom').value||2,enhance:getEnh()});showAny('bis',r);pushHist('Best in Slot',r.builds?r.builds.length+' talent builds':`${fmt(r.final)} (${sgn(r.final-r.start)})`,r)}
   ok=true;

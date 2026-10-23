@@ -12,6 +12,7 @@ const talentsLib = require('./lib/talents');
 const bossLib = require('./lib/boss');
 const itemsLib = require('./lib/items');
 const engineLib = require('./lib/engine');
+const upgradeLib = require('./lib/upgrade');
 const enhLib = require('./lib/enhance');
 const drLib = require('./lib/dr');
 const crypto = require('crypto');
@@ -383,13 +384,43 @@ ipcMain.handle('craft:preview', (_e, { text, crafted }) => {
     return { total: cv.length, slots: Object.values(slots).map(s => ({ slot: s.slot, items: [...s.items], n: s.n })) };
   } catch (e) { return { error: e.message }; }
 });
+// Consumables (Best in Slot final set, Top Gear best combination): every ticked option of each category simulated on setText.
+// current(slot) = what the set uses now. -> [{ slot, current, wh, options: [{ value, label, wh, delta, pct }] }] (best first, max 8)
+const CONS_KEYS = ['flask', 'food', 'potion', 'augmentation'];
+function consInfo() {
+  const labels = {}, ids = {};
+  for (const arr of Object.values(loadLoot()?.consumables || {})) for (const c of arr) { labels[c.value] = c.label.replace(/ \(rank (\d), guessed\)/, ' (rank $1)'); if (c.id) ids[c.value] = c.id; }
+  return { labels, wh: v => (ids[v] ? `item=${ids[v]}` : ''), label: v => !v ? 'Current setup' : v === 'disabled' ? '(none)' : labels[v] || v };
+}
+async function rankConsumables(simcPath, setText, consumables, current, args, range) {
+  const { threads, tmp, log, fight, err } = args, ci = consInfo(), out = [];
+  const cats = CONS_KEYS.filter(k => [...new Set(consumables?.[k] || [])].some(v => v !== current(k)));
+  for (const [n, slot] of cats.entries()) {
+    const opts = [...new Set(consumables[slot])].filter(v => v !== current(slot));
+    const r0 = range[0] + (range[1] - range[0]) * n / cats.length, r1 = range[0] + (range[1] - range[0]) * (n + 1) / cats.length;
+    const pc = await pass(simcPath, setText, opts.map(v => ({ [slot]: v })), err, threads, tmp, log, fight, [r0, r1], `Consumables — ${slot}`);
+    const rows = pc.results.sort((a, b) => b.mean - a.mean).slice(0, 8).map(r => ({ value: opts[r.idx], label: ci.label(opts[r.idx]), wh: ci.wh(opts[r.idx]), delta: r.mean - pc.base, pct: (r.mean / pc.base - 1) * 100 }));
+    out.push({ slot, current: ci.label(current(slot)), wh: ci.wh(current(slot)), options: rows });
+  }
+  return out;
+}
+const consInExport = (text, k) => (new RegExp(`^\\s*${k}\\s*=\\s*([\\w:.\\-]+)\\s*$`, 'm').exec(text) || [])[1];
+
 ipcMain.handle('sim:topgear', run(async (o, tmp) => {
   const { text, topN, fight, catalyst, crafted } = o, fine = fineOf(o), threads = o.threads;
   const { simcPath } = loadSettings();
   if (!simcPath) throw new Error('Select the simc binary first.');
   const log = emitLog;
   saveSettings({ ...loadSettings(), fight, threads, precision: o.precision });
-  const parsed = tg.parse(text), rules = mkRules(text), base = tg.baseSlots(parsed.equipped);
+  const parsed = tg.parse(text), rules = mkRules(text);
+  // Upgrades: bag items (or all items) raised to the last level of their upgrade track (lib/upgrade.js) before anything else, so Catalyst
+  // twins and gems follow the upgraded level.
+  if (o.upgradeBags === 'bags' || o.upgradeBags === 'all') {
+    const P = loadProg(), up = upgradeLib.upgradePools(parsed, o.upgradeBags, enhanceDb().upgrade, { ...P, upgradeTracks: P.upgradeTracks || JSON.parse(fs.readFileSync(progDefault(), 'utf8')).upgradeTracks });
+    log(`>> Upgrades: ${up.length} ${o.upgradeBags === 'all' ? 'item(s)' : 'bag item(s)'} raised to their track's maximum${up.length ? ': ' + up.map(u => `${u.name} ${u.from} → ${u.to} (${u.track})`).join(', ') : ''}`);
+    if (up.some(u => /gladiat|aspirant|combatant|pvp/i.test(u.name))) log('>> Upgrades: PvP items follow the upgrade track their bonus ids show; their real PvP upgrade path may differ.');
+  }
+  const base = tg.baseSlots(parsed.equipped);
   tg.titanPools(parsed, rules);
   const tierSet = tierLib.setup(catalyst, text, loadLoot()?.tierSets, rules, loadProg().tier);
   if (tierSet) log(`>> Catalyst: ${tierLib.poolTwins(parsed, tierSet)} tier twins of “${tierSet.name}”${rules.maxCat < Infinity ? `, max ${rules.maxCat} charges` : ''}`);
@@ -404,13 +435,30 @@ ipcMain.handle('sim:topgear', run(async (o, tmp) => {
   log(`>> Pass 2: ${best.length} best (high precision)`);
   const sub = best.map(b => list[b.idx]), msub = best.map(b => mlist[b.idx]);
   const p2 = await pass(simcPath, KG.text, msub, fine(0.1), threads, tmp, log, fight, [0.6, 0.88], 'Pass 2/2 — finalists');
-  const st = await statsPass(simcPath, KG.text, msub, threads, tmp, log);
-  const rows = p2.results.sort((a, b) => b.mean - a.mean).map(r => ({
-    mean: r.mean, err: r.err, delta: r.mean - p2.base,
+  p2.results.sort((a, b) => b.mean - a.mean);
+  // Consumables: ranked on the best combination; if one beats the current setup, the finalists are simulated again with it (a flask or
+  // food can change which gear wins, through diminishing returns).
+  let fin = p2, setText = KG.text, consumablesRank = [], consNote = '';
+  if (CONS_KEYS.some(k => (o.consumables?.[k] || []).length) && p2.results.length) {
+    const bestText = bis.withSet(KG.text, msub[p2.results[0].idx]);
+    consumablesRank = await rankConsumables(simcPath, bestText, o.consumables, k => consInExport(text, k), { threads, tmp, log, fight, err: fine(0.2) }, [0.8, 0.88]);
+    const pick = Object.fromEntries(consumablesRank.filter(c => c.options[0] && c.options[0].pct > 0.1).map(c => [c.slot, c.options[0].value]));
+    if (Object.keys(pick).length) {
+      consNote = Object.entries(pick).map(([k, v]) => `${k}: ${consInfo().label(v)}`).join(', ');
+      log(`>> Finalists simulated again with ${consNote}`);
+      setText = `${KG.text}\n${Object.entries(pick).map(([k, v]) => `${k}=${v}`).join('\n')}\n`;
+      fin = await pass(simcPath, setText, msub, fine(0.1), threads, tmp, log, fight, [0.88, 0.94], 'Finalists with the best consumables');
+      fin.results.sort((a, b) => b.mean - a.mean);
+      for (const c of consumablesRank) if (pick[c.slot]) c.switched = true;
+    }
+  }
+  const st = await statsPass(simcPath, setText, msub, threads, tmp, log);
+  const rows = fin.results.map(r => ({
+    mean: r.mean, err: r.err, delta: r.mean - fin.base,
     items: Object.entries(sub[r.idx]).map(([slot, item]) => ({ slot, label: parsed.labels[item] || item, stats: st[r.idx]?.[slot], wh: whOf(item) }))
   }));
-  const report = o.report === false || !rows.length ? null : await reportPass(simcPath, KG.text, msub[p2.results[0].idx], fine(0.1), threads, tmp, log, fight, [0.88, 1], 'Creating the simc report');
-  return { base: p2.base, total: list.length, rows, report };
+  const report = o.report === false || !rows.length ? null : await reportPass(simcPath, setText, msub[fin.results[0].idx], fine(0.1), threads, tmp, log, fight, [0.94, 1], 'Creating the simc report');
+  return { base: fin.base, total: list.length, rows, report, consumablesRank, consNote };
 }));
 
 // ---------- Progression (tracks & sources) ----------
@@ -615,16 +663,8 @@ ipcMain.handle('sim:bis', run(async (o, tmp) => {
   const statsNote = Object.keys(gear).length ? '' : `Per-item stats were not found in simc's JSON output (gear keys: ${Object.keys(fin.data.sim.players[0].gear || {}).slice(0, 6).join(', ') || 'none'}). Raw output saved to ${raw}`;
   const dr = drLib.summary(fin.baseStats, levelOf(text));
   // Consumables: every ticked option of each category simulated on the final set, best first (the chosen one is the top line).
-  const consId = {}; for (const arr of Object.values(loadLoot()?.consumables || {})) for (const c of arr) if (c.id) consId[c.value] = c.id;
-  const consWh = v => (consId[v] ? `item=${consId[v]}` : '');
-  const consumablesRank = [];
-  for (const slot of CK) {
-    const opts = [...new Set(consumables?.[slot] || [])].filter(v => v !== S[slot]);
-    if (!opts.length) continue;
-    const pc = await pass(simcPath, setText, opts.map(v => ({ [slot]: v })), fine(0.2), threads, tmp, log, fight, [0.96, 0.99], `Consumables — ${slot}`);
-    const rows = pc.results.sort((a, b) => b.mean - a.mean).slice(0, 8).map(r => ({ label: lab(opts[r.idx]), wh: consWh(opts[r.idx]), delta: r.mean - pc.base, pct: (r.mean / pc.base - 1) * 100 }));
-    consumablesRank.push({ slot, current: labOf(slot, S[slot]), wh: consWh(S[slot]), options: rows });
-  }
+  const consWh = consInfo().wh;
+  const consumablesRank = await rankConsumables(simcPath, setText, consumables, k => S[k], { threads, tmp, log, fight, err: fine(0.2) }, [0.96, 0.99]);
   sendProgress({ pct: 1, label: 'Done' });
   const enhTxt = it => { const e = enhLib.optOf(it, 'enchant_id'), g = enhLib.gemsIn(it); return [e ? `Enchant: ${enchNames[e] || 'id ' + e}` : '', g.length ? `Gems: ${g.map(x => gemNames[x] || 'id ' + x).join(', ')}` : ''].filter(Boolean).join(' · '); };
   const slots = Object.keys({ ...base, ...MF }).filter(s => !isEnh(s) || CK.includes(s));

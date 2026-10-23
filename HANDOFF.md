@@ -359,3 +359,19 @@ Read the user's real userData (loot.json, progression.json, last-bis-result.json
   Replaces the old "copy the replaced piece's gems" carry rule.
 - Verified on the user's export: neck swap to Aqirbane (loot) -> gem_id=diamond/secondary; PvP bag neck -> gets the diamond; real
   Droptimizer run (Venomous Abyss Mythic): Aqirbane Reliquary top at +0.59 %. Tests: 35 pass.
+
+=== 23 OCT: v0.3.2 — TOP GEAR UPGRADES + CONSUMABLES, RESULTS LAYOUT ===
+- Upgrade tracks from item_bonus type 34 (enhance.json "upgrade": { bonusId: [group, rank] }, ranks = bonus ids of a group in id order).
+  Midnight S2 groups: 614 Adventurer?, 615 Veteran?, 616 Champion, 617 Hero, 618 Myth (Myth has 9 levels: 12849..12854 = 1/6..6/6,
+  12855/12856/13848 = drop-only levels, 13848 = 344 "9/6"). Checked on the user's export (12843 = 311 Hero 3/6, 12846 = 321 Hero 6/6,
+  12849 = 318 Myth 1/6, 12854 = 334 Myth 6/6, 12833 = 292 Champion 1/6). progression.json "upgradeTracks" maps group -> track (an
+  older userData copy without it falls back to the bundled mapping). Adventurer/Veteran have no track table: not upgraded.
+- Top Gear "Upgrades": As they are / Bag items fully upgraded / All items fully upgraded (lib/upgrade.js upgradePools, before Catalyst
+  twins and gems). Current ilvl read from ilevel= or the export comment "(N)". PvP items are upgraded along the track their bonus ids
+  show (logged as a caveat).
+- Consumables in Top Gear (rankConsumables shared with BiS): ranked on the best combination; if an option beats the current setup by
+  > 0.1 %, the finalists are simulated again with it (rows then reflect it; summary "finalists with ...").
+- Results: items in game order; Best in Slot set and Top Gear rows as a character sheet (left: head, neck, shoulders, cloak, chest, bracers,
+  weapons; right: hands, waist, legs, feet, rings, trinkets; one column under 1250 px). Item cell = Wowhead link block (icon inserted by
+  tooltips.js as first child -> left; name + detail lines right). Real Wowhead script not testable in the sandbox (stand-in icon used).
+- Tests: 37 pass.
