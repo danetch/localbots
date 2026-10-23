@@ -222,3 +222,39 @@ test('top gear pre-screen: estimate, best candidates kept across slots, equipped
   const c = tg.combos({ pools: { a: ['x', 'e1'], b: ['y', 'e2'], c: ['z', 'e3'] }, equipped: { a: ['x'], b: ['y'], c: ['z'] } }, rules);
   assert.strictEqual(c.length, 6, '8 minus the base and the 3-embellishment combination');
 });
+
+// Real wago.tools rows (23 Oct 2026, build of Midnight S2), reduced to each item's path to its upgrade groups.
+test('loot: season of an instance from its drops\' upgrade-track groups (bonus trees)', () => {
+  const loot = L('loot');
+  const xTree = 'ID,ItemBonusTreeID,ItemID\n311523,5953,239047\n319292,5725,249293\n321500,5960,250243\n326959,5996,268206\n327086,5933,268289';
+  const H = 'ID,ItemContext,ChildItemBonusTreeID,ChildItemBonusListID,ChildItemLevelSelectorID,ChildItemBonusListGroupID,IblGroupPointsModSetID,MinMythicPlusLevel,MaxMythicPlusLevel,ItemCreationContextGroupID,Flags,ParentItemBonusTreeID';
+  const treeNode = [H,
+    '27083,0,4733,0,0,0,0,0,0,0,0,5725', '27082,0,5742,0,0,0,0,0,0,0,0,5725', '20315,165,0,11215,0,0,0,0,0,0,0,4733',
+    '27221,4,0,0,0,609,4366,0,0,0,0,5742', '27222,3,0,0,0,610,4366,0,0,0,0,5742', '27223,5,0,0,0,611,4366,0,0,0,0,5742', '27224,6,0,0,0,612,4366,0,0,0,0,5742',
+    '29556,0,6071,0,0,0,0,0,0,0,0,5933', '29552,6,0,13786,0,0,0,0,0,0,0,6071', '29554,3,0,13788,0,0,0,0,0,0,0,6071', '29555,4,0,13789,0,0,0,0,0,0,0,6071',
+    '29194,0,5998,0,0,0,0,0,0,0,0,5996', '29205,4,0,0,0,615,4366,0,0,0,0,5998', '29206,3,0,0,0,616,4366,0,0,0,0,5998', '29207,5,0,0,0,617,4366,0,0,0,0,5998', '29208,6,0,0,0,618,4366,0,0,0,0,5998',
+    '29070,0,3752,0,0,0,0,0,0,0,0,5953', '15885,57,4089,0,0,0,0,0,0,0,0,3752', '16395,0,0,0,0,310,2965,0,0,0,0,4089',
+    '29097,0,5780,0,0,0,0,0,0,0,0,5960', '27633,0,5770,0,0,0,0,0,0,0,0,5780', '27632,0,5934,0,0,0,0,0,0,0,0,5780',
+    '27445,102,0,0,0,609,2965,0,0,0,0,5770', '27444,35,0,0,0,612,4629,10,0,0,0,5770', '28907,2,0,0,0,608,2963,0,0,0,0,5934'].join('\n');
+  const bonus = 'ID,Value_0,Value_1,Value_2,Value_3,ParentItemBonusListID,Type,OrderIndex\n31284,610,973,0,0,13788,34,1\n31289,609,972,0,0,13789,34,1\n2,7,15789,0,0,13786,2,0';
+  const G = loot.trackGroups({ xTree, treeNode, bonus }, new Set(['239047', '249293', '250243', '268206', '268289']));
+  assert.deepStrictEqual(G['249293'], [609, 610, 611, 612]);   // The Voidspire (S1 raid)
+  assert.deepStrictEqual(G['268289'], [609, 610]);             // Sporefall (S1 raid): type-34 bonuses inside bonus lists
+  assert.deepStrictEqual(G['268206'], [615, 616, 617, 618]);   // The Venomous Abyss (S2 raid)
+  assert.deepStrictEqual(G['239047'], [310]);                  // Kings' Rest remade item (legacy M+ dungeon)
+  assert.deepStrictEqual(G['250243'], [608, 609, 612]);        // Murder Row (S1 dungeon, back in S2 M+)
+  const cur = new Set([616, 617, 618]), known = new Set([608, 609, 610, 611, 612, 614, 615, 616, 617, 618]);
+  assert.strictEqual(loot.seasonOf(G['249293'], cur, known), 'old');
+  assert.strictEqual(loot.seasonOf(G['268289'], cur, known), 'old');
+  assert.strictEqual(loot.seasonOf(G['268206'], cur, known), 'cur');
+  assert.strictEqual(loot.seasonOf(G['239047'], cur, known), null);
+  assert.strictEqual(loot.seasonOf(undefined, cur, known), null);
+});
+
+test('specs: armor type from the class line of the export', () => {
+  const s = L('specs');
+  assert.strictEqual(s.armorOf('warlock="Lofo"\nspec=demonology'), 'cloth');
+  assert.strictEqual(s.armorOf('evoker="x"'), 'mail');
+  assert.strictEqual(s.armorOf('demonhunter="x"'), 'leather');
+  assert.strictEqual(s.armorOf('head=,id=1'), null);
+});

@@ -626,7 +626,7 @@ ipcMain.handle('sim:bis', run(async (o, tmp) => {
     const L = loadLoot(); if (!L) throw new Error('No loot data: click “Update loot data”.');
     const ilvlFor = makeIlvlFor({ instanceIds, instanceSources, upgrade, ilvl });
     const lootSkipped = [];
-    lootItems = loot.select(L, { primary: specs.primaryOf(text), primOf: itemsDb().prim, titan: rules.titan, dual, instanceIds, armor, includeWeapons, weapons: weaponsFor(text), shield: specs.canShield(text), ilvlFor, noSec: itemsDb().noSec, skipped: lootSkipped });
+    lootItems = loot.select(L, { primary: specs.primaryOf(text), primOf: itemsDb().prim, titan: rules.titan, dual, instanceIds, armor: specs.armorOf(text) || armor, includeWeapons, weapons: weaponsFor(text), shield: specs.canShield(text), ilvlFor, noSec: itemsDb().noSec, skipped: lootSkipped });
     ilvlFor.warn(log); logSkipped(lootSkipped, log);
     trace(`-- Loot candidates (${lootItems.length}): item (item level) · slots · sources`);
     for (const it of lootItems) trace(`   ${it.name} (${it.ilvl}) · ${it.slots.join('/')} · ${it.sources.join('; ')}`);
@@ -814,7 +814,11 @@ ipcMain.handle('loot:info', () => {
   const bosses = new Set(Object.values(loadProg().sources).flatMap(s => Object.keys(s.bossOverrides || {})));
   const cur = tiers.find(t => /current season/i.test(t.name)), inSeason = new Set(cur ? cur.instances : []);
   for (const [id, i] of Object.entries(l.instances)) if (Object.values(i.bosses).some(b => bosses.has(b.name.toLowerCase()))) inSeason.add(id);
-  if (inSeason.size) tiers.unshift({ id: 'season', name: `This season (${loadProg().season})`, instances: [...inSeason] });
+  // The Journal's Current Season tier still lists last season's raids: drop raids whose drops only use other seasons' upgrade tracks.
+  const P = loadProg(), curGroups = new Set(Object.keys(P.upgradeTracks || JSON.parse(fs.readFileSync(progDefault(), 'utf8')).upgradeTracks || {}).map(Number));
+  const known = new Set(Object.values(enhanceDb().upgrade || {}).map(v => v[0])), oldSeason = [];
+  if (curGroups.size && known.size) for (const id of [...inSeason]) if (l.instances[id]?.type === 2 && loot.seasonOf(l.instances[id].groups, curGroups, known) === 'old') { inSeason.delete(id); oldSeason.push(l.instances[id].name); }
+  if (inSeason.size) tiers.unshift({ id: 'season', name: `This season (${P.season})`, instances: [...inSeason], left: Object.values(l.instances).some(i => i.groups) ? oldSeason.sort() : null });
   const R = loadCraftRules(), key = n => (l.embellishments || []).find(e => e.name.toLowerCase() === n)?.name;
   const craftedInfo = { items: (l.crafted || []).length + (R.extraItems || []).length, ilvl: R.ilvl, pairs: R.statPairs,
     emb: Object.entries(R.embellishments || {}).filter(([n]) => !(l.embellishments || []).length || key(n)).map(([n, v]) => ({ name: key(n) || n, slots: v.slots, unverified: (R.unverified || []).includes(n) })) };
@@ -834,6 +838,9 @@ ipcMain.handle('loot:update', async () => {
   t.skill = await optional('SkillLineAbility (recipes)', wago('SkillLineAbility'), 'crafted base items come from “extraItems” only');
   t.effects = t.skill && await optional('SpellEffect (recipes, large file)', wago('SpellEffect'), 'crafted base items come from “extraItems” only');
   if (!t.skill || !t.effects) { delete t.skill; delete t.effects; }
+  // Bonus trees: tell which season a raid belongs to (its drops' upgrade tracks). Optional: without them "This season" uses the Journal only.
+  for (const [k, n] of [['map', 'Map'], ['xTree', 'ItemXBonusTree'], ['treeNode', 'ItemBonusTreeNode'], ['bonus', 'ItemBonus']]) { t[k] = await optional(`${n} (season detection)`, wago(n), '“This season” uses the Adventure Guide only'); if (!t[k]) break; }
+  if (!t.map || !t.xTree || !t.treeNode || !t.bonus) { delete t.map; delete t.xTree; delete t.treeNode; delete t.bonus; }
   // simc's item data first: crafting qualities decide the valid consumable names (_2, _3 suffixes), tier/2H/embellishment data come from it too.
   const itemsTxt = await optional('item data (simc, ~26 MB)', itemsLib.ITEMS_URL, 'keeping the bundled copy');
   const itemsJ = itemsTxt && itemsLib.parse(itemsTxt, []);
@@ -875,7 +882,7 @@ ipcMain.handle('sim:drop', run(async (o, tmp) => {
   const rules = mkRules(text), titan = rules.titan, dual = isDual(base, rules);
   const ilvlFor = makeIlvlFor({ instanceIds, instanceSources, upgrade, ilvl });
   const lootSkipped = [];
-  const items = loot.select(L, { primary: specs.primaryOf(text), primOf: itemsDb().prim, titan, dual, instanceIds, armor, includeWeapons, weapons: weaponsFor(text), shield: specs.canShield(text), ilvlFor, noSec: itemsDb().noSec, skipped: lootSkipped });
+  const items = loot.select(L, { primary: specs.primaryOf(text), primOf: itemsDb().prim, titan, dual, instanceIds, armor: specs.armorOf(text) || armor, includeWeapons, weapons: weaponsFor(text), shield: specs.canShield(text), ilvlFor, noSec: itemsDb().noSec, skipped: lootSkipped });
   ilvlFor.warn(log); logSkipped(lootSkipped, log);
   const tierSet = tierLib.setup(catalyst, text, L.tierSets, rules, loadProg().tier);
   // Gems follow the slot like the enchant: the new piece gets the replaced piece's gems if it has (or can get) sockets.

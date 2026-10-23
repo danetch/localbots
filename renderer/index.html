@@ -114,7 +114,7 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
    <label title="Items with a known upgrade track (Champion / Hero / Myth) are raised to its last level (6/6). Crafted items and items already at or above it are left as they are.">Upgrades<select id="tgup"><option value="none">As they are</option><option value="bags">Bag items fully upgraded</option><option value="all">All items fully upgraded</option></select></label></div>
   <div class="row" data-modes="bis"><label>Max rounds<input id="rounds" type="number" min="1" max="12" value="5"></label>
    <label title="Round 1 settles the gear; consumables, enchants and gems are added from this round on">Consumables, enchants &amp; gems from round<input id="consfrom" type="number" min="1" max="12" value="2"></label></div>
-  <div class="row" data-modes="top drop bis"><label class="in"><input type="checkbox" id="cat">Include Catalyst (tier) versions</label>
+  <div class="row" data-modes="top drop bis"><label class="in"><input type="checkbox" id="cat" checked>Include Catalyst (tier) versions</label>
    <label>Max charges<input id="catmax" type="number" min="0" max="5" placeholder="any"></label></div>
   <div class="it" data-modes="top drop bis" id="cathint">Each head/shoulder/chest/hands/legs item (bags and loot) may be converted into your class tier piece (keeps level, stats and effects). Needs “Update loot data” once.</div></details>
 
@@ -130,24 +130,34 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
    <label>Length (s)<input id="dur" type="number" min="10" value="300"></label>
    <label>Variance %<input id="vary" type="number" min="0" max="100" value="20"></label></div></details>
 
- <details class="card sec" id="s_buff"><summary><span class="n"></span>Buffs &amp; consumables<span class="sm" id="sm_buff"></span></summary>
+ <details class="card sec" id="s_buff"><summary><span class="n"></span>Raid buffs &amp; extra options<span class="sm" id="sm_buff"></span></summary>
   <label>Raid buffs<select id="raid"><option value="full">Full raid buffs (default)</option><option value="none">No raid buffs</option><option value="custom">Custom…</option></select></label>
   <div id="rbuffs" hidden style="columns:2;margin-top:4px"></div>
-  <div class="row"><label>Flask<input id="c_flask" list="dl_flask" type="text" placeholder="from export" style="width:100px"></label><label>Food<input id="c_food" list="dl_food" type="text" placeholder="from export" style="width:100px"></label>
+  <label style="margin-top:6px">Extra simc options (one key=value per line)<textarea id="extra" style="height:44px" placeholder="key=value" spellcheck="false"></textarea></label></details>
+
+ <details class="card sec" id="s_cons"><summary><span class="n"></span>Consumables<span class="sm" id="sm_cons"></span></summary>
+  <div style="font-weight:600;font-size:12px">Current setup</div>
+  <div class="it">Leave a field empty to use what your export lists; type a name to use another one in every simulation.</div>
+  <div class="row" style="margin-top:2px"><label>Flask<input id="c_flask" list="dl_flask" type="text" placeholder="from export" style="width:100px"></label><label>Food<input id="c_food" list="dl_food" type="text" placeholder="from export" style="width:100px"></label>
    <label>Potion<input id="c_potion" list="dl_potion" type="text" placeholder="from export" style="width:100px"></label><label>Rune<input id="c_rune" list="dl_rune" type="text" placeholder="from export" style="width:100px"></label></div>
   <label class="in"><input type="checkbox" id="nocons">No consumables</label>
   <div class="it" id="conshint">Suggestions appear after “Update loot data”.</div><div id="dls"></div>
-  <label style="margin-top:6px">Extra simc options (one key=value per line)<textarea id="extra" style="height:44px" placeholder="key=value" spellcheck="false"></textarea></label></details>
+  <div data-modes="top bis">
+   <div style="font-weight:600;font-size:12px;margin-top:10px">Consumables to compare</div>
+   <div class="it" style="margin-bottom:6px">Tick the flasks, food, potions and runes to consider. Best in Slot picks the best of each category alongside your gear; Top Gear ranks them on its best combination and, if one beats your current setup, simulates the finalists again with it. Leave a category empty to keep your current setup.</div>
+   <div id="consBox"></div><div class="it" id="combo"></div>
+   <div class="it" style="margin-top:6px">Secondary stats lose value past 30&nbsp;% from rating (diminishing returns). Best in Slot: when a flask or food and a gear, enchant or gem change push the same stat into that zone, they are simulated together instead of adding up their separate gains.</div>
+   <div class="it" data-modes="bis">Best in Slot adds consumables from the round set in Options (“Consumables, enchants &amp; gems from round”).</div></div></details>
 
  <details class="card sec" id="s_loot" data-modes="drop bis" open><summary><span class="n"></span>Loot source<span class="sm" id="sm_loot"></span></summary>
   <label>Adventure Guide tier<select id="tier"></select></label>
   <div class="row" style="margin-bottom:0"><input id="ifilt" placeholder="Filter instances…" style="flex:1;min-width:120px"><button id="isel" class="small" title="Tick every raid and dungeon listed below (use the tier selector above to pick the season)">Select all</button><button id="inone" class="small">Clear</button></div>
-  <div id="inst" style="max-height:130px;overflow:auto;margin:6px 0"></div>
+  <div id="inst" style="max-height:130px;overflow:auto;margin:6px 0"></div><div class="it" id="seasnote" hidden></div>
   <div class="row"><label>Custom item level<input id="ilvl" type="number" min="1"></label>
    <label>Upgrades<select id="upg"><option value="none">As dropped</option><option value="max">Fully upgraded (x/6)</option></select></label>
-   <label>Armor<select id="arm"><option value="cloth">Cloth</option><option value="leather">Leather</option><option value="mail">Mail</option><option value="plate" selected>Plate</option></select></label>
+   <label id="arml" title="Paste an export with your class to set this automatically">Armor<select id="arm"><option value="cloth">Cloth</option><option value="leather">Leather</option><option value="mail">Mail</option><option value="plate" selected>Plate</option></select></label>
    <label class="in"><input type="checkbox" id="wp">Include weapons &amp; shields</label></div>
-  <div class="it" id="wtxt"></div>
+  <div class="it"><span id="armtxt"></span> <span id="wtxt"></span></div>
   <div class="row"><button id="editprog">Edit tracks &amp; sources…</button><span class="it" id="seas"></span></div>
   <div class="it">Each instance has an item level source: “Custom” uses the field above.</div>
   <div class="it" data-modes="bis">Best in Slot: leave all instances unticked to use bag items only.</div></details>
@@ -162,11 +172,6 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
   <div style="font-weight:600;font-size:12px;margin-top:6px">What will be tested</div><div id="cr_prev" class="it">Tick “Add crafted items” to see which pieces are added.</div>
   <div class="row"><button id="cr_edit">Edit crafted rules…</button></div>
   <div class="it">Only embellished pieces count toward the limit of 2 (the same embellishment twice is allowed). Top Gear first ranks your ticked stat pairs once, searches slots and embellishments with the best pair, then tries every stat-pair combination of the crafted pieces of the best finalists together, so ticking all pairs is fine.</div></details>
-
- <details class="card sec" id="s_cons" data-modes="top bis"><summary><span class="n"></span>Consumables to compare<span class="sm" id="sm_cons"></span></summary>
-  <div class="it" style="margin-bottom:6px">Tick the flasks, food, potions and runes to consider. Best in Slot picks the best of each category alongside your gear; Top Gear ranks them on its best combination and, if one beats your current setup, simulates the finalists again with it. Leave a category empty to keep your current setup.</div>
-  <div id="consBox"></div><div class="it" id="combo"></div>
-  <div class="it" style="margin-top:6px">Secondary stats lose value past 30&nbsp;% from rating (diminishing returns). Best in Slot: when a flask or food and a gear, enchant or gem change push the same stat into that zone, they are simulated together instead of adding up their separate gains.</div></details>
 
  <details class="card sec" id="s_enh" data-modes="top bis"><summary><span class="n"></span>Enchants &amp; gems<span class="sm" id="sm_enh"></span></summary>
   <label class="in"><input type="checkbox" id="en_on">Find the best enchants (rings, chest, legs, weapons)</label>
@@ -224,7 +229,7 @@ document.querySelectorAll('[name=mode]').forEach(r=>r.onchange=()=>setMode(r.val
 $('txt').oninput=()=>{const L=$('txt').value.split(/\r?\n/);let e=0,b=0;
  for(const l of L){const s=l.trim();if(/^\w+=,?id=/.test(s))e++;else if(/^#\s*\w+=,?id=/.test(s))b++}
  const ARMOR_OF={warrior:'plate',paladin:'plate',deathknight:'plate',hunter:'mail',shaman:'mail',evoker:'mail',rogue:'leather',monk:'leather',druid:'leather',demonhunter:'leather',priest:'cloth',mage:'cloth',warlock:'cloth'};
- const cls=(/^\s*(warrior|paladin|deathknight|hunter|shaman|evoker|rogue|monk|druid|demonhunter|priest|mage|warlock)\s*=/mi.exec($('txt').value)||[])[1];if(cls)$('arm').value=ARMOR_OF[cls.toLowerCase()];
+ const cls=(/^\s*(warrior|paladin|deathknight|hunter|shaman|evoker|rogue|monk|druid|demonhunter|priest|mage|warlock)\s*=/mi.exec($('txt').value)||[])[1];const ak=cls&&ARMOR_OF[cls.toLowerCase()];if(ak)$('arm').value=ak;$('arml').hidden=!!ak;$('armtxt').textContent=ak?`Armor: ${cap(ak)} (from your class).`:'';
  const fury=/^\s*warrior\s*=/mi.test($('txt').value)&&/^\s*spec\s*=\s*fury\b/mi.test($('txt').value);
  $('cnt').textContent=(e||b?`${e} equipped items, ${b} bag items detected.`:'Nothing recognised yet.')+(fury?' Fury warrior: two-handers allowed in both hands.':'')};
 
@@ -286,11 +291,13 @@ async function loadLoot(){lootInfo=await api.lootInfo();$('lootst').textContent=
  const C=lootInfo?.consumables;$('conshint').textContent=C?'Suggested names come from game data; if simc rejects one, copy the name from your export.':'Suggestions appear after “Update loot data”.';
  $('dls').innerHTML=C?Object.entries(C).map(([k,v])=>`<datalist id="dl_${k}">${v.map(o=>`<option value="${esc(o.value)}" label="${esc(o.label)}"></option>`).join('')}</datalist>`).join(''):'';
  const T=lootInfo?.tiers||[];$('tier').innerHTML=T.length?T.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('')+'<option value="">All instances</option>':'<option value="">All instances (update loot data for tiers)</option>';
- renderInst()}
+ renderInst();seasNote()}
 function renderInst(){const f=$('ifilt').value.toLowerCase(),tier=(lootInfo?.tiers||[]).find(t=>t.id===$('tier').value),inT=tier?new Set(tier.instances):null,keep=new Set([...document.querySelectorAll('.ins:checked')].map(c=>c.value));
  $('inst').innerHTML=(lootInfo?lootInfo.instances:[]).filter(i=>keep.has(i.id)||((!inT||inT.has(i.id))&&i.name.toLowerCase().includes(f))).slice(0,60).map(i=>`<label class="in"><input type="checkbox" class="ins" value="${i.id}" ${keep.has(i.id)?'checked':''}>${esc(i.name)} <span class="it">(${i.items})</span><select class="isrc" data-i="${i.id}" style="margin-left:auto;max-width:150px;font-size:11px"><option value="custom">Custom ilvl</option>${prog.sources.map(s=>`<option value="${s.id}" ${instSrc[i.id]===s.id?'selected':''}>${esc(s.label)}</option>`).join('')}</select></label>`).join('')}
+function seasNote(){const t=(lootInfo?.tiers||[]).find(t=>t.id===$('tier').value),el=$('seasnote');el.hidden=!t||t.id!=='season';if(el.hidden)return;
+ el.textContent=t.left==null?'Run “Update loot data” to leave last season’s raids out of this list.':t.left.length?`Left out (last season’s upgrade tracks): ${t.left.join(', ')}.`:''}
 $('inst').onchange=e=>{if(e.target.classList.contains('isrc'))instSrc[e.target.dataset.i]=e.target.value};
-$('tier').onchange=renderInst;$('ifilt').oninput=renderInst;$('isel').onclick=()=>document.querySelectorAll('.ins').forEach(c=>c.checked=true);$('inone').onclick=()=>document.querySelectorAll('.ins').forEach(c=>c.checked=false);
+$('tier').onchange=()=>{renderInst();seasNote()};$('ifilt').oninput=renderInst;$('isel').onclick=()=>document.querySelectorAll('.ins').forEach(c=>c.checked=true);$('inone').onclick=()=>document.querySelectorAll('.ins').forEach(c=>c.checked=false);
 $('upd').onclick=async()=>{$('upd').disabled=true;try{await api.lootUpdate();await loadLoot()}catch(e){$('lootst').textContent=msg(e)}$('upd').disabled=false};
 
 api.onLog(l=>{const e=$('log');e.textContent+=l+'\n';e.scrollTop=e.scrollHeight;if(e.textContent.length>200000)e.textContent=e.textContent.slice(-150000)});
@@ -448,10 +455,10 @@ function updSum(){const set=(k,t)=>{const e=$('sm_'+k);if(e)e.textContent=t};
  const bo=bosses.find(x=>x.id===$('boss').value);
  set('fight',(bo?`${bo.name.split(' — ')[0]} (${($('bdiff').selectedOptions[0]||{}).textContent||''})`:`${$('fs').selectedOptions[0].textContent.split(' (')[0]}, ${$('tg').value} target${+$('tg').value>1?'s':''}`)+` · ${$('dur').value}s`);
  const ov=['c_flask','c_food','c_potion','c_rune'].filter(i=>$(i).value).length;
- set('buff',[{full:'full raid buffs',none:'no raid buffs',custom:'custom raid buffs'}[$('raid').value],$('nocons').checked?'no consumables':ov?`${ov} override${ov>1?'s':''}`:'',$('extra').value.trim()?'extra options':''].filter(Boolean).join(' · '));
+ set('buff',[{full:'full raid buffs',none:'no raid buffs',custom:'custom raid buffs'}[$('raid').value],$('extra').value.trim()?'extra options':''].filter(Boolean).join(' · '));
  const ni=document.querySelectorAll('.ins:checked').length;set('loot',ni?`${ni} instance${ni>1?'s':''}`+($('upg').value==='max'?' · fully upgraded':''):mode==='bis'?'bag items only':'pick instances');
  set('craft',$('cr_on').checked?(window.__crTotal!=null?`${window.__crTotal} variants`:'on'):'off');
- const nc=Object.values(consSel).reduce((a,x)=>a+x.size,0);set('cons',(nc?`${nc} option${nc>1?'s':''}`:'keep current')+(mode==='bis'?` · from round ${$('consfrom').value}`:''));
+ const nc=Object.values(consSel).reduce((a,x)=>a+x.size,0);set('cons',[$('nocons').checked?'none':ov?`${ov} override${ov>1?'s':''}`:'from export',mode!=='drop'&&nc?`${nc} to compare`:''].filter(Boolean).join(' · '));
  const eo=getEnh();set('enh',[eo.ench?'enchants':'',eo.gems?'gems'+(eo.add.length?` (+${eo.add.length} socket${eo.add.length>1?'s':''})`:''):''].filter(Boolean).join(' · ')||'keep current')}
 ['input','change','click'].forEach(ev=>document.addEventListener(ev,()=>setTimeout(updSum,0)));
 // Pasting a recognisable export folds the Character section away (its summary line stays); typing never folds it.

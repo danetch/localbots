@@ -419,3 +419,31 @@ embellishment").
   folder is kept. Test: test/migrate.test.js. Tests: 41 pass.
 - Not verified on a real Windows install: that the packaged app's data folder is %APPDATA%\Polygnome (Electron uses productName when
   packaged) and that the NSIS update from "LocalBots" to "Polygnome" replaces the old shortcut/uninstall entry rather than adding one.
+
+=== 23 OCT (evening): GNOME ICON, CATALYST DEFAULT, ARMOR FROM CLASS, CONSUMABLES CARD, SEASON FILTER BY UPGRADE TRACK ===
+- Icon: build/icon.svg = a gnome (red pointed hat with gold band, brass goggles, white beard, pointed ears) peeking over the gold anvil,
+  spark top-left, same navy tile + gold rim. build/icon.png (512), build/icon.ico (16-256), renderer/icon.png regenerated with cairosvg.
+- Options: "Include Catalyst (tier) versions" is ticked by default (not persisted, like before).
+- Loot source: armor type comes from the export's class (lib/specs.js armorOf/ARMOR; main.js uses specs.armorOf(text) || o.armor). The
+  Armor select is only shown when the export has no class line; otherwise the card says "Armor: Cloth (from your class)."
+- Consumables: one "Consumables" card, all modes: current setup (flask/food/potion/rune overrides + "No consumables", were in the buffs
+  card) then "Consumables to compare" (Top Gear / BiS). The old card is now "Raid buffs & extra options". "Consumables, enchants & gems
+  from round" stays in Options (it also drives enchants/gems); the BiS part of the card points to it.
+- Season filter ("This season" in Loot source). Problem: the Journal's "Current Season" tier still lists the S1 raids (The Voidspire,
+  March on Quel'Danas, The Dreamrift, Sporefall) and the Midnight world bosses. VERIFIED on real wago data (read through the user's
+  built-in browser; wago.tools is blocked in the sandbox): an item's bonus tree (ItemXBonusTree -> ItemBonusTreeNode, recursive) names
+  its upgrade-track groups, either as ChildItemBonusListGroupID or as a type-34 bonus inside a ChildItemBonusListID (Sporefall). Same numbers
+  as simc item_bonus type 34 / progression.json upgradeTracks: S1 raids 609-612, S2 raids (Venomous Abyss, Kith'ix, Tidebound Grotto)
+  615-618, Altar of Fangs 614-618, legacy M+ dungeons 310 only (not a track). BUT Midnight S1 dungeons back in the S2 M+ rotation
+  (Murder Row, Blinding Vale, Den of Nalorakk, Voidscar Arena) also list only S1 groups 608-612, so only RAIDS are filtered:
+  Map.InstanceType (JournalInstance.MapID -> Map) 2 = raid (world-boss "Midnight" instance is typed raid too), 1 = dungeon.
+  * "Update loot data" downloads Map, ItemXBonusTree (3.6 MB), ItemBonusTreeNode, ItemBonus (optional; ~5 MB together). loot.build stores
+    per instance `type` (Map.InstanceType) and `groups` (upgrade groups of all its drops; lib/loot.js trackGroups).
+  * loot:info: a raid in the season set is dropped when lib/loot.js seasonOf(groups, current groups = progression upgradeTracks keys,
+    known = enhance.json upgrade groups) === 'old' (only other seasons' tracks). Unknown/no data -> kept. Tier entry carries `left`
+    (names left out) or null when the loot.json predates this (UI: "Run Update loot data to leave last season's raids out").
+  * Next season: only progression.json "upgradeTracks" needs the new group ids (they also drive Top Gear upgrades).
+  * Test with real rows: units "season of an instance from its drops' upgrade-track groups". The full loot:update path with the new
+    tables has NOT run against the real server from the app (needs the user's "Update loot data").
+- UI checked in Electron under Xvfb with test/ui/mock.js (screenshot script in the scratchpad: preload evals mock.js, contextIsolation off).
+- Tests: 44 pass.

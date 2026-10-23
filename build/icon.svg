@@ -1,21 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <radialGradient id="bg" cx="50%" cy="38%" r="75%">
-      <stop offset="0" stop-color="#2a3866"/><stop offset="1" stop-color="#0b1022"/>
-    </radialGradient>
-    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ffe7a3"/><stop offset=".45" stop-color="#d9a441"/><stop offset="1" stop-color="#7a5212"/>
-    </linearGradient>
-    <linearGradient id="anvil" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#fff0bf"/><stop offset=".35" stop-color="#e9b955"/><stop offset="1" stop-color="#9c6a1c"/>
-    </linearGradient>
+    <radialGradient id="bg" cx="50%" cy="38%" r="75%"><stop offset="0" stop-color="#2a3866"/><stop offset="1" stop-color="#0b1022"/></radialGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe7a3"/><stop offset=".45" stop-color="#d9a441"/><stop offset="1" stop-color="#7a5212"/></linearGradient>
+    <linearGradient id="anvil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0bf"/><stop offset=".35" stop-color="#e9b955"/><stop offset="1" stop-color="#9c6a1c"/></linearGradient>
+    <linearGradient id="hat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6b5e"/><stop offset=".6" stop-color="#d23a3a"/><stop offset="1" stop-color="#8e1f2a"/></linearGradient>
+    <radialGradient id="skin" cx="45%" cy="40%" r="65%"><stop offset="0" stop-color="#ffd9bd"/><stop offset="1" stop-color="#e9a982"/></radialGradient>
+    <radialGradient id="lens" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#d9f4ff"/><stop offset=".5" stop-color="#5fc3e8"/><stop offset="1" stop-color="#1d6e92"/></radialGradient>
+    <clipPath id="tile"><rect x="16" y="16" width="480" height="480" rx="96"/></clipPath>
   </defs>
   <rect x="16" y="16" width="480" height="480" rx="96" fill="url(#bg)"/>
+  <g clip-path="url(#tile)">
+    <!-- gnome (pointed hat, brass goggles, beard) peeking over the anvil -->
+    <!-- ears -->
+    <path d="M196 236 Q150 214 140 196 Q170 200 206 214 Z" fill="#e9a982" stroke="#5c3d0c" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M316 236 Q362 214 372 196 Q342 200 306 214 Z" fill="#e9a982" stroke="#5c3d0c" stroke-width="5" stroke-linejoin="round"/>
+    <!-- head -->
+    <ellipse cx="256" cy="246" rx="64" ry="60" fill="url(#skin)" stroke="#5c3d0c" stroke-width="5"/>
+    <!-- beard -->
+    <path d="M194 258 Q190 330 256 346 Q322 330 318 258 Q292 290 256 290 Q220 290 194 258 Z" fill="#f4efe6" stroke="#5c3d0c" stroke-width="5" stroke-linejoin="round"/>
+    <!-- hat: tall, tip flopping right -->
+    <path d="M178 214 Q186 146 232 104 Q300 50 386 96 Q338 90 314 120 Q292 152 334 214 Z" fill="url(#hat)" stroke="#5c3d0c" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M168 210 Q256 190 344 210 L340 230 Q256 214 172 230 Z" fill="#e9b955" stroke="#5c3d0c" stroke-width="5" stroke-linejoin="round"/>
+    <!-- goggles -->
+    <path d="M196 252 L316 252" stroke="#5c3d0c" stroke-width="10"/>
+    <circle cx="230" cy="252" r="22" fill="url(#lens)" stroke="#d9a441" stroke-width="8"/>
+    <circle cx="282" cy="252" r="22" fill="url(#lens)" stroke="#d9a441" stroke-width="8"/>
+    <circle cx="230" cy="252" r="22" fill="none" stroke="#5c3d0c" stroke-width="2.5"/>
+    <circle cx="282" cy="252" r="22" fill="none" stroke="#5c3d0c" stroke-width="2.5"/>
+    <!-- nose -->
+    <ellipse cx="256" cy="280" rx="15" ry="13" fill="#f0a586" stroke="#5c3d0c" stroke-width="4"/>
+    <!-- anvil (in front, hides the lower beard) -->
+    <g transform="translate(46 166) scale(0.82)">
+      <path d="M84 200 Q146 178 204 176 L420 176 L420 226 L356 226 Q324 238 320 270 L320 300 Q332 318 372 326 L386 362 L126 362 L140 326 Q180 318 192 300 L192 270 Q188 244 156 232 Q116 220 84 200 Z"
+        fill="url(#anvil)" stroke="#5c3d0c" stroke-width="7" stroke-linejoin="round"/>
+      <path d="M204 186 L410 186" stroke="#fff6d6" stroke-width="6" stroke-linecap="round" opacity=".7"/>
+    </g>
+    <!-- spark -->
+    <path d="M110 92 l9 27 27 9 -27 9 -9 27 -9 -27 -27 -9 27 -9z" fill="#ffe7a3"/>
+  </g>
   <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="url(#rim)" stroke-width="18"/>
-  <!-- anvil: horn on the left, flat face, narrow waist, wide foot -->
-  <path d="M84 200 Q146 178 204 176 L420 176 L420 226 L356 226 Q324 238 320 270 L320 300 Q332 318 372 326 L386 362 L126 362 L140 326 Q180 318 192 300 L192 270 Q188 244 156 232 Q116 220 84 200 Z"
-        fill="url(#anvil)" stroke="#5c3d0c" stroke-width="6" stroke-linejoin="round"/>
-  <path d="M204 186 L410 186" stroke="#fff6d6" stroke-width="6" stroke-linecap="round" opacity=".7"/>
-  <!-- spark -->
-  <path d="M372 92 l10 30 30 10 -30 10 -10 30 -10 -30 -30 -10 30 -10z" fill="#ffe7a3"/>
 </svg>
