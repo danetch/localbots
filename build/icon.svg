@@ -1,16 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <radialGradient id="bg" cx="50%" cy="38%" r="75%"><stop offset="0" stop-color="#2a3866"/><stop offset="1" stop-color="#0b1022"/></radialGradient>
-    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe7a3"/><stop offset=".45" stop-color="#d9a441"/><stop offset="1" stop-color="#7a5212"/></linearGradient>
-    <linearGradient id="anvil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffeab0"/><stop offset=".35" stop-color="#e5b354"/><stop offset="1" stop-color="#9a6a1c"/></linearGradient>
+    <radialGradient id="bg" cx="50%" cy="38%" r="75%">
+      <stop offset="0" stop-color="#2a3866"/><stop offset="1" stop-color="#0b1022"/>
+    </radialGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe7a3"/><stop offset=".45" stop-color="#d9a441"/><stop offset="1" stop-color="#7a5212"/>
+    </linearGradient>
+    <linearGradient id="anvil" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff0bf"/><stop offset=".35" stop-color="#e9b955"/><stop offset="1" stop-color="#9c6a1c"/>
+    </linearGradient>
   </defs>
   <rect x="16" y="16" width="480" height="480" rx="96" fill="url(#bg)"/>
   <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="url(#rim)" stroke-width="18"/>
-  <!-- anvil -->
-  <g transform="translate(256 268) scale(1.12) translate(-239 -294)">
-  <path d="M64 214 Q120 200 156 196 L414 196 L414 252 Q352 258 330 288 L326 336 L376 358 L376 392 L156 392 L156 358 L206 336 L202 288 Q184 258 148 252 Q104 246 64 214 Z" fill="url(#anvil)" stroke="#5c3d0c" stroke-width="6" stroke-linejoin="round"/>
-  <path d="M164 206 L404 206" stroke="#fff6d6" stroke-width="8" stroke-linecap="round" opacity=".8"/>
-  </g>
+  <!-- anvil: horn on the left, flat face, narrow waist, wide foot -->
+  <path d="M84 200 Q146 178 204 176 L420 176 L420 226 L356 226 Q324 238 320 270 L320 300 Q332 318 372 326 L386 362 L126 362 L140 326 Q180 318 192 300 L192 270 Q188 244 156 232 Q116 220 84 200 Z"
+        fill="url(#anvil)" stroke="#5c3d0c" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M204 186 L410 186" stroke="#fff6d6" stroke-width="6" stroke-linecap="round" opacity=".7"/>
   <!-- spark -->
-  <path d="M380 74 l10 30 30 10 -30 10 -10 30 -10 -30 -30 -10 30 -10z" fill="#ffe7a3"/>
+  <path d="M372 92 l10 30 30 10 -30 10 -10 30 -10 -30 -30 -10 30 -10z" fill="#ffe7a3"/>
 </svg>
