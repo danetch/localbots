@@ -421,8 +421,9 @@ embellishment").
   packaged) and that the NSIS update from "LocalBots" to "Polygnome" replaces the old shortcut/uninstall entry rather than adding one.
 
 === 23 OCT (evening): GNOME ICON, CATALYST DEFAULT, ARMOR FROM CLASS, CONSUMABLES CARD, SEASON FILTER BY UPGRADE TRACK ===
-- Icon: build/icon.svg = a gnome (red pointed hat with gold band, brass goggles, white beard, pointed ears) peeking over the gold anvil,
-  spark top-left, same navy tile + gold rim. build/icon.png (512), build/icon.ico (16-256), renderer/icon.png regenerated with cairosvg.
+- Icon: build/icon.svg = an original gnome engineer girl (pink pigtails with gold ties, brass goggles resting on her fringe, pointed ears,
+  rosy cheeks) peeking over the gold anvil, spark top-left, same navy tile + gold rim (first draft was a bearded gnome in a red hat;
+  user asked for the pink-pigtails engineer-goggles look as inspiration). build/icon.png (512), build/icon.ico (16-256), renderer/icon.png regenerated with cairosvg.
 - Options: "Include Catalyst (tier) versions" is ticked by default (not persisted, like before).
 - Loot source: armor type comes from the export's class (lib/specs.js armorOf/ARMOR; main.js uses specs.armorOf(text) || o.armor). The
   Armor select is only shown when the export has no class line; otherwise the card says "Armor: Cloth (from your class)."

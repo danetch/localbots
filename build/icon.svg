@@ -3,40 +3,48 @@
     <radialGradient id="bg" cx="50%" cy="38%" r="75%"><stop offset="0" stop-color="#2a3866"/><stop offset="1" stop-color="#0b1022"/></radialGradient>
     <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe7a3"/><stop offset=".45" stop-color="#d9a441"/><stop offset="1" stop-color="#7a5212"/></linearGradient>
     <linearGradient id="anvil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0bf"/><stop offset=".35" stop-color="#e9b955"/><stop offset="1" stop-color="#9c6a1c"/></linearGradient>
-    <linearGradient id="hat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6b5e"/><stop offset=".6" stop-color="#d23a3a"/><stop offset="1" stop-color="#8e1f2a"/></linearGradient>
-    <radialGradient id="skin" cx="45%" cy="40%" r="65%"><stop offset="0" stop-color="#ffd9bd"/><stop offset="1" stop-color="#e9a982"/></radialGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9fd2"/><stop offset=".55" stop-color="#ec5fa8"/><stop offset="1" stop-color="#b73a80"/></linearGradient>
+    <radialGradient id="skin" cx="45%" cy="40%" r="65%"><stop offset="0" stop-color="#ffe0c8"/><stop offset="1" stop-color="#eeb08c"/></radialGradient>
     <radialGradient id="lens" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#d9f4ff"/><stop offset=".5" stop-color="#5fc3e8"/><stop offset="1" stop-color="#1d6e92"/></radialGradient>
     <clipPath id="tile"><rect x="16" y="16" width="480" height="480" rx="96"/></clipPath>
   </defs>
   <rect x="16" y="16" width="480" height="480" rx="96" fill="url(#bg)"/>
-  <g clip-path="url(#tile)">
-    <!-- gnome (pointed hat, brass goggles, beard) peeking over the anvil -->
+  <!-- original gnome engineer girl: pink pigtails, brass goggles on her fringe, peeking over the anvil -->
+  <g clip-path="url(#tile)" stroke="#5c3d0c" stroke-linejoin="round">
+    <!-- pigtails (behind the head), with gold hair ties -->
+    <path d="M200 196 Q146 162 114 192 Q86 222 100 266 Q108 292 90 318 Q138 312 150 274 Q160 244 190 238 Z" fill="url(#hair)" stroke-width="6"/>
+    <path d="M312 196 Q366 162 398 192 Q426 222 412 266 Q404 292 422 318 Q374 312 362 274 Q352 244 322 238 Z" fill="url(#hair)" stroke-width="6"/>
+    <ellipse cx="184" cy="212" rx="13" ry="16" fill="#e9b955" stroke-width="5" transform="rotate(-30 184 212)"/>
+    <ellipse cx="328" cy="212" rx="13" ry="16" fill="#e9b955" stroke-width="5" transform="rotate(30 328 212)"/>
     <!-- ears -->
-    <path d="M196 236 Q150 214 140 196 Q170 200 206 214 Z" fill="#e9a982" stroke="#5c3d0c" stroke-width="5" stroke-linejoin="round"/>
-    <path d="M316 236 Q362 214 372 196 Q342 200 306 214 Z" fill="#e9a982" stroke="#5c3d0c" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M200 252 Q160 236 150 216 Q178 222 208 232 Z" fill="#eeb08c" stroke-width="5"/>
+    <path d="M312 252 Q352 236 362 216 Q334 222 304 232 Z" fill="#eeb08c" stroke-width="5"/>
     <!-- head -->
-    <ellipse cx="256" cy="246" rx="64" ry="60" fill="url(#skin)" stroke="#5c3d0c" stroke-width="5"/>
-    <!-- beard -->
-    <path d="M194 258 Q190 330 256 346 Q322 330 318 258 Q292 290 256 290 Q220 290 194 258 Z" fill="#f4efe6" stroke="#5c3d0c" stroke-width="5" stroke-linejoin="round"/>
-    <!-- hat: tall, tip flopping right -->
-    <path d="M178 214 Q186 146 232 104 Q300 50 386 96 Q338 90 314 120 Q292 152 334 214 Z" fill="url(#hat)" stroke="#5c3d0c" stroke-width="6" stroke-linejoin="round"/>
-    <path d="M168 210 Q256 190 344 210 L340 230 Q256 214 172 230 Z" fill="#e9b955" stroke="#5c3d0c" stroke-width="5" stroke-linejoin="round"/>
-    <!-- goggles -->
-    <path d="M196 252 L316 252" stroke="#5c3d0c" stroke-width="10"/>
-    <circle cx="230" cy="252" r="22" fill="url(#lens)" stroke="#d9a441" stroke-width="8"/>
-    <circle cx="282" cy="252" r="22" fill="url(#lens)" stroke="#d9a441" stroke-width="8"/>
-    <circle cx="230" cy="252" r="22" fill="none" stroke="#5c3d0c" stroke-width="2.5"/>
-    <circle cx="282" cy="252" r="22" fill="none" stroke="#5c3d0c" stroke-width="2.5"/>
-    <!-- nose -->
-    <ellipse cx="256" cy="280" rx="15" ry="13" fill="#f0a586" stroke="#5c3d0c" stroke-width="4"/>
-    <!-- anvil (in front, hides the lower beard) -->
-    <g transform="translate(46 166) scale(0.82)">
-      <path d="M84 200 Q146 178 204 176 L420 176 L420 226 L356 226 Q324 238 320 270 L320 300 Q332 318 372 326 L386 362 L126 362 L140 326 Q180 318 192 300 L192 270 Q188 244 156 232 Q116 220 84 200 Z"
-        fill="url(#anvil)" stroke="#5c3d0c" stroke-width="7" stroke-linejoin="round"/>
+    <ellipse cx="256" cy="246" rx="62" ry="62" fill="url(#skin)" stroke-width="5"/>
+    <!-- hair top with fringe -->
+    <path d="M190 250 Q178 160 256 150 Q334 160 322 250 Q314 226 300 216 Q290 232 270 228 Q262 214 256 212 Q246 228 228 228 Q216 218 212 214 Q198 228 190 250 Z" fill="url(#hair)" stroke-width="6"/>
+    <!-- goggles pushed up on the forehead -->
+    <path d="M192 200 Q256 182 320 200" fill="none" stroke="#5c3d0c" stroke-width="12"/>
+    <circle cx="228" cy="190" r="21" fill="url(#lens)" stroke="#d9a441" stroke-width="8"/>
+    <circle cx="284" cy="190" r="21" fill="url(#lens)" stroke="#d9a441" stroke-width="8"/>
+    <circle cx="228" cy="190" r="21" fill="none" stroke-width="2.5"/>
+    <circle cx="284" cy="190" r="21" fill="none" stroke-width="2.5"/>
+    <path d="M249 188 L263 188" stroke="#d9a441" stroke-width="6"/>
+    <!-- eyes, cheeks, smile -->
+    <ellipse cx="232" cy="248" rx="9" ry="12" fill="#2a1a10" stroke="none"/>
+    <ellipse cx="280" cy="248" rx="9" ry="12" fill="#2a1a10" stroke="none"/>
+    <circle cx="235" cy="244" r="3.5" fill="#fff" stroke="none"/>
+    <circle cx="283" cy="244" r="3.5" fill="#fff" stroke="none"/>
+    <circle cx="216" cy="272" r="9" fill="#ff8fa8" opacity=".6" stroke="none"/>
+    <circle cx="296" cy="272" r="9" fill="#ff8fa8" opacity=".6" stroke="none"/>
+    <path d="M242 278 Q256 290 270 278" fill="none" stroke-width="5" stroke-linecap="round"/>
+    <!-- anvil in front -->
+    <g transform="translate(46 168) scale(0.82)">
+      <path d="M84 200 Q146 178 204 176 L420 176 L420 226 L356 226 Q324 238 320 270 L320 300 Q332 318 372 326 L386 362 L126 362 L140 326 Q180 318 192 300 L192 270 Q188 244 156 232 Q116 220 84 200 Z" fill="url(#anvil)" stroke-width="7"/>
       <path d="M204 186 L410 186" stroke="#fff6d6" stroke-width="6" stroke-linecap="round" opacity=".7"/>
     </g>
     <!-- spark -->
-    <path d="M110 92 l9 27 27 9 -27 9 -9 27 -9 -27 -27 -9 27 -9z" fill="#ffe7a3"/>
+    <path d="M110 92 l9 27 27 9 -27 9 -9 27 -9 -27 -27 -9 27 -9z" fill="#ffe7a3" stroke="none"/>
   </g>
   <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="url(#rim)" stroke-width="18"/>
 </svg>
