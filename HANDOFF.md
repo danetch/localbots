@@ -450,10 +450,19 @@ embellishment").
 - UI checked in Electron under Xvfb with test/ui/mock.js (screenshot script in the scratchpad: preload evals mock.js, contextIsolation off).
 - Tests: 44 pass.
 
-=== 23 OCT (night): NYMRISSA WAVECALLER + COUNCIL FIGHTS (in progress: real-simc check pending) ===
+=== 23 OCT (night): NYMRISSA WAVECALLER + COUNCIL FIGHTS ===
 - data/fights/nymrissa.json (BigWigs MidnightLairs/Nymrissa.lua b26c019 + Method guide): Shorerunner murloc adds (Mythic: + Frostscale
   shield add, kill first), Swirling Whirlpools, Chilling Frost soaks. Pull timers 25 / 107 / 35, repeat 132 s = 3 x the 44 s rotation (assumed).
 - Council fights (lib/boss.js `bosses`, `present`, mechanic `allBosses`): desired_targets = 1 + extra bosses, invulnerable windows for an
   extra boss outside its stages (target=Dummy_Enemy_n) + ignore_invulnerable_targets=1 so cleave/AoE ignore it (simc source: player.cpp).
   Twin Fangs = 2 bosses all fight, both submerge; Lost Explorers = 2 bosses (two kept together, the third out of range: 99 % DR within
   30 yd); Coiled Altar = Malacrass from 20 s into stage 3; Entombed Sentinels stays single target (split raid).
+- VERIFIED with a real simc (midnight branch cc01837, OPTIMIZE=0, ~50 min build on 2 cores; profiles/MID2/MID2_Rogue_Outlaw.simc,
+  app's own fightArgs, 40 iterations; per-enemy damage = collected_data.resource_lost.health, timing from resource_timelines.health):
+  Twin Fangs: main 59.3 M, Ithraz 28.9 M (cleave), both take nothing 132-149 s (submerge 130-150). Coiled Altar 300 s: Malacrass takes
+  nothing until 217 s (stage 3 at 198 + 20) then 7.6 M; at 210 s it starts at 158 s (138 + 20). Lost Explorers: 2 targets all fight
+  (67.5 M / 31.6 M). Nymrissa (Mythic) and Sentinels run clean. simc accepts timestamps=0 and target=Dummy_Enemy_1 (targets are created
+  before raid events are parsed, sim.cpp init).
+- Still assumed: Twin Fangs submerge only once at 130 s (guide: 3 submerges before enrage, cycle length unknown); Nymrissa repeat periods,
+  add counts/health; the third Lost Explorer is never in cleave range.
+- Tests: 45 pass.
