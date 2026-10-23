@@ -77,5 +77,21 @@ test('top gear: gems optimised on the best combination, jewelbinder socket used'
   const text = 'rogue="Ann"\nspec=outlaw\nlevel=90\nhead=,id=10\nneck=,id=11,gem_id=240910\nfinger1=,id=12\nfinger2=,id=13\n# Helm B (300)\n# head=,id=20\n';
   const r = await H['sim:topgear']({}, { text, threads: 1, topN: 3, fight: { fightStyle: 'Patchwerk' }, precision: 'fast', report: false, enhance: { gems: true, add: ['head'] } });
   assert.ok(/Flawless Deadly Garnet/.test(r.gemsNote), 'gems: ' + r.gemsNote);
-  assert.ok(logs.some(l => /optimising 4 socket/.test(l)), 'neck + 2 rings + jewelbinder head');
+  assert.ok(logs.some(l => /4 gem socket/.test(l)), 'neck + 2 rings + jewelbinder head');
+});
+
+test('top gear: enchants with gems, crafted stats probe and per-finalist stat pairs', async () => {
+  logs.length = 0;
+  const text = 'rogue="Ann"\nspec=outlaw\nlevel=90\nhead=,id=10\nneck=,id=11,gem_id=240910\nfinger1=,id=12,enchant_id=7965\nfinger2=,id=13\nchest=,id=14\nmain_hand=,id=15\n';
+  fs.writeFileSync(ud + '/loot.json', JSON.stringify({ builtAt: new Date().toISOString(), instances: {}, items: {}, consVer: 2, crafted: [],
+    embellishments: [{ name: 'Arcanoweave Lining', key: 'arcanoweave_lining', bonusId: 99001 }] }));
+  fs.writeFileSync(ud + '/crafted.json', JSON.stringify({ ilvl: 331, statPairs: ['32/36', '36/49', '32/49'], embellishments: { 'arcanoweave lining': { slots: ['wrist', 'back'] } },
+    extraItems: [{ id: 501, name: 'Woven Bracers', slot: 'wrist' }, { id: 502, name: 'Woven Cloak', slot: 'back' }] }));
+  const r = await H['sim:topgear']({}, { text, threads: 1, topN: 4, fight: { fightStyle: 'Patchwerk' }, precision: 'fast', report: false,
+    crafted: { on: true, emb: ['arcanoweave lining'], pairs: ['32/36', '36/49', '32/49'], plain: false }, enhance: { ench: true, gems: true, add: [] } });
+  assert.ok(logs.some(l => /Crafted stats probe/.test(l)), 'probe ran');
+  assert.ok(logs.some(l => /stat-pair combinations of the crafted pieces/.test(l)), 'per-finalist pairs ran');
+  assert.ok(/Zul'jin's Mastery/.test(r.enchNote), 'enchants: ' + r.enchNote);
+  assert.ok(r.rows[0].items.some(t => /Woven/.test(t.label)), 'two embellished crafted pieces in the best row (fake simc rewards embellishments)');
+  fs.rmSync(ud + '/loot.json'); fs.rmSync(ud + '/crafted.json');
 });

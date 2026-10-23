@@ -424,9 +424,27 @@ ipcMain.handle('sim:topgear', run(async (o, tmp) => {
   tg.titanPools(parsed, rules);
   const tierSet = tierLib.setup(catalyst, text, loadLoot()?.tierSets, rules, loadProg().tier);
   if (tierSet) log(`>> Catalyst: ${tierLib.poolTwins(parsed, tierSet)} tier twins of “${tierSet.name}”${rules.maxCat < Infinity ? `, max ${rules.maxCat} charges` : ''}`);
-  const cv = craftedVariants(crafted, text, { base, dual: isDual(base, rules) });
-  if (cv.length) { craftedLib.addToPools(parsed, cv, rules); log(`>> Crafted: ${cv.length} crafted variants added to the pools`); }
   const KG = keepGems(text, base, log);
+  // Crafted gear = which slot, which embellishment, which stats. The stat pair only changes stats (and through diminishing returns its
+  // value depends on the rest of the set), so: (1) a probe ranks the ticked stat pairs once on one crafted piece; (2) the combinations
+  // search slots/embellishments with the best pair only; (3) the crafted pieces of the top finalists then get every stat-pair combination,
+  // simulated together. famItems: crafted item without its stat pair -> the same piece with every ticked pair.
+  const cv = craftedVariants(crafted, text, { base, dual: isDual(base, rules) });
+  const pairOf = it => (/crafted_stats=([^,]*)/.exec(it || '') || [])[1], famKey = it => String(it).replace(/,crafted_stats=[^,]*/, '');
+  const famItems = new Map(), craftSlot = new Map();
+  for (const v of cv) { const k = famKey(v.item); if (!famItems.has(k)) famItems.set(k, []); if (!famItems.get(k).includes(v.item)) famItems.get(k).push(v.item); parsed.labels[v.item] = v.label; craftSlot.set(v.item, v.slot.replace(/[12]$/, '')); }
+  const pairs = [...new Set(cv.map(v => pairOf(v.item)))];
+  let cvUse = cv;
+  if (pairs.length > 1) {
+    const PROBE = ['wrist', 'wrists', 'back', 'waist', 'feet', 'hands', 'legs', 'chest', 'head', 'shoulder', 'shoulders', 'finger1', 'finger2', 'neck'];   // armor first: crafted stats are a big part of its budget
+    const ref = PROBE.map(sl => cv.find(v => v.slot === sl && base[sl])).find(Boolean) || cv[0], refVars = cv.filter(v => v.slot === ref.slot && famKey(v.item) === famKey(ref.item));
+    const pp = await pass(simcPath, KG.text, KG.diffs(refVars.map(v => ({ [v.slot]: v.item }))), fine(0.2), threads, tmp, log, fight, [0, 0.05], 'Crafted stats probe');
+    const top = pp.results.sort((a, b) => b.mean - a.mean)[0], bestPair = top ? pairOf(refVars[top.idx].item) : pairs[0];
+    const SN = { 32: 'Crit', 36: 'Haste', 40: 'Vers', 49: 'Mastery' }, pn = p => p.split('/').map(x => SN[x] || x).join('/');
+    log(`>> Crafted stats probe (${ref.base}, ${ref.slot}): ${pp.results.map(r => `${pn(pairOf(refVars[r.idx].item))} ${((r.mean / pp.base - 1) * 100).toFixed(2)} %`).join(' · ')} → combinations use ${pn(bestPair)}, then every pair is tried on the finalists`);
+    cvUse = cv.filter(v => pairOf(v.item) === bestPair);
+  }
+  if (cvUse.length) { craftedLib.addToPools(parsed, cvUse, rules); log(`>> Crafted: ${cvUse.length} crafted pieces added to the pools${cvUse.length < cv.length ? ` (${cv.length} with every stat pair)` : ''}`); }
   // Too many combinations (crafted variants multiply fast): every candidate is first simulated alone in the current gear, and only the
   // best ones of each slot go on to the combinations (equipped items always stay).
   const est = tg.estimate(parsed.pools), LIMIT = 15000;
@@ -438,10 +456,12 @@ ipcMain.handle('sim:topgear', run(async (o, tmp) => {
     // The estimate ignores the rules (embellishment cap, unique items...), so the budget is raised while the REAL number of combinations
     // stays well under the limit.
     const orig = Object.fromEntries(Object.entries(parsed.pools).map(([k, v]) => [k, [...v]]));
-    let budget = LIMIT, pr = tg.prunePools(parsed, it => g.get(it), budget, orig), n = tg.combos(parsed, rules).length;
+    // group = crafted slot + embellishment: the best piece of every group survives the pre-screen
+    const groupOf = it => craftSlot.has(it) ? craftSlot.get(it) + '|' + ((/embellishment=([^,]*)/.exec(it) || [])[1] || 'plain') : null;
+    let budget = LIMIT, pr = tg.prunePools(parsed, it => g.get(it), budget, orig, groupOf), n = tg.combos(parsed, rules).length;
     for (let i = 0; i < 60 && n < LIMIT / 3 && pr.dropped.length; i++) {
       const prev = { pools: Object.fromEntries(Object.entries(parsed.pools).map(([k, v]) => [k, [...v]])), pr, n };
-      budget *= 4; pr = tg.prunePools(parsed, it => g.get(it), budget, orig);
+      budget *= 4; pr = tg.prunePools(parsed, it => g.get(it), budget, orig, groupOf);
       try { n = tg.combos(parsed, rules, LIMIT * 2).length; } catch { n = Infinity; }
       if (n > LIMIT) { parsed.pools = prev.pools; pr = prev.pr; n = prev.n; break; }
     }
@@ -456,8 +476,31 @@ ipcMain.handle('sim:topgear', run(async (o, tmp) => {
   const best = p1.results.sort((a, b) => b.mean - a.mean).slice(0, topN);
   log(`>> Pass 2: ${best.length} best (high precision)`);
   const sub = best.map(b => list[b.idx]), msub = best.map(b => mlist[b.idx]);
-  const p2 = await pass(simcPath, KG.text, msub, fine(0.1), threads, tmp, log, fight, [0.6, 0.88], 'Pass 2/2 — finalists');
+  let p2 = await pass(simcPath, KG.text, msub, fine(0.1), threads, tmp, log, fight, [0.6, 0.75], 'Pass 2/2 — finalists');
   p2.results.sort((a, b) => b.mean - a.mean);
+  // Crafted stats per finalist: all stat-pair combinations of the crafted pieces of the top 5 finalists, simulated together (exact for
+  // diminishing returns between the two pieces), max 216 per finalist.
+  if (pairs.length > 1) {
+    const tests = [], owner = [];
+    for (const r of p2.results.slice(0, 5)) {
+      const d = sub[r.idx], cs = Object.entries(d).filter(([, it]) => famItems.has(famKey(it))); if (!cs.length) continue;
+      let all = [{}];
+      for (const [sl, it] of cs) { const next = []; for (const c of all) for (const a of famItems.get(famKey(it))) next.push({ ...c, [sl]: a }); all = next.slice(0, 216); }
+      for (const c of all) { tests.push({ ...d, ...c }); owner.push(r.idx); }
+    }
+    if (tests.length) {
+      log(`>> Crafted stats: ${tests.length} stat-pair combinations of the crafted pieces of the top finalists, simulated together`);
+      const pc = await pass(simcPath, KG.text, KG.diffs(tests), fine(0.2), threads, tmp, log, fight, [0.75, 0.8], 'Crafted stats per finalist');
+      const bestBy = new Map(); for (const x of pc.results) { const ow = owner[x.idx]; if (!bestBy.has(ow) || x.mean > bestBy.get(ow).mean) bestBy.set(ow, { mean: x.mean, d: tests[x.idx] }); }
+      let changed = 0;
+      for (const [i, b] of bestBy) if (JSON.stringify(b.d) !== JSON.stringify(sub[i])) { sub[i] = b.d; msub[i] = KG.diffs([b.d])[0]; changed++; }
+      if (changed) {
+        log(`>> Crafted stats: ${changed} finalist(s) get better stat pairs; finalists simulated again`);
+        p2 = await pass(simcPath, KG.text, msub, fine(0.1), threads, tmp, log, fight, [0.8, 0.84], 'Finalists with their best crafted stats');
+        p2.results.sort((a, b) => b.mean - a.mean);
+      }
+    }
+  }
   // Consumables: ranked on the best combination; if one beats the current setup, the finalists are simulated again with it (a flask or
   // food can change which gear wins, through diminishing returns).
   let fin = p2, setText = KG.text, consumablesRank = [], consNote = '';
@@ -474,29 +517,48 @@ ipcMain.handle('sim:topgear', run(async (o, tmp) => {
       for (const c of consumablesRank) if (pick[c.slot]) c.switched = true;
     }
   }
-  // Gems (Enchants & gems section, "Find the best gems"): the gem plan is optimised on the best combination with the Best in Slot moves
-  // (other diamond, all secondary gems of one kind, one gem replaced; Jewelbinder sockets as ticked), then the finalists are simulated
-  // again with the best plan. The baseline keeps your current gems, so the gains include the gem change.
-  let gemsNote = '', finDiffs = msub;
-  const ch = enhLib.gemsFor(enhanceDb());
-  if (o.enhance?.gems && ch.gems.length && fin.results.length) {
+  // Enchants & gems (section "Enchants & gems"): optimised together on the best combination (each round: best move of every enchant slot
+  // and of the gem plan, combined if that is better), then every finalist is simulated again with them. The enchant belongs to the slot,
+  // the gems to the set. The baseline keeps your current enchants and gems, so the gains include the change.
+  let gemsNote = '', enchNote = '', finDiffs = msub;
+  const wantG = !!o.enhance?.gems, wantE = !!o.enhance?.ench;
+  if ((wantG || wantE) && fin.results.length) {
+    const S0 = { ...base, ...sub[fin.results[0].idx] }, ec = enhChoices(text, S0, rules), EDB = enhanceDb();
     const add = (o.enhance.add || []).flatMap(x => x === 'wrist' ? ['wrist', 'wrists'] : [x]).filter(x => enhLib.JEWELBINDER.includes(x));
-    const octx = { ...KG.k, gemsOn: true, add }, names = {}; for (const g of enhanceDb().gems) for (const id of g.ids) names[id] = g.name;
-    const S0 = { ...base, ...sub[fin.results[0].idx] }, Mg = plan => enhLib.materialize({ ...S0, gems: plan }, octx);
-    const n = enhLib.SOCKET_ORDER.reduce((a, x) => a + enhLib.socketsOf(x, Mg('')[x], KG.k.db, { add, base: KG.k.base }), 0);
-    let plan = enhLib.startPlan(enhLib.materialize(S0, KG.k), n, KG.k.db, ch, KG.k.isD, { add, base: KG.k.base });
-    log(`>> Gems: optimising ${n} socket(s) on the best combination${add.length ? ` (Radiant Jewelbinder on ${(o.enhance.add || []).join(', ')})` : ''}`);
-    for (let r = 1; r <= 4; r++) {
-      const cur = Mg(plan), moves = enhLib.planMoves(plan, n, ch, KG.k.isD); if (!moves.length) break;
-      const pg = await pass(simcPath, bis.withSet(setText, cur), moves.map(m => bis.diffOf(cur, Mg(m))), fine(0.2), threads, tmp, log, fight, [0.88 + 0.01 * (r - 1), 0.88 + 0.01 * r], `Gems — round ${r}`);
-      const top = pg.results.sort((a, b) => b.mean - a.mean)[0];
-      if (!top || top.mean - pg.base < 0.0005 * pg.base) break;
-      plan = moves[top.idx]; log(`>> Gems round ${r}: +${Math.round(top.mean - pg.base)} DPS with ${enhLib.gemsPlanLabel(plan, names)}`);
+    const gN = {}, eN = {}; for (const g of EDB.gems) for (const id of g.ids) gN[id] = g.name; for (const e of EDB.enchants) for (const id of e.ids) eN[id] = e.name;
+    const octx = { ...KG.k, gemsOn: wantG && ec.gems.gems.length > 0, enchOn: wantE, add, isWeapon: it => weaponKind(rules.kindOf(tg.idOf(it))) };
+    const st = {};
+    if (wantE) for (const sl of Object.keys(ec.ench)) st['ench:' + sl] = enhLib.optOf(S0[sl], 'enchant_id') || '';
+    const Mx = extra => enhLib.materialize({ ...S0, ...st, ...extra }, octx);
+    let n = 0;
+    if (octx.gemsOn) {
+      n = enhLib.SOCKET_ORDER.reduce((a, x) => a + enhLib.socketsOf(x, Mx({ gems: '' })[x], KG.k.db, { add, base: KG.k.base }), 0);
+      st.gems = enhLib.startPlan(enhLib.materialize(S0, KG.k), n, KG.k.db, ec.gems, KG.k.isD, { add, base: KG.k.base });
     }
-    gemsNote = enhLib.gemsPlanLabel(plan, names);
-    finDiffs = fin.results.length ? msub.map((d, i) => bis.diffOf(KG.MB, enhLib.materialize({ ...base, ...sub[i], gems: plan }, octx))) : msub;
-    log(`>> Finalists simulated again with gems: ${gemsNote}`);
-    fin = await pass(simcPath, setText, finDiffs, fine(0.1), threads, tmp, log, fight, [0.92, 0.95], 'Finalists with the best gems');
+    log(`>> Enchants & gems on the best combination:${wantE ? ` enchants for ${Object.keys(ec.ench).join(', ') || 'no slot'}` : ''}${octx.gemsOn ? ` · ${n} gem socket(s)${add.length ? ` (Radiant Jewelbinder on ${(o.enhance.add || []).join(', ')})` : ''}` : ''}`);
+    for (let r = 1; r <= 6; r++) {
+      const cur = Mx({}), moves = [];
+      if (octx.gemsOn) for (const m of enhLib.planMoves(st.gems, n, ec.gems, KG.k.isD)) moves.push({ dim: 'gems', m: { gems: m } });
+      if (wantE) for (const [sl, list] of Object.entries(ec.ench)) for (const e of list) if (String(e.id) !== st['ench:' + sl]) moves.push({ dim: sl, m: { ['ench:' + sl]: String(e.id) } });
+      const sims = moves.map(x => ({ ...x, d: bis.diffOf(cur, Mx(x.m)) })).filter(x => Object.keys(x.d).length); if (!sims.length) break;
+      const pe = await pass(simcPath, bis.withSet(setText, cur), sims.map(x => x.d), fine(0.2), threads, tmp, log, fight, [0.84 + 0.01 * (r - 1), 0.84 + 0.01 * r], `Enchants & gems — round ${r}`);
+      const bestDim = new Map(); for (const x of pe.results) { const sm = sims[x.idx], g = x.mean - pe.base; if (g > 0.0005 * pe.base && (!bestDim.has(sm.dim) || g > bestDim.get(sm.dim).g)) bestDim.set(sm.dim, { g, m: sm.m }); }
+      if (!bestDim.size) break;
+      const single = [...bestDim.values()].sort((a, b) => b.g - a.g)[0];
+      let pickM = single.m;
+      if (bestDim.size > 1) {                              // all the best moves together, kept only if better than the best one alone
+        const comb = Object.assign({}, ...[...bestDim.values()].map(v => v.m));
+        const pcb = await pass(simcPath, bis.withSet(setText, cur), [bis.diffOf(cur, Mx(comb))], fine(0.2), threads, tmp, log, fight, [0.84 + 0.01 * r, 0.84 + 0.01 * r], `Enchants & gems — round ${r} combined`);
+        if (pcb.results[0] && pcb.results[0].mean - pcb.base > single.g) pickM = comb;
+      }
+      Object.assign(st, pickM);
+      log(`>> Enchants & gems round ${r}: ${Object.entries(pickM).map(([k, v]) => k === 'gems' ? 'gems ' + enhLib.gemsPlanLabel(v, gN) : `${k.slice(5)} ${eN[v] || v}`).join(', ')}`);
+    }
+    if (octx.gemsOn) gemsNote = enhLib.gemsPlanLabel(st.gems, gN);
+    if (wantE) enchNote = Object.entries(st).filter(([k]) => /^ench:/.test(k)).map(([k, v]) => `${k.slice(5)}: ${v ? eN[v] || 'id ' + v : 'none'}`).join(', ');
+    finDiffs = msub.map((d, i) => bis.diffOf(KG.MB, enhLib.materialize({ ...base, ...sub[i], ...st }, octx)));
+    log(`>> Finalists simulated again with these enchants & gems`);
+    fin = await pass(simcPath, setText, finDiffs, fine(0.1), threads, tmp, log, fight, [0.9, 0.95], 'Finalists with the best enchants & gems');
     fin.results.sort((a, b) => b.mean - a.mean);
   }
   const st = await statsPass(simcPath, setText, finDiffs, threads, tmp, log);
@@ -505,7 +567,7 @@ ipcMain.handle('sim:topgear', run(async (o, tmp) => {
     items: Object.entries(sub[r.idx]).map(([slot, item]) => ({ slot, label: parsed.labels[item] || item, stats: st[r.idx]?.[slot], wh: whOf(item) }))
   }));
   const report = o.report === false || !rows.length ? null : await reportPass(simcPath, setText, finDiffs[fin.results[0].idx], fine(0.1), threads, tmp, log, fight, [0.95, 1], 'Creating the simc report');
-  return { base: fin.base, total: list.length, rows, report, consumablesRank, consNote, gemsNote };
+  return { base: fin.base, total: list.length, rows, report, consumablesRank, consNote, gemsNote, enchNote };
 }));
 
 // ---------- Progression (tracks & sources) ----------

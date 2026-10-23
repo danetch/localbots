@@ -161,7 +161,7 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
   <div class="it" style="margin-top:6px">Crafted weapons are added automatically when you tick a weapon embellishment (only types your class can wield).</div>
   <div style="font-weight:600;font-size:12px;margin-top:6px">What will be tested</div><div id="cr_prev" class="it">Tick “Add crafted items” to see which pieces are added.</div>
   <div class="row"><button id="cr_edit">Edit crafted rules…</button></div>
-  <div class="it">Only embellished pieces count toward the limit of 2. Many options multiply fast: in Top Gear tick few stat pairs.</div></details>
+  <div class="it">Only embellished pieces count toward the limit of 2 (the same embellishment twice is allowed). Top Gear first ranks your ticked stat pairs once, searches slots and embellishments with the best pair, then tries every stat-pair combination of the crafted pieces of the best finalists together, so ticking all pairs is fine.</div></details>
 
  <details class="card sec" id="s_cons" data-modes="top bis"><summary><span class="n"></span>Consumables to compare<span class="sm" id="sm_cons"></span></summary>
   <div class="it" style="margin-bottom:6px">Tick the flasks, food, potions and runes to consider. Best in Slot picks the best of each category alongside your gear; Top Gear ranks them on its best combination and, if one beats your current setup, simulates the finalists again with it. Leave a category empty to keep your current setup.</div>
@@ -169,9 +169,9 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
   <div class="it" style="margin-top:6px">Secondary stats lose value past 30&nbsp;% from rating (diminishing returns). Best in Slot: when a flask or food and a gear, enchant or gem change push the same stat into that zone, they are simulated together instead of adding up their separate gains.</div></details>
 
  <details class="card sec" id="s_enh" data-modes="top bis"><summary><span class="n"></span>Enchants &amp; gems<span class="sm" id="sm_enh"></span></summary>
-  <label class="in" data-modes="bis"><input type="checkbox" id="en_on">Find the best enchants (rings, chest, legs, weapons)</label>
+  <label class="in"><input type="checkbox" id="en_on">Find the best enchants (rings, chest, legs, weapons)</label>
   <label class="in"><input type="checkbox" id="gm_on">Find the best gems</label>
-  <div class="it" data-modes="top">Top Gear: the gems are optimised on the best combination, then the finalists are simulated again with them.</div>
+  <div class="it" data-modes="top">Top Gear: enchants and gems are optimised together on the best combination, then every finalist is simulated again with them.</div>
   <div class="row" style="margin-top:2px"><span class="it">Add a socket (Radiant Jewelbinder) to:</span>
    <label class="in"><input type="checkbox" class="jb" value="head" checked>Head</label><label class="in"><input type="checkbox" class="jb" value="wrist" checked>Wrist</label><label class="in"><input type="checkbox" class="jb" value="waist" checked>Waist</label></div>
   <div class="it">Necks and rings always count at least one socket. Speed, leech and avoidance enchants (head, shoulders, feet) are left as they are. The best quality rank of each enchant and gem is used.</div>
@@ -339,7 +339,7 @@ const slotBox=(x,cls)=>`<div class="slot ${cls||''}"><span class="sl">${esc(slot
 // Two columns (left side / right side), each in game order; one column when only one side has items.
 function sheet(items){const L=items.filter(x=>LEFT.includes(x.slot)).sort(byGame),R=items.filter(x=>!LEFT.includes(x.slot)).sort(byGame);
  const col=a=>`<div class="side">${a.map(x=>slotBox(x,x.changed?'chg':'')).join('')}</div>`;return L.length&&R.length?`<div class="sheet">${col(L)}${col(R)}</div>`:col(L.length?L:R)}
-function showTop(r){setRep(r.report);const mx=Math.max(...r.rows.map(x=>Math.abs(x.delta)),0);$('sum').textContent=`Baseline ${fmt(r.base)} DPS · ${r.total} combinations tested${fightLabel}${r.consNote?' · finalists with '+r.consNote:''}${r.gemsNote?' · gems: '+r.gemsNote:''}`;
+function showTop(r){setRep(r.report);const mx=Math.max(...r.rows.map(x=>Math.abs(x.delta)),0);$('sum').textContent=`Baseline ${fmt(r.base)} DPS · ${r.total} combinations tested${fightLabel}${r.consNote?' · finalists with '+r.consNote:''}${r.gemsNote?' · gems: '+r.gemsNote:''}${r.enchNote?' · enchants: '+r.enchNote:''}`;
  $('res').innerHTML=(r.rows.map((x,i)=>`<div class="r"><b><span class="rk">${i+1}.</span>${fmt(x.mean)} DPS</b> <span class="${x.delta>=0?'pos':'neg'}">${sgn(x.delta)}</span> <span class="it">±${fmt(x.err)}</span><div class="side" style="margin-top:4px">${[...x.items].sort(byGame).map(t=>slotBox({slot:t.slot,label:t.label,wh:t.wh,subs:[t.stats?statTxt(t.stats):'']})).join('')}</div>${gainBar(x.delta,mx)}</div>`).join('')||'<div class="empty">No result.</div>')+consBlock(r);
  setCopy(`Top Gear · baseline ${fmt(r.base)} DPS${fightLabel}\n`+r.rows.map((x,i)=>`${i+1}. ${fmt(x.mean)} DPS (${sgn(x.delta)})\n`+[...x.items].sort(byGame).map(t=>`   ${slotN(t.slot)}: ${t.label}${t.stats?' ('+statTxt(t.stats).replace(/&amp;/g,'&')+')':''}`).join('\n')).join('\n')+consCopy(r))}
 function showDrop(r){setRep(r.report);const mx=Math.max(...r.rows.map(x=>Math.abs(x.delta)),0);$('sum').textContent=`Baseline ${fmt(r.base)} DPS · ${r.total} simulations${fightLabel}`;
@@ -376,7 +376,7 @@ function schedCraft(){clearTimeout(crTimer);crTimer=setTimeout(refreshCraftPrev,
 $('cr_on').closest('details').addEventListener('change',schedCraft);$('txt').addEventListener('input',schedCraft);
 const getCrafted=()=>({on:$('cr_on').checked,emb:[...document.querySelectorAll('.cre:checked')].map(x=>x.value),pairs:[...document.querySelectorAll('.crp:checked')].map(x=>x.value),plain:$('cr_plain').checked});
 // ---- Enchants & gems (Best in Slot) ----
-const getEnh=()=>({ench:mode==='bis'&&$('en_on').checked,gems:$('gm_on').checked,add:[...document.querySelectorAll('.jb:checked')].map(c=>c.value)});
+const getEnh=()=>({ench:$('en_on').checked,gems:$('gm_on').checked,add:[...document.querySelectorAll('.jb:checked')].map(c=>c.value)});
 var enTimer=0;const SLN={main_hand:'main hand',off_hand:'off hand',finger1:'ring 1',finger2:'ring 2'};const sln=s=>SLN[s]||s;
 async function refreshEnhPrev(){const el=$('en_prev'),o=getEnh();if(!o.ench&&!o.gems){el.textContent='Tick an option to see what will be tested.';return}
  const r=await api.enhPreview({text:$('txt').value,add:o.add}).catch(e=>({error:msg(e)}));

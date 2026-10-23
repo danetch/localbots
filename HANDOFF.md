@@ -390,3 +390,18 @@ Read the user's real userData (loot.json, progression.json, last-bis-result.json
 - Icon: build/icon.svg (original: three rising gold bars + epic purple gem, navy tile, gold rim), build/icon.png (512), build/icon.ico
   (16-256), renderer/icon.png (window + header). package.json win.icon / nsis installer icons.
 - Tests: 39 pass.
+
+=== 23 OCT: v0.3.4 — TOP GEAR CRAFTED = SLOT/EMBELLISHMENT THEN STATS; TOP GEAR ENCHANTS ===
+User framing: embellishments usually make 2 crafted pieces mandatory; the real question is which stats (with DR). Same embellishment
+twice is allowed: no rule in the app, and simc stacks it (unique_gear_midnight.cpp arcanoweave_lining: "double value for double
+embellishment").
+- Top Gear crafted: famKey = crafted item string without crafted_stats. (1) Probe: the ticked stat pairs on ONE armor piece (wrist,
+  back, waist, ... first; never a trinket) swapped into the current gear -> best pair. (2) Combinations use only that pair (6x fewer
+  candidates); pre-screen (if needed) keeps the best piece of every crafted slot+embellishment group first (prunePools groupOf).
+  (3) For the top 5 finalists: every stat-pair combination of their crafted pieces simulated together (max 216 per finalist; exact for
+  DR between pieces); finalists re-simulated if any changed. User's data, everything ticked: 1296 variants -> 216 pieces -> 9539 combos,
+  1080 stat-pair tests on 5 finalists.
+- Top Gear enchants (with gems): joint coordinate ascent on the best combination (each round: best move per enchant slot and for the gem
+  plan; all best moves combined if that beats the best single one), up to 6 rounds; then all finalists simulated again with them.
+  Summary shows gems and enchants.
+- Tests: 40 pass.
