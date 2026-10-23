@@ -315,7 +315,7 @@ ipcMain.handle('enh:preview', (_e, { text, add }) => {
     const parsed = tg.parse(String(text || '')), base = tg.baseSlots(parsed.equipped);
     if (!Object.keys(base).length) return { empty: true };
     const c = enhChoices(text, base, mkRules(text));
-    const sockets = enhLib.SOCKET_ORDER.map(s => [s, enhLib.socketsOf(s, base[s], c.db, { add })]).filter(([, n]) => n);
+    const sockets = enhLib.SOCKET_ORDER.map(s => [s, enhLib.socketsOf(s, base[s], c.db, { add, base: itemsDb().baseSockets })]).filter(([, n]) => n);
     return { build: c.db.build, ench: Object.entries(c.ench).map(([slot, l]) => ({ slot, names: l.map(e => e.name) })),
       diamonds: c.gems.diamonds.map(g => g.name), gems: c.gems.gems.map(g => g.name), sockets };
   } catch (e) { return { error: e.message }; }
@@ -325,6 +325,15 @@ function logSkipped(sk, log) {
   const u = [...new Map(sk.map(x => [x.id, x])).values()]; if (!u.length) return;
   log(`>> Loot: ${u.length} obsolete item(s) left out (older copies of remade items / Azerite-style stats), see the run log file.`);
   for (const x of u) trace(`   left out: ${x.name} (${x.id}) · ${x.why}`);
+}
+// Gems kept with the set (Top Gear, Droptimizer, Best in Slot without gem optimisation): enhLib.keepCtx + materialize.
+// -> { M(S) simc slot map, text: export + materialized base, diffs(list) materialized profileset diffs }
+function keepGems(text, base, log) {
+  const db = enhanceDb(), dia = new Set(db.gems.filter(g => g.diamond).flatMap(g => g.ids.map(String)));
+  const k = enhLib.keepCtx(base, db, itemsDb().baseSockets, id => dia.has(String(id)));
+  const M = S => enhLib.materialize(S, k), MB = M(base);
+  if (k.filled > 0 && k.keepPlan) log?.(`>> Gems: ${k.filled} empty socket(s) in your gear filled with your most common gem; gems follow the set (a swapped piece's gems move to the new one).`);
+  return { k, M, MB, text: bis.withSet(text, MB), diffs: list => list.map(d => bis.diffOf(MB, M({ ...base, ...d }))) };
 }
 const weaponsFor = text => specs.weaponsOf(text) || Object.keys(loot.WEAPONS).map(Number);
 ipcMain.handle('weapons:of', (_e, text) => { const c = specs.classOf(text), w = specs.weaponsOf(text); return c ? { cls: c, names: w.map(i => loot.WEAPONS[i]), shield: specs.canShield(text) } : null; });
@@ -389,17 +398,18 @@ ipcMain.handle('sim:topgear', run(async (o, tmp) => {
   const list = tg.combos(parsed, rules);
   if (!list.length) throw new Error('No combination found. Check that the export includes your bag items.');
   log(`>> Pass 1: ${list.length} combinations (low precision)`);
-  const p1 = await pass(simcPath, text, list, 0.5, threads, tmp, log, fight, [0, 0.6], 'Pass 1/2 — all combinations');
+  const KG = keepGems(text, base, log), mlist = KG.diffs(list);
+  const p1 = await pass(simcPath, KG.text, mlist, 0.5, threads, tmp, log, fight, [0, 0.6], 'Pass 1/2 — all combinations');
   const best = p1.results.sort((a, b) => b.mean - a.mean).slice(0, topN);
   log(`>> Pass 2: ${best.length} best (high precision)`);
-  const sub = best.map(b => list[b.idx]);
-  const p2 = await pass(simcPath, text, sub, fine(0.1), threads, tmp, log, fight, [0.6, 0.88], 'Pass 2/2 — finalists');
-  const st = await statsPass(simcPath, text, sub, threads, tmp, log);
+  const sub = best.map(b => list[b.idx]), msub = best.map(b => mlist[b.idx]);
+  const p2 = await pass(simcPath, KG.text, msub, fine(0.1), threads, tmp, log, fight, [0.6, 0.88], 'Pass 2/2 — finalists');
+  const st = await statsPass(simcPath, KG.text, msub, threads, tmp, log);
   const rows = p2.results.sort((a, b) => b.mean - a.mean).map(r => ({
     mean: r.mean, err: r.err, delta: r.mean - p2.base,
     items: Object.entries(sub[r.idx]).map(([slot, item]) => ({ slot, label: parsed.labels[item] || item, stats: st[r.idx]?.[slot], wh: whOf(item) }))
   }));
-  const report = o.report === false || !rows.length ? null : await reportPass(simcPath, text, sub[p2.results[0].idx], fine(0.1), threads, tmp, log, fight, [0.88, 1], 'Creating the simc report');
+  const report = o.report === false || !rows.length ? null : await reportPass(simcPath, KG.text, msub[p2.results[0].idx], fine(0.1), threads, tmp, log, fight, [0.88, 1], 'Creating the simc report');
   return { base: p2.base, total: list.length, rows, report };
 }));
 
@@ -467,7 +477,8 @@ ipcMain.handle('sim:bis', run(async (o, tmp) => {
   for (const e of EDB.enchants) for (const id of e.ids) enchNames[id] = e.name;
   const isD = id => diaIds.has(String(id));
   const gemsOn = !!(enh.gems && ec?.gems.gems.length);
-  const ctx = { db: EDB, enchOn: !!enh.ench, gemsOn, add: (enh.add || []).flatMap(s => s === 'wrist' ? ['wrist', 'wrists'] : [s]).filter(s => enhLib.JEWELBINDER.includes(s)), base, isD, isWeapon: it => weaponKind(rules.kindOf(tg.idOf(it))) };
+  const ctx = { db: EDB, enchOn: !!enh.ench, gemsOn, add: (enh.add || []).flatMap(s => s === 'wrist' ? ['wrist', 'wrists'] : [s]).filter(s => enhLib.JEWELBINDER.includes(s)), base: itemsDb().baseSockets, isD, isWeapon: it => weaponKind(rules.kindOf(tg.idOf(it))) };
+  { const kc = enhLib.keepCtx(base, EDB, itemsDb().baseSockets, isD); ctx.keepPlan = kc.keepPlan; ctx.keepAdd = kc.keepAdd; if (kc.filled > 0 && kc.keepPlan) log(`>> Gems: ${kc.filled} empty socket(s) in your gear filled with your most common gem.`); }
   const M = S => enhLib.materialize(S, ctx);
   let S = { ...base };
   // consumables already in the export are the starting point of their category (not "Current setup" -> the same flask)
@@ -509,8 +520,8 @@ ipcMain.handle('sim:bis', run(async (o, tmp) => {
     const enhNow = r >= consFrom, pending = !enhNow && (cands.some(c => isEnh(c.slot)) || gemsOn);
     const later = why => { log(`>> ${why}: adding consumables, enchants & gems from round ${r + 1}.`); consFrom = r + 1; };
     if (gemsOn && enhNow) {                             // gem plan moves, regenerated from the current plan and socket count
-      const n = enhLib.SOCKET_ORDER.reduce((a, s) => a + enhLib.socketsOf(s, M(S)[s], EDB, { add: ctx.add }), 0);
-      const start = S.gems !== undefined ? S.gems : enhLib.startPlan(M(S), n, EDB, ec.gems, isD, { add: ctx.add });
+      const n = enhLib.SOCKET_ORDER.reduce((a, s) => a + enhLib.socketsOf(s, M(S)[s], EDB, { add: ctx.add, base: ctx.base }), 0);
+      const start = S.gems !== undefined ? S.gems : enhLib.startPlan(M(S), n, EDB, ec.gems, isD, { add: ctx.add, base: ctx.base });
       const plans = [...new Set([...(S.gems === undefined ? [start] : []), ...enhLib.planMoves(start, n, ec.gems, isD)])];
       cands = cands.filter(c => c.slot !== 'gems').concat(plans.map(p => ({ key: 'gems|' + p, slot: 'gems', item: p, label: enhLib.gemsPlanLabel(p, gemNames), src: 'Gems' })));
       for (const c of cands) if (c.slot === 'gems') labels[c.item] = c.label;
@@ -702,14 +713,14 @@ ipcMain.handle('sim:drop', run(async (o, tmp) => {
   ilvlFor.warn(log); logSkipped(lootSkipped, log);
   const tierSet = tierLib.setup(catalyst, text, L.tierSets, rules, loadProg().tier);
   // Gems follow the slot like the enchant: the new piece gets the replaced piece's gems if it has (or can get) sockets.
-  const carryGems = (slot, item) => enhLib.materialize({ ...base, [slot]: item }, { db: enhanceDb(), base })[slot];
+  const KG = keepGems(text, base, log);
   const list = [], meta = [];
   for (const it of items) for (const slot of it.slots) {
     const cur = base[slot]; if (!cur) continue;
     const other = { finger1: 'finger2', finger2: 'finger1', trinket1: 'trinket2', trinket2: 'trinket1' }[slot];
     if (other && base[other] && tg.idOf(base[other]) === String(it.id)) continue; // unique-equipped
     const ench = (/enchant_id=\d+/.exec(cur) || [''])[0];
-    const diff = { [slot]: carryGems(slot, `,id=${it.id},ilevel=${it.ilvl}${ench ? ',' + ench : ''}`) };
+    const diff = { [slot]: `,id=${it.id},ilevel=${it.ilvl}${ench ? ',' + ench : ''}` };
     if (it.twoHand && !titan && base.off_hand) diff.off_hand = '';
     list.push(diff); meta.push({ it, slot });
     const tw = tierSet && rules.maxCat >= 1 && tierSet.slots[slot] ? tierLib.twin(diff[slot], tierSet.slots[slot]) : null;
@@ -719,24 +730,25 @@ ipcMain.handle('sim:drop', run(async (o, tmp) => {
     const cur = base[v.slot]; if (!cur) continue;
     const other = { finger1: 'finger2', finger2: 'finger1', trinket1: 'trinket2', trinket2: 'trinket1' }[v.slot];
     if (other && base[other] && tg.idOf(base[other]) === tg.idOf(v.item)) continue;
-    const ench = (/enchant_id=\d+/.exec(cur) || [''])[0], diff = { [v.slot]: carryGems(v.slot, v.item + (ench ? ',' + ench : '')) };
+    const ench = (/enchant_id=\d+/.exec(cur) || [''])[0], diff = { [v.slot]: v.item + (ench ? ',' + ench : '') };
     if (v.twoHand && !titan && base.off_hand) diff.off_hand = '';
     list.push(diff); meta.push({ it: { id: 'c' + list.length, name: v.label, ilvl: '', sources: ['Crafted'], fullName: v.label }, slot: v.slot });
   }
   if (!list.length) throw new Error('No eligible item with these filters.');
   log(`>> ${list.length} simulations for ${items.length} items`);
-  const p = await pass(simcPath, text, list, fine(0.1), threads, tmp, log, fight, [0, 0.85], 'Simulating drops');
+  const mlist = KG.diffs(list);
+  const p = await pass(simcPath, KG.text, mlist, fine(0.1), threads, tmp, log, fight, [0, 0.85], 'Simulating drops');
   const best = new Map();
   for (const r of p.results) {
     const { it, slot, twin } = meta[r.idx], bk = it.id + '@' + it.ilvl + (twin ? '#c' : ''), prev = best.get(bk);
-    if (!prev || r.mean > prev.mean) best.set(bk, { id: it.id, name: it.fullName || `${it.name} (${it.ilvl})${twin ? ' → tier (catalyst)' : ''}`, slot, sources: [...new Set(it.sources)], mean: r.mean, err: r.err, diff: list[r.idx] });
+    if (!prev || r.mean > prev.mean) best.set(bk, { id: it.id, name: it.fullName || `${it.name} (${it.ilvl})${twin ? ' → tier (catalyst)' : ''}`, slot, sources: [...new Set(it.sources)], mean: r.mean, err: r.err, diff: mlist[r.idx] });
   }
   const rows = [...best.values()].sort((a, b) => b.mean - a.mean)
     .map(r => ({ ...r, delta: r.mean - p.base, pct: (r.mean / p.base - 1) * 100 }));
-  const top = rows.slice(0, 40), st = await statsPass(simcPath, text, top.map(r => r.diff), threads, tmp, log);
+  const top = rows.slice(0, 40), st = await statsPass(simcPath, KG.text, top.map(r => r.diff), threads, tmp, log);
   top.forEach((r, i) => { if (st[i]?.[r.slot]) r.stats = st[i][r.slot]; });
   rows.forEach(r => { r.wh = whOf(r.diff?.[r.slot]); });
-  const report = o.report === false || !rows.length ? null : await reportPass(simcPath, text, rows[0].diff, fine(0.1), threads, tmp, log, fight, [0.85, 1], 'Creating the simc report');
+  const report = o.report === false || !rows.length ? null : await reportPass(simcPath, KG.text, rows[0].diff, fine(0.1), threads, tmp, log, fight, [0.85, 1], 'Creating the simc report');
   rows.forEach(r => delete r.diff);
   return { base: p.base, total: list.length, rows, report };
 }));

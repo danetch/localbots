@@ -29,28 +29,51 @@ test('bundled data: Midnight enchants and gems only (best rank), sensible choice
   assert.deepStrictEqual(g.diamonds.map(d => d.name).sort(), ['Indecipherable Eversong Diamond', 'Powerful Eversong Diamond']);
 });
 
-test('sockets: neck/rings at least one, jewelbinder slots, bonus ids, listed gems', () => {
-  assert.strictEqual(E.socketsOf('finger1', ',id=1', db), 1);
+test('sockets: built-in + bonus ids + listed gems; loot neck/ring get the drop socket; jewelbinder only on socketless pieces', () => {
+  const built = id => ({ 268265: 1 })[id] || 0;
+  assert.strictEqual(E.socketsOf('finger1', ',id=1', db), 1, 'loot ring: drop socket');
+  assert.strictEqual(E.socketsOf('neck', ',id=268265,ilevel=344', db, { base: built }), 2, 'Aqirbane Reliquary from loot: 1 built-in + drop socket');
+  assert.strictEqual(E.socketsOf('neck', ',id=268265,bonus_id=13662/13668', db, { base: built }), 2, 'from the export: built-in + bonus 13668');
+  assert.strictEqual(E.socketsOf('neck', ',id=273781,bonus_id=6652/13668/12854', db, { base: built }), 1);
   assert.strictEqual(E.socketsOf('head', ',id=1', db), 0);
   assert.strictEqual(E.socketsOf('head', ',id=1', db, { add: ['head'] }), 1);
-  assert.strictEqual(E.socketsOf('neck', ',id=1,gem_id=1/2', db), 2);
-  assert.strictEqual(E.socketsOf('wrist', ',id=1,bonus_id=13750', db), 1);
+  assert.strictEqual(E.socketsOf('wrist', ',id=1,bonus_id=13750', db, { add: ['wrist'] }), 1, 'jewelbinder never adds a second socket');
+  assert.strictEqual(E.socketsOf('neck', ',id=1,bonus_id=5,gem_id=1/2', db), 2, 'listed gems');
   assert.strictEqual(E.socketsOf('neck', '', db), 0);
 });
 
-test('materialize: enchant follows the slot, gem plan fills sockets, diamond never repeated, carry mode', () => {
+test('materialize: enchant follows the slot, gem plan fills sockets, diamond never repeated', () => {
   const isD = id => id === '240983';
   const base = { neck: ',id=1,gem_id=240904', finger1: ',id=2,enchant_id=7965', finger2: ',id=3', head: ',id=4', off_hand: ',id=9' };
   const S = { ...base, 'ench:finger1': '7969', 'ench:off_hand': '8041', gems: '240983,240904' };
-  const m = E.materialize(S, { db, base, enchOn: true, gemsOn: true, add: ['head'], isD, isWeapon: () => false });
+  const m = E.materialize(S, { db, enchOn: true, gemsOn: true, add: ['head'], isD, isWeapon: () => false });
   assert.strictEqual(m.finger1, ',id=2,enchant_id=7969,gem_id=240904');
   assert.strictEqual(m.neck, ',id=1,gem_id=240983');
   assert.strictEqual(m.head, ',id=4,gem_id=240904');
   assert.strictEqual(m.off_hand, ',id=9', 'no weapon enchant on a non-weapon off hand');
   assert.ok(!('gems' in m) && !Object.keys(m).some(k => k.startsWith('ench:')));
   assert.deepStrictEqual(E.fit('240983', 3, isD), ['240983'], 'diamond is unique');
-  const c = E.materialize({ ...base, neck: ',id=7', head: ',id=8' }, { db, base: { ...base, head: ',id=4,gem_id=5' } });
-  assert.strictEqual(c.neck, ',id=7,gem_id=240904'); assert.strictEqual(c.head, ',id=8,gem_id=5');
+});
+
+test('gems follow the set (Top Gear / Droptimizer): swapping the piece holding the diamond keeps the diamond', () => {
+  const isD = id => id === '240983', built = id => ({ 268265: 1 })[id] || 0;
+  const base = { neck: ',id=273781,bonus_id=13668,gem_id=240983', finger1: ',id=2,bonus_id=13668,gem_id=240904', finger2: ',id=3,bonus_id=13668', head: ',id=4,bonus_id=13750,gem_id=240910', wrist: ',id=5' };
+  const k = E.keepCtx(base, db, built, isD);
+  assert.deepStrictEqual(k.keepAdd, ['head'], 'only the socketed head keeps a jewelbinder socket');
+  assert.strictEqual(k.filled, 1, 'empty ring socket filled');
+  const M = S => E.materialize(S, k), MB = M(base);
+  assert.strictEqual(MB.neck, ',id=273781,bonus_id=13668,gem_id=240983');
+  // a loot neck with 2 sockets (Aqirbane Reliquary) replaces the diamond neck: diamond + one more gem, rings keep theirs
+  const n2 = M({ ...base, neck: ',id=268265,ilevel=344' });
+  assert.strictEqual(n2.neck, ',id=268265,ilevel=344,gem_id=240983/240904');
+  assert.strictEqual(E.gemsIn(n2.head).length, 1);
+  // a new head without bonus ids still gets a socket (today's head is socketed); a new wrist does not (today's wrist is not)
+  assert.strictEqual(E.gemsIn(M({ ...base, head: ',id=40,ilevel=344' }).head).length, 1);
+  assert.strictEqual(E.gemsIn(M({ ...base, wrist: ',id=50,ilevel=344' }).wrist).length, 0);
+  // the gem total never changes except when the socket count does
+  const all = S => Object.values(M(S)).flatMap(E.gemsIn);
+  assert.strictEqual(all({ ...base, finger1: ',id=60,ilevel=344' }).length, all(base).length);
+  assert.strictEqual(all({ ...base, finger1: ',id=60,ilevel=344' }).filter(isD).length, 1);
 });
 
 test('gem plan moves: canonical, distinct, include diamond swaps and single replacements', () => {

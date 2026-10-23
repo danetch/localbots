@@ -345,3 +345,17 @@ Read the user's real userData (loot.json, progression.json, last-bis-result.json
 - Installed app userData = %APPDATA%\LocalBots = same folder as dev (%APPDATA%\localbots, case-insensitive): data carries over.
 - Linked PC (Matthias): code folder C:\Users\Matthias\Code\localbots, data C:\Users\Matthias\AppData\Roaming\localbots (read access granted
   in the 23 Oct session; the device shell did not start, file listing/staging works).
+
+=== 23 OCT: SOCKETS & GEMS IN ALL MODES (v0.3.1) ===
+- Socket count (lib/enhance.js socketsOf) = built-in sockets (items.json "sock", from item_data socket colours; e.g. 268265 Aqirbane
+  Reliquary = 1) + socket bonus ids (item_bonus type 6, e.g. 13668 on every Midnight neck/ring drop, 13534, 13750) and at least the gems
+  already listed. Necks/rings WITHOUT bonus ids (loot/crafted strings we build) = built-in + 1 (the drop socket): Aqirbane from loot = 2.
+  Jewelbinder (+1) only on a head/wrist/waist without any socket.
+- Gems belong to the SET (materialize): the plan (BiS gem optimisation: S.gems; otherwise keepCtx.keepPlan = equipped gems) is spread over
+  the sockets of the set in SOCKET_ORDER, diamond first. Swapping the piece holding the diamond keeps the diamond; more sockets -> extra
+  copies of a secondary gem; fewer -> a secondary is dropped, never the diamond. Empty sockets in the equipped gear are filled with the
+  most common equipped gem (logged). Top Gear and Droptimizer use keepGems() (main.js): base text = export + materialized base, profileset
+  diffs materialized; a Jewelbinder socket is assumed on a new head/wrist/waist only if today's piece in that slot has a socket.
+  Replaces the old "copy the replaced piece's gems" carry rule.
+- Verified on the user's export: neck swap to Aqirbane (loot) -> gem_id=diamond/secondary; PvP bag neck -> gets the diamond; real
+  Droptimizer run (Venomous Abyss Mythic): Aqirbane Reliquary top at +0.59 %. Tests: 35 pass.
