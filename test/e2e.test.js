@@ -71,3 +71,11 @@ test('top gear: bag items fully upgraded and consumables ranked on the best comb
   assert.ok(r.rows.some(x => x.items.some(t => /Helm B \(311 → 321\)/.test(t.label))));
   assert.strictEqual(r.consumablesRank.length, 1); assert.strictEqual(r.consumablesRank[0].options.length, 2);
 });
+
+test('top gear: gems optimised on the best combination, jewelbinder socket used', async () => {
+  logs.length = 0;
+  const text = 'rogue="Ann"\nspec=outlaw\nlevel=90\nhead=,id=10\nneck=,id=11,gem_id=240910\nfinger1=,id=12\nfinger2=,id=13\n# Helm B (300)\n# head=,id=20\n';
+  const r = await H['sim:topgear']({}, { text, threads: 1, topN: 3, fight: { fightStyle: 'Patchwerk' }, precision: 'fast', report: false, enhance: { gems: true, add: ['head'] } });
+  assert.ok(/Flawless Deadly Garnet/.test(r.gemsNote), 'gems: ' + r.gemsNote);
+  assert.ok(logs.some(l => /optimising 4 socket/.test(l)), 'neck + 2 rings + jewelbinder head');
+});

@@ -210,3 +210,15 @@ test('upgrade: bag items raised to their track maximum (Hero / Myth 6/6), nothin
   const p2 = tg.parse('warlock="a"\n# Helm (311)\nhead=,id=10,bonus_id=12843\n'); U.upgradePools(p2, 'all', db.upgrade, P);
   assert.deepStrictEqual(p2.equipped.head, [',id=10,bonus_id=12843,ilevel=321']);
 });
+
+test('top gear pre-screen: estimate, best candidates kept across slots, equipped always kept, emb-cap branches cut', () => {
+  const tg = require('../lib/topgear');
+  assert.strictEqual(tg.estimate({ head: [1, 2, 3], finger: [1, 2, 3, 4] }), 3 * 6);
+  const parsed = { pools: { head: ['h0', 'h1', 'h2', 'h3'], wrist: ['w0', 'w1', 'w2'] }, equipped: { head: ['h0'], wrist: ['w0'] }, labels: {} };
+  const gain = { h1: 50, h2: -10, h3: 40, w1: 45, w2: 1 }, pr = tg.prunePools(parsed, i => gain[i], 6);
+  assert.deepStrictEqual(parsed.pools, { head: ['h0', 'h1', 'h3'], wrist: ['w0', 'w1'] }, 'h1, w1, h3 kept (best first), then the budget of 6 is full');
+  assert.deepStrictEqual(pr.dropped.sort(), ['h2', 'w2']);
+  const rules = { tags: { e1: { emb: true }, e2: { emb: true }, e3: { emb: true } }, embBonusIds: new Set(), maxEmb: 2 };
+  const c = tg.combos({ pools: { a: ['x', 'e1'], b: ['y', 'e2'], c: ['z', 'e3'] }, equipped: { a: ['x'], b: ['y'], c: ['z'] } }, rules);
+  assert.strictEqual(c.length, 6, '8 minus the base and the 3-embellishment combination');
+});

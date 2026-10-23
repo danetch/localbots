@@ -375,3 +375,18 @@ Read the user's real userData (loot.json, progression.json, last-bis-result.json
   weapons; right: hands, waist, legs, feet, rings, trinkets; one column under 1250 px). Item cell = Wowhead link block (icon inserted by
   tooltips.js as first child -> left; name + detail lines right). Real Wowhead script not testable in the sandbox (stand-in icon used).
 - Tests: 37 pass.
+
+=== 23 OCT: v0.3.3 — TOP GEAR CRAFTED PRE-SCREEN, TOP GEAR GEMS, ICON ===
+- Crafted gear in Top Gear used to fail with "Too many combinations" (all embellishments + all stat pairs = 1296 variants on the user's
+  warlock; even 3 embellishments x 2 pairs = 18 per slot in 4 slots). Now: if tg.estimate(pools) > 15000, every non-equipped candidate is
+  simulated alone (tg.singleSwaps; rings/trinkets in both slots), then tg.prunePools keeps equipped items + candidates best-first across
+  ALL slots while the estimate fits a budget; the budget is raised (x4 steps) while the REAL combos count stays < 5000 (the estimate
+  ignores the embellishment cap). combos() now cuts branches above the embellishment cap during recursion (was: checked at the leaf
+  after millions of visits). User's data: 1296 variants -> 3347 combos; 72 variants -> 9119 combos; set-aside items in the run log.
+- Top Gear gems ("Enchants & gems" section now visible in Top Gear, gems only; enchants stay BiS): plan optimised on the best
+  combination (planMoves, up to 4 rounds, Jewelbinder sockets as ticked), then the finalists are simulated again with the plan.
+  Baseline keeps the current gems. Result summary shows the plan.
+- Top Gear results: one column in game order (the character sheet is kept for Best in Slot).
+- Icon: build/icon.svg (original: three rising gold bars + epic purple gem, navy tile, gold rim), build/icon.png (512), build/icon.ico
+  (16-256), renderer/icon.png (window + header). package.json win.icon / nsis installer icons.
+- Tests: 39 pass.

@@ -1,6 +1,6 @@
 {
   "name": "localbots",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Local SimulationCraft gear optimizer",
   "main": "main.js",
   "scripts": {
@@ -43,11 +43,14 @@
             "x64"
           ]
         }
-      ]
+      ],
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
     },
     "publish": [
       {

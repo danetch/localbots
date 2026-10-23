@@ -2,6 +2,7 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline' https://wow.zamimg.com; script-src 'unsafe-inline' https://wow.zamimg.com; img-src 'self' data: https://wow.zamimg.com https://*.wowhead.com; connect-src https://*.wowhead.com; font-src data: https://wow.zamimg.com">
 <title>LocalBots</title>
+<link rel="icon" href="icon.png">
 <style>
 :root{--bg:#e9eef2;--panel:#f8fafb;--ink:#17222d;--mute:#5b6b7a;--line:#cfd8e0;--acc:#1f5fbf;--pos:#1d7a4a;--neg:#b3382c;--hl:#e3efe8;--field:#fff;--shadow:0 1px 2px rgba(20,35,50,.06)}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#10171e;--panel:#18222c;--ink:#e4ebf1;--mute:#8b9bab;--line:#2b3947;--acc:#6aa3f0;--pos:#5cc58b;--neg:#ef8277;--hl:#1b2f26;--field:#0e151c;--shadow:none}:root:not([data-theme=light]) button.go,:root:not([data-theme=light]) .seg label:has(input:checked){color:#0b1722!important}}
@@ -79,7 +80,7 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
 @media(max-width:1000px){body{height:auto;overflow:auto}main{grid-template-columns:1fr}#setup{overflow:visible}#resbox{min-height:70vh}header{flex-wrap:wrap}}
 </style></head><body>
 <header>
- <span class="brand">LocalBots</span>
+ <span class="brand"><img src="icon.png" alt="" width="24" height="24" style="vertical-align:-6px;margin-right:7px">LocalBots</span>
  <div class="seg" role="radiogroup" aria-label="Mode">
   <label><input type="radio" name="mode" value="top" checked>Top Gear</label>
   <label><input type="radio" name="mode" value="drop">Droptimizer</label>
@@ -167,9 +168,10 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
   <div id="consBox"></div><div class="it" id="combo"></div>
   <div class="it" style="margin-top:6px">Secondary stats lose value past 30&nbsp;% from rating (diminishing returns). Best in Slot: when a flask or food and a gear, enchant or gem change push the same stat into that zone, they are simulated together instead of adding up their separate gains.</div></details>
 
- <details class="card sec" id="s_enh" data-modes="bis"><summary><span class="n"></span>Enchants &amp; gems<span class="sm" id="sm_enh"></span></summary>
-  <label class="in"><input type="checkbox" id="en_on">Find the best enchants (rings, chest, legs, weapons)</label>
+ <details class="card sec" id="s_enh" data-modes="top bis"><summary><span class="n"></span>Enchants &amp; gems<span class="sm" id="sm_enh"></span></summary>
+  <label class="in" data-modes="bis"><input type="checkbox" id="en_on">Find the best enchants (rings, chest, legs, weapons)</label>
   <label class="in"><input type="checkbox" id="gm_on">Find the best gems</label>
+  <div class="it" data-modes="top">Top Gear: the gems are optimised on the best combination, then the finalists are simulated again with them.</div>
   <div class="row" style="margin-top:2px"><span class="it">Add a socket (Radiant Jewelbinder) to:</span>
    <label class="in"><input type="checkbox" class="jb" value="head" checked>Head</label><label class="in"><input type="checkbox" class="jb" value="wrist" checked>Wrist</label><label class="in"><input type="checkbox" class="jb" value="waist" checked>Waist</label></div>
   <div class="it">Necks and rings always count at least one socket. Speed, leech and avoidance enchants (head, shoulders, feet) are left as they are. The best quality rank of each enchant and gem is used.</div>
@@ -216,7 +218,7 @@ api.prog().then(p=>{prog=p;$('seas').textContent=p.season;renderInst()});
 $('editprog').onclick=()=>api.editProg();
 
 function setMode(m){mode=m;document.querySelectorAll('[data-modes]').forEach(e=>e.hidden=!e.dataset.modes.split(' ').includes(m));
- $('go').textContent=MODES[m][0];$('mdesc').textContent=MODES[m][1];if(m!=='top'&&!lootInfo)loadLoot()}
+ $('go').textContent=MODES[m][0];$('mdesc').textContent=MODES[m][1];if(typeof schedEnh==='function')schedEnh();if(m!=='top'&&!lootInfo)loadLoot()}
 document.querySelectorAll('[name=mode]').forEach(r=>r.onchange=()=>setMode(r.value));setMode('top');loadLoot();
 
 $('txt').oninput=()=>{const L=$('txt').value.split(/\r?\n/);let e=0,b=0;
@@ -337,8 +339,8 @@ const slotBox=(x,cls)=>`<div class="slot ${cls||''}"><span class="sl">${esc(slot
 // Two columns (left side / right side), each in game order; one column when only one side has items.
 function sheet(items){const L=items.filter(x=>LEFT.includes(x.slot)).sort(byGame),R=items.filter(x=>!LEFT.includes(x.slot)).sort(byGame);
  const col=a=>`<div class="side">${a.map(x=>slotBox(x,x.changed?'chg':'')).join('')}</div>`;return L.length&&R.length?`<div class="sheet">${col(L)}${col(R)}</div>`:col(L.length?L:R)}
-function showTop(r){setRep(r.report);const mx=Math.max(...r.rows.map(x=>Math.abs(x.delta)),0);$('sum').textContent=`Baseline ${fmt(r.base)} DPS · ${r.total} combinations tested${fightLabel}${r.consNote?' · finalists with '+r.consNote:''}`;
- $('res').innerHTML=(r.rows.map((x,i)=>`<div class="r"><b><span class="rk">${i+1}.</span>${fmt(x.mean)} DPS</b> <span class="${x.delta>=0?'pos':'neg'}">${sgn(x.delta)}</span> <span class="it">±${fmt(x.err)}</span><div style="margin-top:4px">${sheet(x.items.map(t=>({slot:t.slot,label:t.label,wh:t.wh,subs:[t.stats?statTxt(t.stats):'']})))}</div>${gainBar(x.delta,mx)}</div>`).join('')||'<div class="empty">No result.</div>')+consBlock(r);
+function showTop(r){setRep(r.report);const mx=Math.max(...r.rows.map(x=>Math.abs(x.delta)),0);$('sum').textContent=`Baseline ${fmt(r.base)} DPS · ${r.total} combinations tested${fightLabel}${r.consNote?' · finalists with '+r.consNote:''}${r.gemsNote?' · gems: '+r.gemsNote:''}`;
+ $('res').innerHTML=(r.rows.map((x,i)=>`<div class="r"><b><span class="rk">${i+1}.</span>${fmt(x.mean)} DPS</b> <span class="${x.delta>=0?'pos':'neg'}">${sgn(x.delta)}</span> <span class="it">±${fmt(x.err)}</span><div class="side" style="margin-top:4px">${[...x.items].sort(byGame).map(t=>slotBox({slot:t.slot,label:t.label,wh:t.wh,subs:[t.stats?statTxt(t.stats):'']})).join('')}</div>${gainBar(x.delta,mx)}</div>`).join('')||'<div class="empty">No result.</div>')+consBlock(r);
  setCopy(`Top Gear · baseline ${fmt(r.base)} DPS${fightLabel}\n`+r.rows.map((x,i)=>`${i+1}. ${fmt(x.mean)} DPS (${sgn(x.delta)})\n`+[...x.items].sort(byGame).map(t=>`   ${slotN(t.slot)}: ${t.label}${t.stats?' ('+statTxt(t.stats).replace(/&amp;/g,'&')+')':''}`).join('\n')).join('\n')+consCopy(r))}
 function showDrop(r){setRep(r.report);const mx=Math.max(...r.rows.map(x=>Math.abs(x.delta)),0);$('sum').textContent=`Baseline ${fmt(r.base)} DPS · ${r.total} simulations${fightLabel}`;
  $('res').innerHTML=r.rows.map((x,i)=>`<div class="r"><b><span class="rk">${i+1}.</span></b><span class="${x.delta>=0?'pos':'neg'}">${sgn(x.delta)} (${x.pct>=0?'+':''}${x.pct.toFixed(2)} %)</span> <span class="it">±${fmt(x.err)}</span><div style="margin-top:3px">${slotBox({slot:x.slot,label:x.name,wh:x.wh,subs:[x.sources.map(esc).join(', '),x.stats?statTxt(x.stats):'']})}</div>${gainBar(x.delta,mx)}</div>`).join('')||'<div class="empty">No result.</div>';
@@ -374,7 +376,7 @@ function schedCraft(){clearTimeout(crTimer);crTimer=setTimeout(refreshCraftPrev,
 $('cr_on').closest('details').addEventListener('change',schedCraft);$('txt').addEventListener('input',schedCraft);
 const getCrafted=()=>({on:$('cr_on').checked,emb:[...document.querySelectorAll('.cre:checked')].map(x=>x.value),pairs:[...document.querySelectorAll('.crp:checked')].map(x=>x.value),plain:$('cr_plain').checked});
 // ---- Enchants & gems (Best in Slot) ----
-const getEnh=()=>({ench:$('en_on').checked,gems:$('gm_on').checked,add:[...document.querySelectorAll('.jb:checked')].map(c=>c.value)});
+const getEnh=()=>({ench:mode==='bis'&&$('en_on').checked,gems:$('gm_on').checked,add:[...document.querySelectorAll('.jb:checked')].map(c=>c.value)});
 var enTimer=0;const SLN={main_hand:'main hand',off_hand:'off hand',finger1:'ring 1',finger2:'ring 2'};const sln=s=>SLN[s]||s;
 async function refreshEnhPrev(){const el=$('en_prev'),o=getEnh();if(!o.ench&&!o.gems){el.textContent='Tick an option to see what will be tested.';return}
  const r=await api.enhPreview({text:$('txt').value,add:o.add}).catch(e=>({error:msg(e)}));
@@ -383,7 +385,7 @@ async function refreshEnhPrev(){const el=$('en_prev'),o=getEnh();if(!o.ench&&!o.
   (o.gems?`<div style="margin-top:3px"><b>${r.sockets.reduce((a,x)=>a+x[1],0)} socket(s)</b> (${r.sockets.map(([s,n])=>sln(s)+(n>1?' ×'+n:'')).join(', ')||'none'}) · one diamond: ${r.diamonds.map(esc).join(' or ')} · ${r.gems.length} gems</div>`:'')+
   `<div style="margin-top:3px">Enchant and gem data: simc build ${esc(r.build||'?')}.</div>`}
 function schedEnh(){clearTimeout(enTimer);enTimer=setTimeout(refreshEnhPrev,300)}
-$('s_enh').addEventListener('change',()=>{schedEnh();try{localStorage.setItem('lb_enh',JSON.stringify(getEnh()))}catch{}});$('txt').addEventListener('input',schedEnh);
+$('s_enh').addEventListener('change',()=>{schedEnh();try{localStorage.setItem('lb_enh',JSON.stringify({...getEnh(),ench:$('en_on').checked}))}catch{}});$('txt').addEventListener('input',schedEnh);
 try{const e=JSON.parse(localStorage.getItem('lb_enh')||'null');if(e){$('en_on').checked=!!e.ench;$('gm_on').checked=!!e.gems;document.querySelectorAll('.jb').forEach(c=>c.checked=(e.add||[]).includes(c.value))}}catch{}
 schedEnh();
 const CATS=[['flask','Flasks','flask'],['food','Food','food'],['potion','Potions','potion'],['augmentation','Augment runes','rune']];
@@ -459,7 +461,7 @@ $('go').onclick=async()=>{
  $('go').disabled=true;$('stop').disabled=false;$('log').textContent='';$('sum').textContent='';$('res').innerHTML='<div class="empty">Simulation running…</div>';startProg();let ok=false;
  const base={text:$('txt').value,threads:thrCount(),reserve:thrRes(),report:$('rep_on').checked,fight:getFight(),precision:$('prec').value,catalyst:{on:$('cat').checked,max:$('catmax').value===''?null:+$('catmax').value},crafted:getCrafted(),builds:talArgs()};
  try{
-  if(mode==='top'){const r=await api.run({...base,topN:+$('top').value,upgradeBags:$('tgup').value,consumables:Object.fromEntries(Object.entries(consSel).map(([k,s])=>[k,[...s]]))});showAny('top',r);pushHist('Top Gear',r.builds?r.builds.length+' talent builds':r.rows[0]?`${fmt(r.rows[0].mean)} (${sgn(r.rows[0].delta)})`:'no result',r)}
+  if(mode==='top'){const r=await api.run({...base,topN:+$('top').value,upgradeBags:$('tgup').value,enhance:getEnh(),consumables:Object.fromEntries(Object.entries(consSel).map(([k,s])=>[k,[...s]]))});showAny('top',r);pushHist('Top Gear',r.builds?r.builds.length+' talent builds':r.rows[0]?`${fmt(r.rows[0].mean)} (${sgn(r.rows[0].delta)})`:'no result',r)}
   else if(mode==='drop'){const r=await api.drop({...base,...lootArgs()});showAny('drop',r);pushHist('Droptimizer',r.builds?r.builds.length+' talent builds':r.rows[0]?`${r.rows[0].name} ${sgn(r.rows[0].delta)}`:'no result',r)}
   else{const r=await api.bis({...base,...lootArgs(),consumables:Object.fromEntries(Object.entries(consSel).map(([k,s])=>[k,[...s]])),maxRounds:+$('rounds').value||5,consFrom:+$('consfrom').value||2,enhance:getEnh()});showAny('bis',r);pushHist('Best in Slot',r.builds?r.builds.length+' talent builds':`${fmt(r.final)} (${sgn(r.final-r.start)})`,r)}
   ok=true;

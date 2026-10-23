@@ -426,11 +426,33 @@ ipcMain.handle('sim:topgear', run(async (o, tmp) => {
   if (tierSet) log(`>> Catalyst: ${tierLib.poolTwins(parsed, tierSet)} tier twins of “${tierSet.name}”${rules.maxCat < Infinity ? `, max ${rules.maxCat} charges` : ''}`);
   const cv = craftedVariants(crafted, text, { base, dual: isDual(base, rules) });
   if (cv.length) { craftedLib.addToPools(parsed, cv, rules); log(`>> Crafted: ${cv.length} crafted variants added to the pools`); }
+  const KG = keepGems(text, base, log);
+  // Too many combinations (crafted variants multiply fast): every candidate is first simulated alone in the current gear, and only the
+  // best ones of each slot go on to the combinations (equipped items always stay).
+  const est = tg.estimate(parsed.pools), LIMIT = 15000;
+  if (est > LIMIT) {
+    const sw = tg.singleSwaps(parsed, base, rules);
+    log(`>> About ${Math.round(est).toLocaleString('en-US')} combinations: pre-screening ${sw.length} candidates one by one first`);
+    const ps = await pass(simcPath, KG.text, KG.diffs(sw.map(x => x.diff)), 0.5, threads, tmp, log, fight, [0, 0.25], `Pre-screen — ${sw.length} candidates`);
+    const g = new Map(); for (const r of ps.results) { const it = sw[r.idx].item, v = r.mean - ps.base; if (!g.has(it) || v > g.get(it)) g.set(it, v); }
+    // The estimate ignores the rules (embellishment cap, unique items...), so the budget is raised while the REAL number of combinations
+    // stays well under the limit.
+    const orig = Object.fromEntries(Object.entries(parsed.pools).map(([k, v]) => [k, [...v]]));
+    let budget = LIMIT, pr = tg.prunePools(parsed, it => g.get(it), budget, orig), n = tg.combos(parsed, rules).length;
+    for (let i = 0; i < 60 && n < LIMIT / 3 && pr.dropped.length; i++) {
+      const prev = { pools: Object.fromEntries(Object.entries(parsed.pools).map(([k, v]) => [k, [...v]])), pr, n };
+      budget *= 4; pr = tg.prunePools(parsed, it => g.get(it), budget, orig);
+      try { n = tg.combos(parsed, rules, LIMIT * 2).length; } catch { n = Infinity; }
+      if (n > LIMIT) { parsed.pools = prev.pools; pr = prev.pr; n = prev.n; break; }
+    }
+    log(`>> Pre-screen: kept your equipped items and the ${pr.kept} best other candidate(s) (best alone first, any slot); ${pr.dropped.length} set aside (details in the run log file)`);
+    for (const it of pr.dropped) trace(`   set aside: ${parsed.labels[it] || it} (${g.has(it) ? (g.get(it) / ps.base * 100).toFixed(2) + ' %' : 'not simulated'})`);
+  }
   const list = tg.combos(parsed, rules);
   if (!list.length) throw new Error('No combination found. Check that the export includes your bag items.');
   log(`>> Pass 1: ${list.length} combinations (low precision)`);
-  const KG = keepGems(text, base, log), mlist = KG.diffs(list);
-  const p1 = await pass(simcPath, KG.text, mlist, 0.5, threads, tmp, log, fight, [0, 0.6], 'Pass 1/2 — all combinations');
+  const mlist = KG.diffs(list);
+  const p1 = await pass(simcPath, KG.text, mlist, 0.5, threads, tmp, log, fight, [est > LIMIT ? 0.25 : 0, 0.6], 'Pass 1/2 — all combinations');
   const best = p1.results.sort((a, b) => b.mean - a.mean).slice(0, topN);
   log(`>> Pass 2: ${best.length} best (high precision)`);
   const sub = best.map(b => list[b.idx]), msub = best.map(b => mlist[b.idx]);
@@ -452,13 +474,38 @@ ipcMain.handle('sim:topgear', run(async (o, tmp) => {
       for (const c of consumablesRank) if (pick[c.slot]) c.switched = true;
     }
   }
-  const st = await statsPass(simcPath, setText, msub, threads, tmp, log);
+  // Gems (Enchants & gems section, "Find the best gems"): the gem plan is optimised on the best combination with the Best in Slot moves
+  // (other diamond, all secondary gems of one kind, one gem replaced; Jewelbinder sockets as ticked), then the finalists are simulated
+  // again with the best plan. The baseline keeps your current gems, so the gains include the gem change.
+  let gemsNote = '', finDiffs = msub;
+  const ch = enhLib.gemsFor(enhanceDb());
+  if (o.enhance?.gems && ch.gems.length && fin.results.length) {
+    const add = (o.enhance.add || []).flatMap(x => x === 'wrist' ? ['wrist', 'wrists'] : [x]).filter(x => enhLib.JEWELBINDER.includes(x));
+    const octx = { ...KG.k, gemsOn: true, add }, names = {}; for (const g of enhanceDb().gems) for (const id of g.ids) names[id] = g.name;
+    const S0 = { ...base, ...sub[fin.results[0].idx] }, Mg = plan => enhLib.materialize({ ...S0, gems: plan }, octx);
+    const n = enhLib.SOCKET_ORDER.reduce((a, x) => a + enhLib.socketsOf(x, Mg('')[x], KG.k.db, { add, base: KG.k.base }), 0);
+    let plan = enhLib.startPlan(enhLib.materialize(S0, KG.k), n, KG.k.db, ch, KG.k.isD, { add, base: KG.k.base });
+    log(`>> Gems: optimising ${n} socket(s) on the best combination${add.length ? ` (Radiant Jewelbinder on ${(o.enhance.add || []).join(', ')})` : ''}`);
+    for (let r = 1; r <= 4; r++) {
+      const cur = Mg(plan), moves = enhLib.planMoves(plan, n, ch, KG.k.isD); if (!moves.length) break;
+      const pg = await pass(simcPath, bis.withSet(setText, cur), moves.map(m => bis.diffOf(cur, Mg(m))), fine(0.2), threads, tmp, log, fight, [0.88 + 0.01 * (r - 1), 0.88 + 0.01 * r], `Gems — round ${r}`);
+      const top = pg.results.sort((a, b) => b.mean - a.mean)[0];
+      if (!top || top.mean - pg.base < 0.0005 * pg.base) break;
+      plan = moves[top.idx]; log(`>> Gems round ${r}: +${Math.round(top.mean - pg.base)} DPS with ${enhLib.gemsPlanLabel(plan, names)}`);
+    }
+    gemsNote = enhLib.gemsPlanLabel(plan, names);
+    finDiffs = fin.results.length ? msub.map((d, i) => bis.diffOf(KG.MB, enhLib.materialize({ ...base, ...sub[i], gems: plan }, octx))) : msub;
+    log(`>> Finalists simulated again with gems: ${gemsNote}`);
+    fin = await pass(simcPath, setText, finDiffs, fine(0.1), threads, tmp, log, fight, [0.92, 0.95], 'Finalists with the best gems');
+    fin.results.sort((a, b) => b.mean - a.mean);
+  }
+  const st = await statsPass(simcPath, setText, finDiffs, threads, tmp, log);
   const rows = fin.results.map(r => ({
     mean: r.mean, err: r.err, delta: r.mean - fin.base,
     items: Object.entries(sub[r.idx]).map(([slot, item]) => ({ slot, label: parsed.labels[item] || item, stats: st[r.idx]?.[slot], wh: whOf(item) }))
   }));
-  const report = o.report === false || !rows.length ? null : await reportPass(simcPath, setText, msub[fin.results[0].idx], fine(0.1), threads, tmp, log, fight, [0.94, 1], 'Creating the simc report');
-  return { base: fin.base, total: list.length, rows, report, consumablesRank, consNote };
+  const report = o.report === false || !rows.length ? null : await reportPass(simcPath, setText, finDiffs[fin.results[0].idx], fine(0.1), threads, tmp, log, fight, [0.95, 1], 'Creating the simc report');
+  return { base: fin.base, total: list.length, rows, report, consumablesRank, consNote, gemsNote };
 }));
 
 // ---------- Progression (tracks & sources) ----------
@@ -794,7 +841,7 @@ ipcMain.handle('sim:drop', run(async (o, tmp) => {
 }));
 
 app.whenReady().then(() => {
-  win = new BrowserWindow({ width: 1180, height: 820, title: 'LocalBots',
+  win = new BrowserWindow({ width: 1180, height: 820, title: 'LocalBots', icon: path.join(__dirname, 'renderer', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true } });
   win.setMenuBarVisibility(false);
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\/www\.wowhead\.com\//.test(url)) shell.openExternal(url); return { action: 'deny' }; });
