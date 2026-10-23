@@ -5,7 +5,7 @@ Top Gear, Droptimizer and Best in Slot (with Catalyst, crafted gear, enchants, g
 
 ## Install
 
-Download `LocalBots Setup x.y.z.exe` from the latest [release](https://github.com/danetch/localbots/releases) and run it.
+Download `LocalBots-Setup-x.y.z.exe` from the latest [release](https://github.com/danetch/localbots/releases) and run it.
 The installer is not code-signed yet: Windows SmartScreen shows a warning, click **More info → Run anyway**.
 LocalBots checks for new versions at startup and offers to update.
 

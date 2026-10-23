@@ -333,3 +333,15 @@ Read the user's real userData (loot.json, progression.json, last-bis-result.json
 - Verified on the user's own data with real simc (Kings' Rest + Temple of Sethraliss at M+ +10, Venomous Abyss Mythic, Catalyst on, M+
   talents): BiS takes the Cowl (as tier in round 1, plain in round 3 once Ula'tek hands carry the tier). 10 min on the debug simc build.
 - Tests: 34 pass.
+
+=== 23 OCT: GITHUB + RELEASES (repo danetch/localbots, public) ===
+- Code lives in https://github.com/danetch/localbots (branch main). This file is HANDOFF.md in the repo: no more zips.
+- Release = bump "version" in package.json and push to main. .github/workflows/release.yml: job check (does release v<version> exist?),
+  test (ubuntu, npm test), win (windows, electron-builder --win --publish always, releaseType "release"). Pushes without a version
+  bump run only the check job. Tag pushes from the Claude sandbox are cut off by its proxy, hence no tag trigger.
+- v0.3.0 published 23 Oct: LocalBots-Setup-0.3.0.exe (82 MB, unsigned NSIS) + latest.yml. First packaging run succeeded.
+- Startup update check (renderer checkAppAtStart, 4 s after launch): banner "LocalBots x is available" -> Update and restart
+  (electron-updater downloadUpdate + quitAndInstall); "Later" remembers the version (localStorage lb_app_dismissed). Installed app only.
+- Installed app userData = %APPDATA%\LocalBots = same folder as dev (%APPDATA%\localbots, case-insensitive): data carries over.
+- Linked PC (Matthias): code folder C:\Users\Matthias\Code\localbots, data C:\Users\Matthias\AppData\Roaming\localbots (read access granted
+  in the 23 Oct session; the device shell did not start, file listing/staging works).
