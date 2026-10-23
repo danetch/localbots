@@ -1,6 +1,6 @@
 {
   "name": "localbots",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Local SimulationCraft gear optimizer",
   "main": "main.js",
   "scripts": {

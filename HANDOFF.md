@@ -405,3 +405,4 @@ embellishment").
   plan; all best moves combined if that beats the best single one), up to 6 rounds; then all finalists simulated again with them.
   Summary shows gems and enchants.
 - Tests: 40 pass.
+- v0.3.6: same as 0.3.5, re-released because two concurrent pushes both published v0.3.5 (one installer may carry an earlier anvil draft).
