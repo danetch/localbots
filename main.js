@@ -18,6 +18,23 @@ const drLib = require('./lib/dr');
 const crypto = require('crypto');
 const { resolve: resolveIlvl } = require('./lib/progression');
 
+// Renamed LocalBots -> Polygnome (v0.4.0): Electron's data folder follows the product name (installed: %APPDATA%\Polygnome, dev: the
+// package name). On the first launch the old LocalBots folder is copied over (caches skipped), the old one is kept as a backup, and a
+// simc path that pointed inside it is moved to the copy. Runs before anything opens the data folder.
+(function migrateFromLocalBots() {
+  try {
+    const appData = app.getPath('appData'), dest = app.getPath('userData');
+    if (fs.existsSync(path.join(dest, 'settings.json')) || fs.existsSync(path.join(dest, 'loot.json'))) return;
+    const src = ['LocalBots', 'localbots'].map(n => path.join(appData, n)).find(d => path.resolve(d).toLowerCase() !== path.resolve(dest).toLowerCase() && fs.existsSync(path.join(d, 'settings.json')));
+    if (!src) return;
+    const SKIP = /^(Cache|Code Cache|GPUCache|DawnGraphiteCache|DawnWebGPUCache|blob_storage|Crashpad|Shared Dictionary|Singleton\w*|lockfile)$/i;
+    fs.mkdirSync(dest, { recursive: true });
+    fs.cpSync(src, dest, { recursive: true, filter: f => !SKIP.test(path.basename(f)) });
+    const sf = path.join(dest, 'settings.json'), st = JSON.parse(fs.readFileSync(sf, 'utf8'));
+    if (st.simcPath && st.simcPath.toLowerCase().startsWith(src.toLowerCase() + path.sep)) { st.simcPath = path.join(dest, st.simcPath.slice(src.length + 1)); fs.writeFileSync(sf, JSON.stringify(st, null, 2)); }
+    fs.writeFileSync(path.join(dest, 'migrated-from.txt'), `Copied from ${src} on ${new Date().toISOString()}. The old folder was kept as a backup and can be deleted.\n`);
+  } catch (e) { console.error('Polygnome: could not copy the LocalBots data', e); }
+})();
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 const loadSettings = () => { try { return JSON.parse(fs.readFileSync(settingsFile(), 'utf8')); } catch { return {}; } };
 const saveSettings = s => fs.writeFileSync(settingsFile(), JSON.stringify(s, null, 2));
@@ -57,7 +74,7 @@ function runSimc(simcPath, inputFile, jsonFile, extra, onLine) {
 async function withRun(fn) {
   if (busy) throw new Error('A simulation is already running.');
   busy = true; cancelled = false;
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'localbots-'));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'polygnome-'));
   try {
     const d = logsDir(); fs.mkdirSync(d, { recursive: true });
     for (const f of fs.readdirSync(d).filter(f => /^run-.*\.log$/.test(f)).sort().slice(0, -19)) try { fs.rmSync(path.join(d, f)); } catch {}
@@ -80,7 +97,7 @@ function resolveFight(f) {
 // the other and returned as { builds: [{ name, string, result }] }.
 let progScale = { o: 0, s: 1, prefix: '' };
 const run = fn => (_e, o) => withRun(async tmp => {
-  trace(`LocalBots ${app.getVersion()} · ${new Date().toString()}\nOptions: ${JSON.stringify({ ...o, text: undefined })}\n--- export ---\n${o?.text || ''}\n--- end of export ---`);
+  trace(`Polygnome ${app.getVersion()} · ${new Date().toString()}\nOptions: ${JSON.stringify({ ...o, text: undefined })}\n--- export ---\n${o?.text || ''}\n--- end of export ---`);
   const opts = o && o.fight ? { ...o, fight: resolveFight(o.fight) } : o;
   if (opts?.reserve != null) saveSettings({ ...loadSettings(), reserve: opts.reserve });
   const sel = opts?.builds;
@@ -259,7 +276,7 @@ ipcMain.handle('engine:install', async (_e, opt) => {
     const l = (await pickBuild(opt?.family))?.latest;
     if (!l) throw new Error('No Windows build found in the simc download index for this version.');
     const root = engineDir(); fs.mkdirSync(root, { recursive: true });
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'localbots-engine-')), arc = path.join(tmp, l.name);
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'polygnome-engine-')), arc = path.join(tmp, l.name);
     try {
       log(`>> Downloading ${l.name}…`); let last = 0;
       await downloadFile(l.url, arc, (p, got) => { if (Date.now() - last > 1500) { last = Date.now(); log(p != null ? `   ${Math.round(p * 100)} %` : `   ${(got / 1048576).toFixed(0)} MB`); } });
@@ -903,7 +920,7 @@ ipcMain.handle('sim:drop', run(async (o, tmp) => {
 }));
 
 app.whenReady().then(() => {
-  win = new BrowserWindow({ width: 1180, height: 820, title: 'LocalBots', icon: path.join(__dirname, 'renderer', 'icon.png'),
+  win = new BrowserWindow({ width: 1180, height: 820, title: 'Polygnome', icon: path.join(__dirname, 'renderer', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true } });
   win.setMenuBarVisibility(false);
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\/www\.wowhead\.com\//.test(url)) shell.openExternal(url); return { action: 'deny' }; });

@@ -1,4 +1,4 @@
-LOCALBOTS - PROJECT HANDOFF (as of 22 Oct 2026, after enchants/gems/DR consumables)
+POLYGNOME (formerly LOCALBOTS) - PROJECT HANDOFF (as of 22 Oct 2026, after enchants/gems/DR consumables)
 ================================================
 Paste this file at the start of a new conversation and upload localbots.zip (the latest build).
 Ask the assistant to read the zip before changing anything.
@@ -406,3 +406,16 @@ embellishment").
   Summary shows gems and enchants.
 - Tests: 40 pass.
 - v0.3.6: same as 0.3.5, re-released because two concurrent pushes both published v0.3.5 (one installer may carry an earlier anvil draft).
+
+=== 23 OCT: RENAMED TO POLYGNOME (v0.4.0) ===
+- Name chosen with the user ("poly" = many gnomes testing parallel versions of your gear; sounds like polynomial / French polynome).
+  Quick web search found no product using it. Tagline: "A thousand gnomes test your gear so you don't have to."
+- Changed: productName "Polygnome", package name "polygnome", window/header/title, update texts, tmp dir prefixes, README.
+- KEPT ON PURPOSE: appId "com.localbots.app" (Windows identity: installed 0.3.x copies update in place to Polygnome) and the GitHub repo
+  danetch/localbots (updater feed baked into installed copies). Renaming the repo later = first ship a release pointing to the new name.
+- Data folder follows the product name: %APPDATA%\Polygnome (dev: %APPDATA%\polygnome). main.js migrateFromLocalBots() runs at
+  startup before anything opens the folder: if the new folder has no settings.json/loot.json and %APPDATA%\LocalBots has settings.json,
+  copy everything except Chromium caches, rewrite settings.simcPath if it pointed inside the old folder, write migrated-from.txt; the old
+  folder is kept. Test: test/migrate.test.js. Tests: 41 pass.
+- Not verified on a real Windows install: that the packaged app's data folder is %APPDATA%\Polygnome (Electron uses productName when
+  packaged) and that the NSIS update from "LocalBots" to "Polygnome" replaces the old shortcut/uninstall entry rather than adding one.

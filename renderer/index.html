@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline' https://wow.zamimg.com; script-src 'unsafe-inline' https://wow.zamimg.com; img-src 'self' data: https://wow.zamimg.com https://*.wowhead.com; connect-src https://*.wowhead.com; font-src data: https://wow.zamimg.com">
-<title>LocalBots</title>
+<title>Polygnome</title>
 <link rel="icon" href="icon.png">
 <style>
 :root{--bg:#e9eef2;--panel:#f8fafb;--ink:#17222d;--mute:#5b6b7a;--line:#cfd8e0;--acc:#1f5fbf;--pos:#1d7a4a;--neg:#b3382c;--hl:#e3efe8;--field:#fff;--shadow:0 1px 2px rgba(20,35,50,.06)}
@@ -80,7 +80,7 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
 @media(max-width:1000px){body{height:auto;overflow:auto}main{grid-template-columns:1fr}#setup{overflow:visible}#resbox{min-height:70vh}header{flex-wrap:wrap}}
 </style></head><body>
 <header>
- <span class="brand"><img src="icon.png" alt="" width="24" height="24" style="vertical-align:-6px;margin-right:7px">LocalBots</span>
+ <span class="brand"><img src="icon.png" alt="" width="24" height="24" style="vertical-align:-6px;margin-right:7px">Polygnome</span>
  <div class="seg" role="radiogroup" aria-label="Mode">
   <label><input type="radio" name="mode" value="top" checked>Top Gear</label>
   <label><input type="radio" name="mode" value="drop">Droptimizer</label>
@@ -265,13 +265,13 @@ $('ub_go').onclick=async()=>{$('ub_go').disabled=true;$('ubtxt').textContent='Do
 $('ub_later').onclick=()=>{try{localStorage.setItem(DISMISS,$('ub_go').dataset.h||'')}catch{}$('ubanner').hidden=true};
 $('uchk').onclick=async()=>{$('ust').textContent='Checking…';const r=await api.updateCheck();
   $('ust').textContent={dev:'Updates only work in the installed app.',current:`Up to date (${r.current}).`,available:`Version ${r.version} is available.`,error:r.message||'Update check failed.',idle:''}[r.state]||'';
-  if(r.state==='available'&&confirm(`Install LocalBots ${r.version} and restart?`))api.updateInstall().catch(x=>$('ust').textContent=msg(x))};
+  if(r.state==='available'&&confirm(`Install Polygnome ${r.version} and restart?`))api.updateInstall().catch(x=>$('ust').textContent=msg(x))};
 refreshEngine();setTimeout(checkEngineAtStart,1500);
-// Startup: new LocalBots release on GitHub (installed app only; silent in development and on network errors). Dismissed per version.
+// Startup: new Polygnome release on GitHub (installed app only; silent in development and on network errors). Dismissed per version.
 async function checkAppAtStart(){let r;try{r=await api.updateCheck()}catch{return}if(!r||r.state!=='available')return;
  let d='';try{d=localStorage.getItem('lb_app_dismissed')||''}catch{}if(d===r.version)return;
- $('abtxt').textContent=`LocalBots ${r.version} is available (you have ${r.current}).`;$('ab_go').dataset.v=r.version;$('abanner').hidden=false}
-$('ab_go').onclick=async()=>{$('ab_go').disabled=true;$('abtxt').textContent='Downloading the update… LocalBots restarts when it is ready.';try{await api.updateInstall()}catch(x){$('abtxt').textContent='Update failed: '+msg(x);$('ab_go').disabled=false}};
+ $('abtxt').textContent=`Polygnome ${r.version} is available (you have ${r.current}).`;$('ab_go').dataset.v=r.version;$('abanner').hidden=false}
+$('ab_go').onclick=async()=>{$('ab_go').disabled=true;$('abtxt').textContent='Downloading the update… Polygnome restarts when it is ready.';try{await api.updateInstall()}catch(x){$('abtxt').textContent='Update failed: '+msg(x);$('ab_go').disabled=false}};
 $('ab_later').onclick=()=>{try{localStorage.setItem('lb_app_dismissed',$('ab_go').dataset.v||'')}catch{}$('abanner').hidden=true};
 setTimeout(checkAppAtStart,4000);
 const RB={bloodlust:'Bloodlust',arcane_intellect:'Arcane Intellect',battle_shout:'Battle Shout',power_word_fortitude:'Power Word: Fortitude',mark_of_the_wild:'Mark of the Wild',skyfury:'Skyfury',mystic_touch:'Mystic Touch',chaos_brand:'Chaos Brand',hunters_mark:'Hunter’s Mark'};

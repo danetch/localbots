@@ -1,7 +1,7 @@
 {
-  "name": "localbots",
-  "version": "0.3.6",
-  "description": "Local SimulationCraft gear optimizer",
+  "name": "polygnome",
+  "version": "0.4.0",
+  "description": "Polygnome: local, unlimited SimulationCraft gear optimizer (Top Gear, Droptimizer, Best in Slot)",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -17,10 +17,10 @@
     "7zip-bin": "^5.2.0",
     "electron-updater": "^6.3.9"
   },
-  "author": "LocalBots",
+  "author": "Polygnome",
   "build": {
     "appId": "com.localbots.app",
-    "productName": "LocalBots",
+    "productName": "Polygnome",
     "directories": {
       "output": "dist"
     },
