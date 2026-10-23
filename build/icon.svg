@@ -1,50 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <defs>
-    <radialGradient id="bg" cx="50%" cy="38%" r="75%"><stop offset="0" stop-color="#2a3866"/><stop offset="1" stop-color="#0b1022"/></radialGradient>
-    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe7a3"/><stop offset=".45" stop-color="#d9a441"/><stop offset="1" stop-color="#7a5212"/></linearGradient>
-    <linearGradient id="anvil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0bf"/><stop offset=".35" stop-color="#e9b955"/><stop offset="1" stop-color="#9c6a1c"/></linearGradient>
-    <linearGradient id="hair" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9fd2"/><stop offset=".55" stop-color="#ec5fa8"/><stop offset="1" stop-color="#b73a80"/></linearGradient>
-    <radialGradient id="skin" cx="45%" cy="40%" r="65%"><stop offset="0" stop-color="#ffe0c8"/><stop offset="1" stop-color="#eeb08c"/></radialGradient>
-    <radialGradient id="lens" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#d9f4ff"/><stop offset=".5" stop-color="#5fc3e8"/><stop offset="1" stop-color="#1d6e92"/></radialGradient>
-    <clipPath id="tile"><rect x="16" y="16" width="480" height="480" rx="96"/></clipPath>
-  </defs>
-  <rect x="16" y="16" width="480" height="480" rx="96" fill="url(#bg)"/>
-  <!-- original gnome engineer girl: pink pigtails, brass goggles on her fringe, peeking over the anvil -->
-  <g clip-path="url(#tile)" stroke="#5c3d0c" stroke-linejoin="round">
-    <!-- pigtails (behind the head), with gold hair ties -->
-    <path d="M200 196 Q146 162 114 192 Q86 222 100 266 Q108 292 90 318 Q138 312 150 274 Q160 244 190 238 Z" fill="url(#hair)" stroke-width="6"/>
-    <path d="M312 196 Q366 162 398 192 Q426 222 412 266 Q404 292 422 318 Q374 312 362 274 Q352 244 322 238 Z" fill="url(#hair)" stroke-width="6"/>
-    <ellipse cx="184" cy="212" rx="13" ry="16" fill="#e9b955" stroke-width="5" transform="rotate(-30 184 212)"/>
-    <ellipse cx="328" cy="212" rx="13" ry="16" fill="#e9b955" stroke-width="5" transform="rotate(30 328 212)"/>
-    <!-- ears -->
-    <path d="M200 252 Q160 236 150 216 Q178 222 208 232 Z" fill="#eeb08c" stroke-width="5"/>
-    <path d="M312 252 Q352 236 362 216 Q334 222 304 232 Z" fill="#eeb08c" stroke-width="5"/>
-    <!-- head -->
-    <ellipse cx="256" cy="246" rx="62" ry="62" fill="url(#skin)" stroke-width="5"/>
-    <!-- hair top with fringe -->
-    <path d="M190 250 Q178 160 256 150 Q334 160 322 250 Q314 226 300 216 Q290 232 270 228 Q262 214 256 212 Q246 228 228 228 Q216 218 212 214 Q198 228 190 250 Z" fill="url(#hair)" stroke-width="6"/>
-    <!-- goggles pushed up on the forehead -->
-    <path d="M192 200 Q256 182 320 200" fill="none" stroke="#5c3d0c" stroke-width="12"/>
-    <circle cx="228" cy="190" r="21" fill="url(#lens)" stroke="#d9a441" stroke-width="8"/>
-    <circle cx="284" cy="190" r="21" fill="url(#lens)" stroke="#d9a441" stroke-width="8"/>
-    <circle cx="228" cy="190" r="21" fill="none" stroke-width="2.5"/>
-    <circle cx="284" cy="190" r="21" fill="none" stroke-width="2.5"/>
-    <path d="M249 188 L263 188" stroke="#d9a441" stroke-width="6"/>
-    <!-- eyes, cheeks, smile -->
-    <ellipse cx="232" cy="248" rx="9" ry="12" fill="#2a1a10" stroke="none"/>
-    <ellipse cx="280" cy="248" rx="9" ry="12" fill="#2a1a10" stroke="none"/>
-    <circle cx="235" cy="244" r="3.5" fill="#fff" stroke="none"/>
-    <circle cx="283" cy="244" r="3.5" fill="#fff" stroke="none"/>
-    <circle cx="216" cy="272" r="9" fill="#ff8fa8" opacity=".6" stroke="none"/>
-    <circle cx="296" cy="272" r="9" fill="#ff8fa8" opacity=".6" stroke="none"/>
-    <path d="M242 278 Q256 290 270 278" fill="none" stroke-width="5" stroke-linecap="round"/>
-    <!-- anvil in front -->
-    <g transform="translate(46 168) scale(0.82)">
-      <path d="M84 200 Q146 178 204 176 L420 176 L420 226 L356 226 Q324 238 320 270 L320 300 Q332 318 372 326 L386 362 L126 362 L140 326 Q180 318 192 300 L192 270 Q188 244 156 232 Q116 220 84 200 Z" fill="url(#anvil)" stroke-width="7"/>
-      <path d="M204 186 L410 186" stroke="#fff6d6" stroke-width="6" stroke-linecap="round" opacity=".7"/>
-    </g>
-    <!-- spark -->
-    <path d="M110 92 l9 27 27 9 -27 9 -9 27 -9 -27 -27 -9 27 -9z" fill="#ffe7a3" stroke="none"/>
-  </g>
-  <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="url(#rim)" stroke-width="18"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><!-- Polygnome: low-poly gnome hat (pink facets, floppy tip, gold band) --><defs><radialGradient id="bg" cx="50%" cy="38%" r="75%"><stop offset="0" stop-color="#2a3866"/><stop offset="1" stop-color="#0b1022"/></radialGradient>
+<linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe7a3"/><stop offset=".45" stop-color="#d9a441"/><stop offset="1" stop-color="#7a5212"/></linearGradient>
+<clipPath id="tile"><rect x="16" y="16" width="480" height="480" rx="96"/></clipPath></defs>
+<rect x="16" y="16" width="480" height="480" rx="96" fill="url(#bg)"/><g clip-path="url(#tile)"><g transform="translate(-12 -10)"><polygon points="96,412 150,306 258,430" fill="#ff9ccd" stroke="#ff9ccd" stroke-width="1.5" stroke-linejoin="round"/><polygon points="150,306 262,292 258,430" fill="#f26db0" stroke="#f26db0" stroke-width="1.5" stroke-linejoin="round"/><polygon points="262,292 420,412 258,430" fill="#c93f88" stroke="#c93f88" stroke-width="1.5" stroke-linejoin="round"/><polygon points="262,292 352,302 420,412" fill="#a92f70" stroke="#a92f70" stroke-width="1.5" stroke-linejoin="round"/><polygon points="150,306 204,202 262,292" fill="#ffb3da" stroke="#ffb3da" stroke-width="1.5" stroke-linejoin="round"/><polygon points="204,202 300,190 262,292" fill="#ea5aa3" stroke="#ea5aa3" stroke-width="1.5" stroke-linejoin="round"/><polygon points="300,190 352,302 262,292" fill="#bb3a7e" stroke="#bb3a7e" stroke-width="1.5" stroke-linejoin="round"/><polygon points="300,190 340,140 352,302" fill="#8e2560" stroke="#8e2560" stroke-width="1.5" stroke-linejoin="round"/><polygon points="204,202 268,112 300,190" fill="#ff8cc4" stroke="#ff8cc4" stroke-width="1.5" stroke-linejoin="round"/><polygon points="268,112 330,100 300,190" fill="#e0579c" stroke="#e0579c" stroke-width="1.5" stroke-linejoin="round"/><polygon points="330,100 340,140 300,190" fill="#a52d6d" stroke="#a52d6d" stroke-width="1.5" stroke-linejoin="round"/><polygon points="330,100 414,170 340,140" fill="#d14a90" stroke="#d14a90" stroke-width="1.5" stroke-linejoin="round"/><polygon points="88,416 258,434 258,390 108,374" fill="#f6d27a" stroke="#f6d27a" stroke-width="1.5" stroke-linejoin="round"/><polygon points="258,434 428,416 408,374 258,390" fill="#c9922e" stroke="#c9922e" stroke-width="1.5" stroke-linejoin="round"/><polygon points="108,374 258,390 258,382 112,366" fill="#fff0bf"/></g></g>
+<rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="url(#rim)" stroke-width="18"/></svg>
