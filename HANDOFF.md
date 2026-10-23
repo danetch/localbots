@@ -449,3 +449,11 @@ embellishment").
     tables has NOT run against the real server from the app (needs the user's "Update loot data").
 - UI checked in Electron under Xvfb with test/ui/mock.js (screenshot script in the scratchpad: preload evals mock.js, contextIsolation off).
 - Tests: 44 pass.
+
+=== 23 OCT (night): NYMRISSA WAVECALLER + COUNCIL FIGHTS (in progress: real-simc check pending) ===
+- data/fights/nymrissa.json (BigWigs MidnightLairs/Nymrissa.lua b26c019 + Method guide): Shorerunner murloc adds (Mythic: + Frostscale
+  shield add, kill first), Swirling Whirlpools, Chilling Frost soaks. Pull timers 25 / 107 / 35, repeat 132 s = 3 x the 44 s rotation (assumed).
+- Council fights (lib/boss.js `bosses`, `present`, mechanic `allBosses`): desired_targets = 1 + extra bosses, invulnerable windows for an
+  extra boss outside its stages (target=Dummy_Enemy_n) + ignore_invulnerable_targets=1 so cleave/AoE ignore it (simc source: player.cpp).
+  Twin Fangs = 2 bosses all fight, both submerge; Lost Explorers = 2 bosses (two kept together, the third out of range: 99 % DR within
+  30 yd); Coiled Altar = Malacrass from 20 s into stage 3; Entombed Sentinels stays single target (split raid).

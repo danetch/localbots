@@ -1,0 +1,102 @@
+{
+ "id": "nymrissa",
+ "name": "Nymrissa Wavecaller — The Tidebound Grotto",
+ "source": "BigWigs (BigWigsMods/BigWigs b26c019) MidnightLairs/Nymrissa.lua + Method boss guide (mechanics).",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the pull. timesFrom: bigwigs = timeline durations read from BigWigs (pull timers only), guide = from the guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. BigWigs matches timeline bars by rounded duration: Abyssal Rain 8/23/33, Alluring Bubble 18, bubble adds 7/25, Chilling Frost 17/35, Swirling Whirlpools 89/107, plus a 44 s bar that rotates adds -> Chilling Frost -> Abyssal Rain; read here as pull timers 25 (adds), 35 (frost), 107 (whirlpools), each repeating every 3 x 44 = 132 s (assumed). Not modelled: Abyssal Rain and Pop! (raid damage), Wavecaller's Might stacks and Unending Tides (enrage), Iceblade Flurry / Water Jet (tank), failed murlocs turning into Berserkers.",
+ "defaultDuration": 300,
+ "mechanics": {
+  "shorerunners": {
+   "label": "Alluring Bubble: Bubblefin Shorerunners race to the bubble (kill them)",
+   "type": "adds",
+   "count": 5,
+   "health": 400000,
+   "duration": 15,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "count",
+    "health",
+    "duration",
+    "repeat"
+   ]
+  },
+  "frostscale": {
+   "label": "Bubblefin Frostscale (Mythic: shields the murlocs, kill first)",
+   "type": "adds",
+   "count": 1,
+   "health": 1500000,
+   "duration": 10,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "health",
+    "duration",
+    "repeat"
+   ]
+  },
+  "whirlpools": {
+   "label": "Swirling Whirlpools (move to the gap and stack)",
+   "type": "movement",
+   "duration": 5,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "repeat"
+   ]
+  },
+  "frost": {
+   "label": "Chilling Frost / Frost Orb (assigned soakers; Lingering Frost patches)",
+   "type": "movement",
+   "duration": 4,
+   "chance": 0.2,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance",
+    "repeat"
+   ]
+  }
+ },
+ "difficulties": {
+  "heroic": {
+   "label": "Normal / Heroic",
+   "times": {
+    "shorerunners": [
+     25
+    ],
+    "whirlpools": [
+     107
+    ],
+    "frost": [
+     35
+    ]
+   },
+   "repeat": {
+    "shorerunners": 132,
+    "whirlpools": 132,
+    "frost": 132
+   }
+  },
+  "mythic": {
+   "label": "Mythic",
+   "times": {
+    "shorerunners": [
+     25
+    ],
+    "frostscale": [
+     25
+    ],
+    "whirlpools": [
+     107
+    ],
+    "frost": [
+     35
+    ]
+   },
+   "repeat": {
+    "shorerunners": 132,
+    "frostscale": 132,
+    "whirlpools": 132,
+    "frost": 132
+   }
+  }
+ }
+}

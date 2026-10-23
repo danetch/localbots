@@ -91,7 +91,7 @@ function resolveFight(f) {
   const def = bossLib.list(bossDirs()).find(b => b.id === f.boss);
   if (!def) throw new Error(`Boss fight “${f.boss}” not found.`);
   const r = bossLib.build(def, { difficulty: f.difficulty, duration: f.duration });
-  return { ...f, fightStyle: '', duration: r.length, raidEvents: r.events };   // no fight_style: simc clears raid_events when fight_style=Patchwerk is given (sim.cpp init_fight_style)
+  return { ...f, fightStyle: '', duration: r.length, targets: r.targets, raidEvents: r.events, bossArgs: r.extraArgs };   // no fight_style: simc clears raid_events when fight_style=Patchwerk is given (sim.cpp init_fight_style)
 }
 // Talent builds chosen in the panel (o.builds = [{string}]): one build replaces the active talents= line; several are simulated one after
 // the other and returned as { builds: [{ name, string, result }] }.

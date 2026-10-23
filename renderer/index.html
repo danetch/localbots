@@ -243,7 +243,7 @@ async function bossPreview(){const on=!!$('boss').value;$('fs').disabled=$('tg')
  const r=await api.bossPreview({boss:$('boss').value,difficulty:$('bdiff').value,duration:+$('dur').value||300});if(!r){$('bprev').textContent='Boss fight not found.';return}
  const TAG={bigwigs:'BigWigs',guide:'guide',assumed:'guessed'};
  const L=r.summary.map(m=>`• ${m.label}${m.assumed.length?' *':''} [times: ${TAG[m.timesFrom]||m.timesFrom}]: ${m.times.slice(0,8).map(t=>t+'s').join(', ')}${m.times.length>8?' …':''}`).join('\n');
- $('bprev').textContent=`Length ${r.length}s`+(r.stages.length>1?` · stages start at ${r.stages.map(s=>`${s.id}: ${s.at}s`).join(', ')}`:'')+`\n* = effect size guessed. Edit the files to refine (button “Edit…”).\n`+L}
+ $('bprev').textContent=`Length ${r.length}s`+(r.stages.length>1?` · stages start at ${r.stages.map(s=>`${s.id}: ${s.at}s`).join(', ')}`:'')+(r.targets>1?`\nBosses cleaved together (separate health): ${r.bosses.join(' + ')}${r.present.filter(p=>p.absent.length).map(p=>` · ${p.name} from ${p.absent[p.absent.length-1][1]}s`).join('')}`:'')+`\n* = effect size guessed. Edit the files to refine (button “Edit…”).\n`+L}
 api.bossList().then(B=>{bosses=B;$('boss').innerHTML='<option value="">None (use the style below)</option>'+B.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');
  const f=window.__savedFight||{};if(f.boss&&B.some(b=>b.id===f.boss)){$('boss').value=f.boss;$('boss').onchange();if(f.difficulty)$('bdiff').value=f.difficulty;bossPreview()}});
 $('boss').onchange=()=>{const b=bosses.find(x=>x.id===$('boss').value);$('bdiff').innerHTML=b?b.difficulties.map(d=>`<option value="${d.id}">${esc(d.label)}</option>`).join(''):'';if(b&&$('dur').value==='300')$('dur').value=b.duration;bossPreview()};

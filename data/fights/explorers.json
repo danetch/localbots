@@ -2,7 +2,7 @@
  "id": "explorers",
  "name": "The Lost Explorers",
  "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Explorers.lua + Icy Veins boss guide (mechanics).",
- "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing, a second boss pool (the sim fights one target).",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing.",
  "defaultDuration": 300,
  "stages": [
   {
@@ -170,5 +170,12 @@
     "hazard": 35
    }
   }
- }
+ },
+ "mainBoss": "Gebbo",
+ "bosses": [
+  {
+   "name": "Iku"
+  }
+ ],
+ "council": "Three bosses with separate health (Icy Veins: they do not share health). Two are kept together and cleaved; all three within 30 yd take 99 % less damage, so the third (Nama, rotating between them) is not in cleave range. Simulated as 2 targets for the whole fight."
 }

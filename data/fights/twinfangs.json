@@ -2,7 +2,7 @@
  "id": "twinfangs",
  "name": "The Twin Fangs",
  "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/TwinFangs.lua + Icy Veins boss guide (mechanics).",
- "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing, a second boss pool (the sim fights one target).",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing.",
  "defaultDuration": 360,
  "mechanics": {
   "emergence": {
@@ -53,14 +53,15 @@
    ]
   },
   "submerge": {
-   "label": "Intermission: bosses submerged (targetability unconfirmed)",
+   "label": "Intermission: both bosses submerge (targetability unconfirmed)",
    "type": "invulnerable",
    "duration": 20,
    "timesFrom": "bigwigs",
    "assumed": [
     "duration",
     "whether the bosses are targetable"
-   ]
+   ],
+   "allBosses": true
   }
  },
  "difficulties": {
@@ -90,5 +91,12 @@
     "feast": 100
    }
   }
- }
+ },
+ "mainBoss": "Vexhul",
+ "bosses": [
+  {
+   "name": "Ithraz"
+  }
+ ],
+ "council": "Two bosses with separate health (Icy Veins: they do not share health and should die together), tanked close and cleaved (Method: start on Vexhul while cleaving Ithraz, swap at 40 %). Simulated as 2 targets for the whole fight; both submerge together."
 }
