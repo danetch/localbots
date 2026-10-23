@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline' https://wow.zamimg.com; script-src 'unsafe-inline' https://wow.zamimg.com; img-src 'self' data: https://wow.zamimg.com https://*.wowhead.com; connect-src https://*.wowhead.com; font-src data: https://wow.zamimg.com">
+<title>LocalBots</title>
+<style>
+:root{--bg:#e9eef2;--panel:#f8fafb;--ink:#17222d;--mute:#5b6b7a;--line:#cfd8e0;--acc:#1f5fbf;--pos:#1d7a4a;--neg:#b3382c;--hl:#e3efe8;--field:#fff;--shadow:0 1px 2px rgba(20,35,50,.06)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#10171e;--panel:#18222c;--ink:#e4ebf1;--mute:#8b9bab;--line:#2b3947;--acc:#6aa3f0;--pos:#5cc58b;--neg:#ef8277;--hl:#1b2f26;--field:#0e151c;--shadow:none}:root:not([data-theme=light]) button.go,:root:not([data-theme=light]) .seg label:has(input:checked){color:#0b1722!important}}
+:root[data-theme=dark]{--bg:#10171e;--panel:#18222c;--ink:#e4ebf1;--mute:#8b9bab;--line:#2b3947;--acc:#6aa3f0;--pos:#5cc58b;--neg:#ef8277;--hl:#1b2f26;--field:#0e151c;--shadow:none}:root[data-theme=dark] button.go,:root[data-theme=dark] .seg label:has(input:checked){color:#0b1722!important}
+:root[data-theme=dark]{color-scheme:dark}:root[data-theme=light]{color-scheme:light}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 "Segoe UI",system-ui,sans-serif}
+body{height:100vh;display:flex;flex-direction:column;overflow:hidden}
+main{display:grid;grid-template-columns:minmax(380px,450px) minmax(420px,1fr);gap:12px;padding:0 12px 12px;flex:1;min-height:0}
+.col{display:flex;flex-direction:column;gap:10px;min-height:0;overflow:auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;box-shadow:var(--shadow)}
+.card.fill{flex:1;display:flex;flex-direction:column;min-height:0}
+h1{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:0 0 8px;font-weight:600}
+details>summary{cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);font-weight:600;list-style:none}
+details>summary::before{content:"▸ "}details[open]>summary::before{content:"▾ "}
+#setup{counter-reset:st;display:flex;flex-direction:column;gap:8px;min-height:0;overflow:auto;padding-right:2px}
+#setup>.sec:not([hidden]){counter-increment:st}#setup>.sec>summary .n::before{content:counter(st) " · "}details[open]>summary{margin-bottom:8px}
+textarea{width:100%;height:78px;resize:vertical;background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:6px;font:11px/1.35 Consolas,monospace}
+input,select{padding:5px 7px;background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:4px;font:inherit;max-width:100%}
+input[type=number]{width:74px}
+.row{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:6px 0}
+label{display:flex;flex-direction:column;font-size:12px;color:var(--mute);gap:2px}
+label.in{flex-direction:row;align-items:center;gap:6px;color:var(--ink);font-size:13px}
+button{padding:6px 12px;transition:background .15s,border-color .15s;border-radius:4px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;font:inherit}
+button.go{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600;flex:1}
+button:hover:not(:disabled):not(.go){border-color:var(--acc)}button.go:hover:not(:disabled){filter:brightness(1.1)}
+button.small{padding:3px 9px;font-size:12px}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--acc);outline-offset:2px}button:disabled{opacity:.5;cursor:default}
+.seg{display:flex;border:1px solid var(--line);border-radius:5px;overflow:hidden}.seg label{flex:1;flex-direction:row;justify-content:center;padding:6px 2px;cursor:pointer;color:var(--ink);font-size:12px;white-space:nowrap;border-right:1px solid var(--line)}
+.seg label:last-child{border:0}.seg input{position:absolute;opacity:0}.seg label:has(input:checked){background:var(--acc);color:#fff}.seg label:has(input:focus-visible){outline:2px solid var(--acc);outline-offset:-2px}
+.it{color:var(--mute);font-size:12px}.pos{color:var(--pos)}.neg{color:var(--neg)}
+.bar{height:12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .4s ease}
+.bar.ind i{width:35%;animation:slide 1.2s ease-in-out infinite alternate}@keyframes slide{from{margin-left:0}to{margin-left:65%}}
+@media(prefers-reduced-motion:reduce){.bar.ind i{animation:none;width:100%;opacity:.5}}
+#pline{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--mute);margin-top:4px}
+#log{flex:1;min-height:120px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:6px;font:11px/1.35 Consolas,monospace;white-space:pre-wrap;color:var(--mute)}
+#res{overflow:auto;flex:1}.r{padding:8px 0;border-bottom:1px solid var(--line)}.r:last-child{border:0}
+.empty{color:var(--mute);padding:20px 0;line-height:1.7}.empty.neg{color:var(--neg);border-left:3px solid var(--neg);padding:8px 12px;background:var(--bg);border-radius:0 4px 4px 0}
+.rhead{display:flex;justify-content:space-between;align-items:center;gap:8px}.rhead h1{margin:0}
+.gain{height:3px;border-radius:2px;background:var(--pos);opacity:.55;margin-top:5px}.gain.neg{background:var(--neg)}
+.hrow{display:flex;gap:8px;justify-content:space-between;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:5px 0;font-size:12px}.hrow:hover{background:var(--hl)}.hrow b{font-weight:600}
+.st{color:var(--mute)}a.wh{color:inherit;text-decoration:none;border-bottom:1px dotted var(--mute)}a.wh:hover{color:var(--acc)}#ubanner{display:flex;align-items:center;gap:10px;margin:0 12px 8px;padding:7px 12px;border:1px solid var(--acc);border-radius:8px;background:var(--panel);font-size:13px}.go2{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}.rk{display:inline-block;min-width:1.6em;color:var(--mute)}
+table{border-collapse:collapse;width:100%;font-size:13px}td,th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:11px;text-transform:uppercase;color:var(--mute)}
+tr.chg td{background:var(--hl)}
+/* ---- layout: header (mode + run) / progress strip / setup accordion | results with tabs ---- */
+header{display:flex;align-items:center;gap:12px;padding:10px 12px 8px}
+.brand{font-weight:700;font-size:16px;letter-spacing:.02em;margin-right:4px}
+header .seg{width:330px}header button.go{flex:none;min-width:150px}
+.grow{flex:1}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--neg);margin-left:6px}
+#pstrip{display:flex;align-items:center;gap:10px;padding:0 12px 8px;font-size:12px;color:var(--mute)}
+#pstrip .bar{flex:1;height:8px}#ptxt{min-width:230px}#ptime{min-width:130px;text-align:right}
+details.sec{padding:9px 14px}details.sec>summary{display:flex;align-items:baseline;gap:6px}
+.sm{margin-left:auto;padding-left:12px;text-transform:none;letter-spacing:0;font-weight:400;font-size:12px;color:var(--ink);opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+details.sec[open]>summary .sm{opacity:.45}
+#secbar{display:flex;gap:6px;justify-content:flex-end;padding:0 2px}
+#resbox{display:flex;flex-direction:column;min-height:0;padding:0}
+.tabs{display:flex;align-items:center;gap:2px;padding:6px 10px 0;border-bottom:1px solid var(--line)}
+.tab{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;padding:6px 12px;color:var(--mute);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+.tab.on{color:var(--ink);border-bottom-color:var(--acc)}
+.pane{flex:1;min-height:0;overflow:auto;padding:12px 16px}#p_res{display:flex;flex-direction:column}
+#log{height:100%;min-height:0}
+dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:16px 18px;width:min(560px,92vw)}
+dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:14px 0 4px}
+@media(max-width:1000px){body{height:auto;overflow:auto}main{grid-template-columns:1fr}#setup{overflow:visible}#resbox{min-height:70vh}header{flex-wrap:wrap}}
+</style></head><body>
+<header>
+ <span class="brand">LocalBots</span>
+ <div class="seg" role="radiogroup" aria-label="Mode">
+  <label><input type="radio" name="mode" value="top" checked>Top Gear</label>
+  <label><input type="radio" name="mode" value="drop">Droptimizer</label>
+  <label><input type="radio" name="mode" value="bis">Best in Slot</label></div>
+ <button id="go" class="go" title="Ctrl+Enter">Run Top Gear</button><button id="stop" disabled>Cancel</button>
+ <span class="grow"></span>
+ <span id="lootst" class="it"></span><button id="upd" class="small" title="Loot tables, crafted items, tier sets and consumables: needed for Catalyst, Crafted gear, Droptimizer and Best in Slot">Update loot data</button>
+ <button id="setbtn" class="small">Settings<span id="setdot" class="dot" hidden title="No simc selected"></span></button>
+</header>
+<div id="abanner" role="status" hidden style="display:flex;align-items:center;gap:10px;margin:0 12px 8px;padding:7px 12px;border:1px solid var(--pos);border-radius:8px;background:var(--panel);font-size:13px"><span id="abtxt"></span><span class="grow"></span><button id="ab_go" class="small go2">Update and restart</button><button id="ab_later" class="small">Later</button></div>
+<div id="ubanner" role="status" hidden><span id="ubtxt"></span><span class="grow"></span><button id="ub_go" class="small go2">Update</button><button id="ub_later" class="small">Later</button></div>
+<div id="pstrip"><span id="ptxt">Idle</span>
+ <div class="bar" id="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Simulation progress"><i id="fill"></i></div>
+ <span id="ptime"></span></div>
+
+<main>
+<div id="setup">
+ <div id="secbar"><button class="small" id="expall">Expand all</button><button class="small" id="colall">Collapse all</button></div>
+
+ <details class="card sec" id="s_char" open><summary><span class="n"></span>Character<span class="sm" id="sm_char"></span></summary>
+  <textarea id="txt" placeholder="Paste the full /simc export here (bags included)." spellcheck="false"></textarea>
+  <div class="it" id="cnt">Nothing pasted yet.</div></details>
+
+ <details class="card sec" id="s_tal" hidden><summary><span class="n"></span>Talent builds<span class="sm" id="sm_tal"></span></summary>
+  <div id="tal"></div></details>
+
+ <details class="card sec" id="s_opt" open><summary><span class="n"></span>Options<span class="sm" id="sm_opt"></span></summary>
+  <div class="it" id="mdesc"></div>
+  <label class="in" style="margin:4px 0"><input type="checkbox" id="rep_on" checked>Create the simc HTML report of the best result (adds some time)</label>
+  <div class="row" data-modes="top"><label>Finalists (pass 2)<input id="top" type="number" min="1" value="30"></label></div>
+  <div class="row" data-modes="bis"><label>Max rounds<input id="rounds" type="number" min="1" max="12" value="5"></label>
+   <label title="Round 1 settles the gear; consumables, enchants and gems are added from this round on">Consumables, enchants &amp; gems from round<input id="consfrom" type="number" min="1" max="12" value="2"></label></div>
+  <div class="row" data-modes="top drop bis"><label class="in"><input type="checkbox" id="cat">Include Catalyst (tier) versions</label>
+   <label>Max charges<input id="catmax" type="number" min="0" max="5" placeholder="any"></label></div>
+  <div class="it" data-modes="top drop bis" id="cathint">Each head/shoulder/chest/hands/legs item (bags and loot) may be converted into your class tier piece (keeps level, stats and effects). Needs “Update loot data” once.</div></details>
+
+ <details class="card sec" id="s_fight" open><summary><span class="n"></span>Fight<span class="sm" id="sm_fight"></span></summary>
+  <div class="row" style="margin-top:0"><label>Boss fight<select id="boss"><option value="">None (use the style below)</option></select></label>
+   <label hidden>Difficulty<select id="bdiff" disabled></select></label><button id="bedit" type="button" class="small" title="Open the folder with the boss fight files">Edit…</button></div>
+  <div class="it" id="bprev" hidden style="white-space:pre-wrap"></div>
+  <div class="row"><label>Style<select id="fs">
+   <option value="Patchwerk">Patchwerk (stationary)</option><option value="LightMovement">Light movement</option><option value="HeavyMovement">Heavy movement</option>
+   <option value="HecticAddCleave">Hectic add cleave</option><option value="CleaveAdd">Cleave add</option><option value="CastingPatchwerk">Casting Patchwerk</option>
+   <option value="DungeonSlice">Dungeon slice</option><option value="DungeonRoute">Dungeon route</option></select></label>
+   <label>Targets<input id="tg" type="number" min="1" max="20" value="1"></label>
+   <label>Length (s)<input id="dur" type="number" min="10" value="300"></label>
+   <label>Variance %<input id="vary" type="number" min="0" max="100" value="20"></label></div></details>
+
+ <details class="card sec" id="s_buff"><summary><span class="n"></span>Buffs &amp; consumables<span class="sm" id="sm_buff"></span></summary>
+  <label>Raid buffs<select id="raid"><option value="full">Full raid buffs (default)</option><option value="none">No raid buffs</option><option value="custom">Custom…</option></select></label>
+  <div id="rbuffs" hidden style="columns:2;margin-top:4px"></div>
+  <div class="row"><label>Flask<input id="c_flask" list="dl_flask" type="text" placeholder="from export" style="width:100px"></label><label>Food<input id="c_food" list="dl_food" type="text" placeholder="from export" style="width:100px"></label>
+   <label>Potion<input id="c_potion" list="dl_potion" type="text" placeholder="from export" style="width:100px"></label><label>Rune<input id="c_rune" list="dl_rune" type="text" placeholder="from export" style="width:100px"></label></div>
+  <label class="in"><input type="checkbox" id="nocons">No consumables</label>
+  <div class="it" id="conshint">Suggestions appear after “Update loot data”.</div><div id="dls"></div>
+  <label style="margin-top:6px">Extra simc options (one key=value per line)<textarea id="extra" style="height:44px" placeholder="key=value" spellcheck="false"></textarea></label></details>
+
+ <details class="card sec" id="s_loot" data-modes="drop bis" open><summary><span class="n"></span>Loot source<span class="sm" id="sm_loot"></span></summary>
+  <label>Adventure Guide tier<select id="tier"></select></label>
+  <div class="row" style="margin-bottom:0"><input id="ifilt" placeholder="Filter instances…" style="flex:1;min-width:120px"><button id="isel" class="small" title="Tick every raid and dungeon listed below (use the tier selector above to pick the season)">Select all</button><button id="inone" class="small">Clear</button></div>
+  <div id="inst" style="max-height:130px;overflow:auto;margin:6px 0"></div>
+  <div class="row"><label>Custom item level<input id="ilvl" type="number" min="1"></label>
+   <label>Upgrades<select id="upg"><option value="none">As dropped</option><option value="max">Fully upgraded (x/6)</option></select></label>
+   <label>Armor<select id="arm"><option value="cloth">Cloth</option><option value="leather">Leather</option><option value="mail">Mail</option><option value="plate" selected>Plate</option></select></label>
+   <label class="in"><input type="checkbox" id="wp">Include weapons &amp; shields</label></div>
+  <div class="it" id="wtxt"></div>
+  <div class="row"><button id="editprog">Edit tracks &amp; sources…</button><span class="it" id="seas"></span></div>
+  <div class="it">Each instance has an item level source: “Custom” uses the field above.</div>
+  <div class="it" data-modes="bis">Best in Slot: leave all instances unticked to use bag items only.</div></details>
+
+ <details class="card sec" id="s_craft" data-modes="top drop bis"><summary><span class="n"></span>Crafted gear<span class="sm" id="sm_craft"></span></summary>
+  <label class="in"><input type="checkbox" id="cr_on">Add crafted items to the pool (max level)</label>
+  <div class="it" id="cr_st">Run “Update loot data” to list craftable items.</div>
+  <div style="font-weight:600;font-size:12px;margin-top:6px">Embellishments to test</div><div id="cr_emb" style="max-height:150px;overflow:auto"></div>
+  <label class="in"><input type="checkbox" id="cr_plain">Also test crafts without embellishment</label>
+  <div style="font-weight:600;font-size:12px;margin-top:6px">Crafted stat pairs</div><div id="cr_pairs"></div>
+  <div class="it" style="margin-top:6px">Crafted weapons are added automatically when you tick a weapon embellishment (only types your class can wield).</div>
+  <div style="font-weight:600;font-size:12px;margin-top:6px">What will be tested</div><div id="cr_prev" class="it">Tick “Add crafted items” to see which pieces are added.</div>
+  <div class="row"><button id="cr_edit">Edit crafted rules…</button></div>
+  <div class="it">Only embellished pieces count toward the limit of 2. Many options multiply fast: in Top Gear tick few stat pairs.</div></details>
+
+ <details class="card sec" id="s_cons" data-modes="bis"><summary><span class="n"></span>Consumables to compare<span class="sm" id="sm_cons"></span></summary>
+  <div class="it" style="margin-bottom:6px">Tick the flasks, food, potions and runes to consider. Best in Slot picks the best of each category alongside your gear. Leave a category empty to keep your current setup.</div>
+  <div id="consBox"></div><div class="it" id="combo"></div>
+  <div class="it" style="margin-top:6px">Secondary stats lose value past 30&nbsp;% from rating (diminishing returns). When a flask or food and a gear, enchant or gem change push the same stat into that zone, Best in Slot simulates them together instead of adding up their separate gains.</div></details>
+
+ <details class="card sec" id="s_enh" data-modes="bis"><summary><span class="n"></span>Enchants &amp; gems<span class="sm" id="sm_enh"></span></summary>
+  <label class="in"><input type="checkbox" id="en_on">Find the best enchants (rings, chest, legs, weapons)</label>
+  <label class="in"><input type="checkbox" id="gm_on">Find the best gems</label>
+  <div class="row" style="margin-top:2px"><span class="it">Add a socket (Radiant Jewelbinder) to:</span>
+   <label class="in"><input type="checkbox" class="jb" value="head" checked>Head</label><label class="in"><input type="checkbox" class="jb" value="wrist" checked>Wrist</label><label class="in"><input type="checkbox" class="jb" value="waist" checked>Waist</label></div>
+  <div class="it">Necks and rings always count at least one socket. Speed, leech and avoidance enchants (head, shoulders, feet) are left as they are. The best quality rank of each enchant and gem is used.</div>
+  <div style="font-weight:600;font-size:12px;margin-top:6px">What will be tested</div><div id="en_prev" class="it">Paste an export and tick an option.</div></details>
+</div>
+
+<section class="card" id="resbox">
+ <div class="tabs" role="tablist">
+  <button class="tab on" data-tab="res" role="tab">Results</button><button class="tab" data-tab="hist" role="tab" id="tabh">History</button><button class="tab" data-tab="log" role="tab">Activity log</button>
+  <span class="grow"></span><button id="rep" class="small" hidden title="Open simc's HTML report of the best result in your browser">Open simc report</button><button id="copy" class="small" hidden>Copy</button></div>
+ <div class="pane" id="p_res"><div id="sum" class="it"></div>
+  <div id="res"><div class="empty">1. Paste your /simc export (bags included)<br>2. Pick a mode (top bar) and adjust the options<br>3. Run: results appear here.</div></div></div>
+ <div class="pane" id="p_hist" hidden><div class="rhead"><span class="it">Last 10 runs · click one to reopen it</span><button id="hclear" class="small">Clear</button></div><div id="hist"></div></div>
+ <div class="pane" id="p_log" hidden><div class="rhead" style="margin-bottom:6px"><span class="it">End of the current run. Every run is saved in full to a log file.</span><button id="logfile" class="small">Show full log file</button></div><div id="log" aria-live="polite" style="height:calc(100% - 34px)"></div></div>
+</section>
+</main>
+
+<dialog id="setdlg"><div class="rhead"><h1 style="margin:0">Settings</h1><button id="setclose" class="small">Close</button></div>
+ <h2>Simulation engine</h2>
+ <div class="row" style="margin-top:0"><button id="pick">Select simc…</button><label>Threads left free<input id="rsv" type="number" min="0" value="6" title="Logical processors kept free for WoW and other apps"></label>
+  <label>Precision<select id="prec"><option value="fast">Fast</option><option value="standard" selected>Standard</option><option value="high">High (slow)</option></select></label></div>
+ <div id="thrinfo" class="it" style="margin-top:4px"></div>
+ <div id="simc" class="it" style="word-break:break-all"></div>
+ <div id="eng" class="it" style="margin-top:4px"></div>
+ <div class="row"><button id="eget" class="small" hidden>Download / update simc</button></div>
+ <div id="engnew" class="it" hidden><span id="engnewtxt"></span> <button id="eforce" class="small"></button></div>
+ <h2>Appearance</h2>
+ <div class="row" style="margin-top:0"><label>Theme<select id="theme"><option value="auto">Follow the system</option><option value="light">Light</option><option value="dark">Dark</option></select></label></div>
+ <label class="in" style="margin-top:8px"><input type="checkbox" id="whon">Wowhead icons and item tooltips (needs internet; restart to turn off)</label>
+ <h2>Application</h2>
+ <div class="row" style="margin-top:0"><button id="uchk" class="small">Check for app updates</button><span id="ust" class="it"></span></div>
+</dialog>
+
+<script>
+const $=id=>document.getElementById(id),fmt=n=>Math.round(n).toLocaleString('en-US');
+const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const sgn=n=>(n>=0?'+':'')+fmt(n);
+const msg=e=>String(e&&e.message||e).replace(/^Error invoking remote method '[^']*': (Error: )?/,'');
+const MODES={top:['Run Top Gear','Tests every valid combination of your bag items (rings and trinkets in pairs).'],
+ drop:['Run Droptimizer','Tests each loot drop on its own against your current gear and ranks the gains.'],
+ bis:['Build Best in Slot','Iteratively equips the best upgrades from your bags, optional loot and optional consumables until no gain remains.']};
+let mode='top',lootInfo=null,prog={sources:[]};const instSrc={};
+api.prog().then(p=>{prog=p;$('seas').textContent=p.season;renderInst()});
+$('editprog').onclick=()=>api.editProg();
+
+function setMode(m){mode=m;document.querySelectorAll('[data-modes]').forEach(e=>e.hidden=!e.dataset.modes.split(' ').includes(m));
+ $('go').textContent=MODES[m][0];$('mdesc').textContent=MODES[m][1];if(m!=='top'&&!lootInfo)loadLoot()}
+document.querySelectorAll('[name=mode]').forEach(r=>r.onchange=()=>setMode(r.value));setMode('top');loadLoot();
+
+$('txt').oninput=()=>{const L=$('txt').value.split(/\r?\n/);let e=0,b=0;
+ for(const l of L){const s=l.trim();if(/^\w+=,?id=/.test(s))e++;else if(/^#\s*\w+=,?id=/.test(s))b++}
+ const ARMOR_OF={warrior:'plate',paladin:'plate',deathknight:'plate',hunter:'mail',shaman:'mail',evoker:'mail',rogue:'leather',monk:'leather',druid:'leather',demonhunter:'leather',priest:'cloth',mage:'cloth',warlock:'cloth'};
+ const cls=(/^\s*(warrior|paladin|deathknight|hunter|shaman|evoker|rogue|monk|druid|demonhunter|priest|mage|warlock)\s*=/mi.exec($('txt').value)||[])[1];if(cls)$('arm').value=ARMOR_OF[cls.toLowerCase()];
+ const fury=/^\s*warrior\s*=/mi.test($('txt').value)&&/^\s*spec\s*=\s*fury\b/mi.test($('txt').value);
+ $('cnt').textContent=(e||b?`${e} equipped items, ${b} bag items detected.`:'Nothing recognised yet.')+(fury?' Fury warrior: two-handers allowed in both hands.':'')};
+
+let bosses=[];
+api.settings().then(s=>{$('simc').textContent=s.simcPath||'No simc selected';
+ $('rsv').value=s.reserve??6;thrUpd();if(s.precision)$('prec').value=s.precision;
+ const f=s.fight;window.__savedFight=f;if(f&&f.boss&&bosses.some(b=>b.id===f.boss)){$('boss').value=f.boss;$('boss').onchange();if(f.difficulty)$('bdiff').value=f.difficulty;bossPreview()}if(f){$('fs').value=f.fightStyle||'Patchwerk';$('tg').value=f.targets||1;$('dur').value=f.duration||300;$('vary').value=Math.round((f.vary??0.2)*100);
+ $('raid').value=f.raid||'full';$('raid').onchange();if(f.raidOn)document.querySelectorAll('.rb').forEach(c=>c.checked=f.raidOn.includes(c.value));
+ $('c_flask').value=f.flask||'';$('c_food').value=f.food||'';$('c_potion').value=f.potion||'';$('c_rune').value=f.rune||'';$('nocons').checked=!!f.noCons;$('extra').value=f.extra||''}});
+async function bossPreview(){const on=!!$('boss').value;$('fs').disabled=$('tg').disabled=on;$('fs').parentElement.hidden=$('tg').parentElement.hidden=on;$('bdiff').disabled=!on;$('bdiff').parentElement.hidden=!on;$('bprev').hidden=!on;if(!on)return;
+ const r=await api.bossPreview({boss:$('boss').value,difficulty:$('bdiff').value,duration:+$('dur').value||300});if(!r){$('bprev').textContent='Boss fight not found.';return}
+ const TAG={bigwigs:'BigWigs',guide:'guide',assumed:'guessed'};
+ const L=r.summary.map(m=>`• ${m.label}${m.assumed.length?' *':''} [times: ${TAG[m.timesFrom]||m.timesFrom}]: ${m.times.slice(0,8).map(t=>t+'s').join(', ')}${m.times.length>8?' …':''}`).join('\n');
+ $('bprev').textContent=`Length ${r.length}s`+(r.stages.length>1?` · stages start at ${r.stages.map(s=>`${s.id}: ${s.at}s`).join(', ')}`:'')+`\n* = effect size guessed. Edit the files to refine (button “Edit…”).\n`+L}
+api.bossList().then(B=>{bosses=B;$('boss').innerHTML='<option value="">None (use the style below)</option>'+B.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');
+ const f=window.__savedFight||{};if(f.boss&&B.some(b=>b.id===f.boss)){$('boss').value=f.boss;$('boss').onchange();if(f.difficulty)$('bdiff').value=f.difficulty;bossPreview()}});
+$('boss').onchange=()=>{const b=bosses.find(x=>x.id===$('boss').value);$('bdiff').innerHTML=b?b.difficulties.map(d=>`<option value="${d.id}">${esc(d.label)}</option>`).join(''):'';if(b&&$('dur').value==='300')$('dur').value=b.duration;bossPreview()};
+$('bdiff').onchange=bossPreview;$('dur').addEventListener('change',bossPreview);$('bedit').onclick=()=>api.bossEdit();
+async function refreshEngine(){try{const e=await api.engineInfo();$('simc').textContent=e.path||'No simc selected';$('eget').hidden=!e.canInstall;
+  $('eng').textContent=e.version?`SimulationCraft ${e.version.simc} · WoW ${e.version.wow}${e.version.hotfix?' · hotfix '+e.version.hotfix:''}`+(e.dataBuild&&e.dataBuild!==e.version.wow?` — bundled item data is for ${e.dataBuild}: click “Update loot data”`:''):(e.path?'Could not read the simc version (is it a valid simc?).':e.canInstall?'No simc yet: click “Download / update simc”.':'Select your simc build.')}catch(x){$('eng').textContent=msg(x)}}
+$('pick').onclick=async()=>{const p=await api.pickSimc();if(p){$('simc').textContent=p;refreshEngine()}};
+const fmtBuild=l=>`${l.version} · build ${l.hash}${l.date?' · '+l.date.slice(0,10):''}`;
+function showNewer(c){const f=(c&&c.newerFamilies)||[];$('engnew').hidden=!f.length;if(!f.length)return;
+ $('engnewtxt').textContent=`A newer version ${f[0]} exists on the download server. It is not offered automatically because it may be a PTR/beta build.`;$('eforce').textContent=`Install ${f[0]} anyway`;$('eforce').dataset.fam=f[0]}
+async function installEngine(opt){try{$('eng').textContent='Downloading… (see the activity log)';await api.engineInstall(opt);$('ubanner').hidden=true;return true}catch(x){$('eng').textContent=msg(x);return false}finally{refreshEngine()}}
+$('eget').onclick=async()=>{$('eget').disabled=true;$('eng').textContent='Checking…';try{const c=await api.engineCheck();showNewer(c);
+  if(!c.latest)$('eng').textContent='No build found for your simc version.';
+  else if(!c.upToDate||confirm('simc is already up to date ('+fmtBuild(c.latest)+'). Download it again?'))await installEngine();else $('eng').textContent='Already up to date.'}catch(x){$('eng').textContent=msg(x)}$('eget').disabled=false;refreshEngine()};
+$('eforce').onclick=async()=>{const f=$('eforce').dataset.fam;if(f&&confirm(`Install SimulationCraft ${f}? It may be a PTR/beta build whose data differs from the live game.`))await installEngine({family:f})};
+// Startup: look for a newer simc build (retail line only) and propose it with its version number; dismissed per build.
+const DISMISS='lb_simc_dismissed';
+async function checkEngineAtStart(){let c;try{c=await api.engineCheck()}catch{return}showNewer(c);if(!c.latest||c.upToDate)return;
+ let d='';try{d=localStorage.getItem(DISMISS)||''}catch{}if(d===c.latest.hash)return;
+ const iv=c.installedVersion,have=iv?`${iv.simc}${iv.git?' · build '+iv.git:''}${iv.hotfix?' · hotfix '+iv.hotfix:''}`:'unknown build';
+ $('ubtxt').textContent=c.hasSimc?`SimulationCraft update available: ${fmtBuild(c.latest)}. Installed: ${have}.`:`No simc is selected. Download SimulationCraft ${fmtBuild(c.latest)}?`;
+ $('ub_go').textContent=c.hasSimc?'Update now':'Download';$('ubanner').hidden=false;$('ub_go').dataset.h=c.latest.hash}
+$('ub_go').onclick=async()=>{$('ub_go').disabled=true;$('ubtxt').textContent='Downloading SimulationCraft… (see the Activity log tab)';const ok=await installEngine();$('ub_go').disabled=false;if(!ok)$('ubtxt').textContent='The download failed: '+$('eng').textContent};
+$('ub_later').onclick=()=>{try{localStorage.setItem(DISMISS,$('ub_go').dataset.h||'')}catch{}$('ubanner').hidden=true};
+$('uchk').onclick=async()=>{$('ust').textContent='Checking…';const r=await api.updateCheck();
+  $('ust').textContent={dev:'Updates only work in the installed app.',current:`Up to date (${r.current}).`,available:`Version ${r.version} is available.`,error:r.message||'Update check failed.',idle:''}[r.state]||'';
+  if(r.state==='available'&&confirm(`Install LocalBots ${r.version} and restart?`))api.updateInstall().catch(x=>$('ust').textContent=msg(x))};
+refreshEngine();setTimeout(checkEngineAtStart,1500);
+// Startup: new LocalBots release on GitHub (installed app only; silent in development and on network errors). Dismissed per version.
+async function checkAppAtStart(){let r;try{r=await api.updateCheck()}catch{return}if(!r||r.state!=='available')return;
+ let d='';try{d=localStorage.getItem('lb_app_dismissed')||''}catch{}if(d===r.version)return;
+ $('abtxt').textContent=`LocalBots ${r.version} is available (you have ${r.current}).`;$('ab_go').dataset.v=r.version;$('abanner').hidden=false}
+$('ab_go').onclick=async()=>{$('ab_go').disabled=true;$('abtxt').textContent='Downloading the update… LocalBots restarts when it is ready.';try{await api.updateInstall()}catch(x){$('abtxt').textContent='Update failed: '+msg(x);$('ab_go').disabled=false}};
+$('ab_later').onclick=()=>{try{localStorage.setItem('lb_app_dismissed',$('ab_go').dataset.v||'')}catch{}$('abanner').hidden=true};
+setTimeout(checkAppAtStart,4000);
+const RB={bloodlust:'Bloodlust',arcane_intellect:'Arcane Intellect',battle_shout:'Battle Shout',power_word_fortitude:'Power Word: Fortitude',mark_of_the_wild:'Mark of the Wild',skyfury:'Skyfury',mystic_touch:'Mystic Touch',chaos_brand:'Chaos Brand',hunters_mark:'Hunter’s Mark'};
+$('rbuffs').innerHTML=Object.entries(RB).map(([k,v])=>`<label class="in"><input type="checkbox" class="rb" value="${k}" checked>${v}</label>`).join('');
+$('raid').onchange=()=>$('rbuffs').hidden=$('raid').value!=='custom';
+const getFight=()=>({boss:$('boss').value,difficulty:$('bdiff').value,fightStyle:$('fs').value,targets:+$('tg').value||1,duration:+$('dur').value||300,vary:Math.min(100,Math.max(0,+$('vary').value||0))/100,
+ raid:$('raid').value,raidOn:[...document.querySelectorAll('.rb:checked')].map(c=>c.value),flask:$('c_flask').value,food:$('c_food').value,potion:$('c_potion').value,rune:$('c_rune').value,noCons:$('nocons').checked,extra:$('extra').value});
+
+
+async function loadLoot(){lootInfo=await api.lootInfo();$('lootst').textContent=lootInfo?'Data from '+new Date(lootInfo.builtAt).toLocaleDateString('en-GB'):'No data yet: click the button.';
+ renderCons();renderCrafted();
+ const C=lootInfo?.consumables;$('conshint').textContent=C?'Suggested names come from game data; if simc rejects one, copy the name from your export.':'Suggestions appear after “Update loot data”.';
+ $('dls').innerHTML=C?Object.entries(C).map(([k,v])=>`<datalist id="dl_${k}">${v.map(o=>`<option value="${esc(o.value)}" label="${esc(o.label)}"></option>`).join('')}</datalist>`).join(''):'';
+ const T=lootInfo?.tiers||[];$('tier').innerHTML=T.length?T.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('')+'<option value="">All instances</option>':'<option value="">All instances (update loot data for tiers)</option>';
+ renderInst()}
+function renderInst(){const f=$('ifilt').value.toLowerCase(),tier=(lootInfo?.tiers||[]).find(t=>t.id===$('tier').value),inT=tier?new Set(tier.instances):null,keep=new Set([...document.querySelectorAll('.ins:checked')].map(c=>c.value));
+ $('inst').innerHTML=(lootInfo?lootInfo.instances:[]).filter(i=>keep.has(i.id)||((!inT||inT.has(i.id))&&i.name.toLowerCase().includes(f))).slice(0,60).map(i=>`<label class="in"><input type="checkbox" class="ins" value="${i.id}" ${keep.has(i.id)?'checked':''}>${esc(i.name)} <span class="it">(${i.items})</span><select class="isrc" data-i="${i.id}" style="margin-left:auto;max-width:150px;font-size:11px"><option value="custom">Custom ilvl</option>${prog.sources.map(s=>`<option value="${s.id}" ${instSrc[i.id]===s.id?'selected':''}>${esc(s.label)}</option>`).join('')}</select></label>`).join('')}
+$('inst').onchange=e=>{if(e.target.classList.contains('isrc'))instSrc[e.target.dataset.i]=e.target.value};
+$('tier').onchange=renderInst;$('ifilt').oninput=renderInst;$('isel').onclick=()=>document.querySelectorAll('.ins').forEach(c=>c.checked=true);$('inone').onclick=()=>document.querySelectorAll('.ins').forEach(c=>c.checked=false);
+$('upd').onclick=async()=>{$('upd').disabled=true;try{await api.lootUpdate();await loadLoot()}catch(e){$('lootst').textContent=msg(e)}$('upd').disabled=false};
+
+api.onLog(l=>{const e=$('log');e.textContent+=l+'\n';e.scrollTop=e.scrollHeight;if(e.textContent.length>200000)e.textContent=e.textContent.slice(-150000)});
+$('stop').onclick=()=>api.cancel();
+$('logfile').onclick=async()=>{const ok=await api.openLog().catch(()=>false);if(!ok)$('logfile').textContent='No log file yet'};
+
+let pT0=0,pTimer=null,pPct=null,pLabel='Starting…';
+const mmss=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+function drawProg(){const el=(Date.now()-pT0)/1000;$('ptxt').textContent=pPct==null?pLabel:`${pLabel} — ${Math.round(pPct*100)} %`;
+ $('ptime').textContent=mode!=='bis'&&pPct>0.05&&pPct<1?`${mmss(el)} · ~${mmss(el/pPct*(1-pPct))} left`:mmss(el);
+ const b=$('bar');b.classList.toggle('ind',pPct==null);if(pPct!=null){$('fill').style.width=(pPct*100).toFixed(1)+'%';b.setAttribute('aria-valuenow',Math.round(pPct*100))}}
+function startProg(){pT0=Date.now();pPct=null;pLabel='Starting…';drawProg();clearInterval(pTimer);pTimer=setInterval(drawProg,1000)}
+function endProg(ok){clearInterval(pTimer);pPct=ok?1:0;pLabel=ok?'Done':'Stopped';drawProg()}
+api.onProgress(p=>{pPct=pPct==null?p.pct:Math.max(pPct,p.pct);pLabel=p.label;drawProg()});
+
+const lootArgs=()=>({instanceIds:[...document.querySelectorAll('.ins:checked')].map(c=>c.value),ilvl:+$('ilvl').value,armor:$('arm').value,includeWeapons:$('wp').checked,instanceSources:{...instSrc},upgrade:$('upg').value});
+
+// Wowhead icons + tooltips (script loaded from wow.zamimg.com when enabled; links work without it).
+const wl=(label,wh)=>wh?`<a class="wh" href="https://www.wowhead.com/${esc(wh.split('&')[0])}" data-wowhead="${esc(wh)}" target="_blank" rel="noopener">${esc(label)}</a>`:esc(label);
+let whOn=true;try{whOn=localStorage.getItem('lb_wh')!=='0'}catch{}
+function whRefresh(){try{const w=window.$WowheadPower||(window.WH&&WH.Tooltips);w&&w.refreshLinks&&w.refreshLinks()}catch{}}
+function loadWh(){if(!whOn||window.__whLoading)return;window.__whLoading=true;window.whTooltips={colorLinks:false,iconizeLinks:true,renameLinks:false,iconSize:'small'};
+ const s=document.createElement('script');s.src='https://wow.zamimg.com/js/tooltips.js';s.onload=whRefresh;s.onerror=()=>{window.__whLoading=false};document.head.appendChild(s)}
+$('whon').checked=whOn;$('whon').onchange=()=>{whOn=$('whon').checked;try{localStorage.setItem('lb_wh',whOn?'1':'0')}catch{}if(whOn)loadWh()};
+{let t=0;new MutationObserver(()=>{clearTimeout(t);t=setTimeout(whRefresh,120)}).observe($('res'),{childList:true,subtree:true})}
+loadWh();
+// simc HTML report of the best result
+let curReport=null;
+function setRep(f){curReport=f||null;$('rep').hidden=!curReport;$('rep').textContent='Open simc report'}
+$('rep').onclick=async()=>{const ok=await api.openReport(curReport).catch(()=>false);if(!ok)$('rep').textContent='Report file not found'};
+const CONSN={flask:'Flask',food:'Food',potion:'Potion',augmentation:'Augment rune'};
+const consBlock=r=>r.consumablesRank&&r.consumablesRank.length?'<h1 style="margin-top:14px">Consumables (best first)</h1>'+r.consumablesRank.map(c=>`<div class="r"><b>${esc(CONSN[c.slot]||c.slot)}</b>: ${wl(c.current,c.wh)} <span class="it">(chosen)</span>${c.options.length?`<div class="it" style="padding-left:1.2em">${c.options.map(o=>`${wl(o.label,o.wh)} <span class="${o.delta>=0?'pos':'neg'}">${sgn(o.delta)} (${o.pct.toFixed(2)} %)</span>`).join('<br>')}</div>`:''}</div>`).join(''):'';
+const consCopy=r=>(r.consumablesRank||[]).map(c=>`\n${CONSN[c.slot]||c.slot}: ${c.current} (chosen); others: `+c.options.map(o=>`${o.label} ${sgn(o.delta)}`).join(', ')).join('');
+let copyText='',fightLabel='';
+const gainBar=(d,max)=>`<div class="gain ${d<0?'neg':''}" style="width:${max>0?Math.max(2,Math.min(100,Math.abs(d)/max*100)):2}%"></div>`;
+function setCopy(t){copyText=t;$('copy').hidden=!t}
+function showTop(r){setRep(r.report);const mx=Math.max(...r.rows.map(x=>Math.abs(x.delta)),0);$('sum').textContent=`Baseline ${fmt(r.base)} DPS · ${r.total} combinations tested${fightLabel}`;
+ $('res').innerHTML=r.rows.map((x,i)=>`<div class="r"><b><span class="rk">${i+1}.</span>${fmt(x.mean)} DPS</b> <span class="${x.delta>=0?'pos':'neg'}">${sgn(x.delta)}</span> <span class="it">±${fmt(x.err)}</span><div class="it" style="padding-left:1.6em">${x.items.map(t=>`${t.slot}: ${wl(t.label,t.wh)}${t.stats?` <span class="st">· ${statTxt(t.stats)}</span>`:''}`).join('<br>')}</div>${gainBar(x.delta,mx)}</div>`).join('')||'<div class="empty">No result.</div>';
+ setCopy(`Top Gear · baseline ${fmt(r.base)} DPS${fightLabel}\n`+r.rows.map((x,i)=>`${i+1}. ${fmt(x.mean)} DPS (${sgn(x.delta)})\n`+x.items.map(t=>`   ${t.slot}: ${t.label}${t.stats?' ('+statTxt(t.stats).replace(/&amp;/g,'&')+')':''}`).join('\n')).join('\n'))}
+function showDrop(r){setRep(r.report);const mx=Math.max(...r.rows.map(x=>Math.abs(x.delta)),0);$('sum').textContent=`Baseline ${fmt(r.base)} DPS · ${r.total} simulations${fightLabel}`;
+ $('res').innerHTML=r.rows.map((x,i)=>`<div class="r"><b><span class="rk">${i+1}.</span>${wl(x.name,x.wh)}</b> <span class="${x.delta>=0?'pos':'neg'}">${sgn(x.delta)} (${x.pct>=0?'+':''}${x.pct.toFixed(2)} %)</span> <span class="it">±${fmt(x.err)}</span><div class="it" style="padding-left:1.6em">${esc(x.slot)} · ${x.sources.map(esc).join(', ')}${x.stats?`<br>${statTxt(x.stats)}`:''}</div>${gainBar(x.delta,mx)}</div>`).join('')||'<div class="empty">No result.</div>';
+ setCopy(`Droptimizer · baseline ${fmt(r.base)} DPS${fightLabel}\n`+r.rows.map((x,i)=>`${i+1}. ${x.name} (${x.slot}) ${sgn(x.delta)} (${x.pct.toFixed(2)} %) — ${x.sources.join(', ')}`).join('\n'))}
+const slotName=s=>s==='gems'?'gems':/^ench:/.test(s)?sln(s.slice(5))+' enchant':s;
+const STN={crit:'Critical strike',haste:'Haste',mastery:'Mastery',versatility:'Versatility'};
+const drBlock=r=>r.dr&&r.dr.length?'<h1 style="margin-top:14px">Secondary stats &amp; diminishing returns</h1><table><tr><th>Stat</th><th>Rating</th><th>% from rating</th><th>After DR</th><th>Next point worth</th></tr>'+r.dr.map(d=>`<tr><td>${STN[d.stat]}</td><td>${fmt(d.rating)}</td><td>${d.raw.toFixed(1)} %</td><td>${d.eff.toFixed(1)} %</td><td class="${d.slope<1?'neg':''}">${Math.round(d.slope*100)} %</td></tr>`).join('')+'</table><div class="it">Diminishing returns start at 30 % from rating (90 % value up to 40 %, then 80, 70, 60, 50 %). Base and talent percentages are not affected.</div>':'';
+const SN={crit:'Crit',haste:'Haste',mastery:'Mastery',vers:'Vers'};
+const statTxt=s=>s?Object.entries(s).map(([k,v])=>{if(k==='ilvl')return 'ilvl '+v;const x=Object.keys(SN).find(n=>k.toLowerCase().includes(n));return `${x?SN[x]:esc(k)} ${fmt(v)}`}).join(' · '):'';
+function showBis(r){setRep(r.report);const g=r.final-r.start;setCopy(`Best in Slot · ${fmt(r.start)} → ${fmt(r.final)} DPS (${sgn(g)})${fightLabel}\n`+r.set.map(s=>`${s.slot}: ${s.label}${s.changed?` (replaces ${s.from})`:''}${s.enh?` [${s.enh}]`:''}`).join('\n')+consCopy(r));$('sum').innerHTML=`<b>${fmt(r.start)} → ${fmt(r.final)} DPS</b> <span class="${g>=0?'pos':'neg'}">${sgn(g)} (${(g/r.start*100).toFixed(2)} %)</span> · ${r.rounds.length} round(s)`+(r.statsNote?`<div class="it" style="margin-top:4px">${esc(r.statsNote)}</div>`:'');
+ $('res').innerHTML=`<table><tr><th>Slot</th><th>Item</th><th>Source</th><th>Replaces</th></tr>${r.set.map(s=>`<tr class="${s.changed?'chg':''}"><td>${esc(s.slot)}</td><td>${wl(s.label,s.wh)}${s.stats?`<div class="it">${statTxt(s.stats)}</div>`:''}${s.enh?`<div class="it">${s.enhChanged?'<b class="pos">●</b> ':''}${esc(s.enh)}</div>`:''}</td><td class="it">${esc(s.src)}</td><td class="it">${s.changed?esc(s.from):''}</td></tr>`).join('')}</table>`+
+ consBlock(r)+drBlock(r)+(r.rounds.length?'<h1 style="margin-top:14px">Iteration history</h1>'+r.rounds.map(x=>`<div class="r"><b>Round ${x.round}</b> <span class="pos">${sgn(x.to-x.from)} DPS</span><div class="it">${x.changes.map(c=>`${esc(slotName(c.slot))}: ${esc(c.from)} → ${esc(c.to)}${c.src?` <i>(${esc(c.src)})</i>`:''}`).join('<br>')}</div></div>`).join(''):'<div class="empty">No upgrade found: your current set is already the best available.</div>')}
+
+
+const SNAME={32:'Crit',36:'Haste',40:'Vers',49:'Mastery'};
+function renderCrafted(){schedCraft();const c=lootInfo?.crafted;if(!c){$('cr_st').textContent='Run “Update loot data” to list craftable items.';return}
+ const keep=new Set([...document.querySelectorAll('.cre:checked')].map(x=>x.value)),keepP=new Set([...document.querySelectorAll('.crp:checked')].map(x=>x.value)),first=!document.querySelector('.crp');
+ $('cr_st').textContent=`${c.items} craftable base item(s) known · crafted item level ${c.ilvl}`+(c.items?'':' — none found: add some under "extraItems" in Edit crafted rules');
+ $('cr_emb').innerHTML=c.emb.map(e=>`<label class="in"><input type="checkbox" class="cre" value="${esc(e.name)}" ${keep.has(e.name)?'checked':''}>${esc(e.name)} <span class="it">(${e.slots.join(', ')}${e.unverified?' · slots unverified':''})</span></label>`).join('')||'<div class="it">No embellishment rules.</div>';
+ $('cr_pairs').innerHTML=c.pairs.map(p=>`<label class="in" style="display:inline-flex;margin-right:8px"><input type="checkbox" class="crp" value="${p}" ${first||keepP.has(p)?'checked':''}>${p.split('/').map(s=>SNAME[s]||s).join(' / ')}</label>`).join('');
+}
+$('cr_edit').onclick=()=>api.editCrafted();
+// Preview of the pieces the Crafted card adds (per slot: base items and number of variants), refreshed when the card or the export changes.
+var crTimer=0;
+async function refreshCraftPrev(){const el=$('cr_prev');if(!$('cr_on').checked){window.__crTotal=null;el.textContent='Tick “Add crafted items” to see which pieces are added.';return}
+ const r=await api.craftPreview({text:$('txt').value,crafted:getCrafted()}).catch(e=>({error:msg(e)}));
+ if(r.error){el.textContent=r.error;return}
+ window.__crTotal=r.total;el.innerHTML=`<b>${r.total}</b> crafted variant(s) added to the pool, from your class's armor and accessories (every craftable piece × each ticked stat pair × each embellishment allowed in its slot):`+
+  r.slots.map(s=>`<div style="margin-top:3px"><b>${esc(s.slot)}</b> · ${s.n} variant(s)<br>${s.items.map(esc).join(', ')}</div>`).join('')}
+function schedCraft(){clearTimeout(crTimer);crTimer=setTimeout(refreshCraftPrev,300)}
+$('cr_on').closest('details').addEventListener('change',schedCraft);$('txt').addEventListener('input',schedCraft);
+const getCrafted=()=>({on:$('cr_on').checked,emb:[...document.querySelectorAll('.cre:checked')].map(x=>x.value),pairs:[...document.querySelectorAll('.crp:checked')].map(x=>x.value),plain:$('cr_plain').checked});
+// ---- Enchants & gems (Best in Slot) ----
+const getEnh=()=>({ench:$('en_on').checked,gems:$('gm_on').checked,add:[...document.querySelectorAll('.jb:checked')].map(c=>c.value)});
+var enTimer=0;const SLN={main_hand:'main hand',off_hand:'off hand',finger1:'ring 1',finger2:'ring 2'};const sln=s=>SLN[s]||s;
+async function refreshEnhPrev(){const el=$('en_prev'),o=getEnh();if(!o.ench&&!o.gems){el.textContent='Tick an option to see what will be tested.';return}
+ const r=await api.enhPreview({text:$('txt').value,add:o.add}).catch(e=>({error:msg(e)}));
+ if(r.error){el.textContent=r.error;return}if(r.empty){el.textContent='Paste an export first.';return}
+ el.innerHTML=(o.ench?(r.ench.length?r.ench.map(x=>`<div><b>${esc(sln(x.slot))}</b>: ${x.names.map(esc).join(', ')}</div>`).join(''):'<div>No enchant to test for this character.</div>'):'')+
+  (o.gems?`<div style="margin-top:3px"><b>${r.sockets.reduce((a,x)=>a+x[1],0)} socket(s)</b> (${r.sockets.map(([s,n])=>sln(s)+(n>1?' ×'+n:'')).join(', ')||'none'}) · one diamond: ${r.diamonds.map(esc).join(' or ')} · ${r.gems.length} gems</div>`:'')+
+  `<div style="margin-top:3px">Enchant and gem data: simc build ${esc(r.build||'?')}.</div>`}
+function schedEnh(){clearTimeout(enTimer);enTimer=setTimeout(refreshEnhPrev,300)}
+$('s_enh').addEventListener('change',()=>{schedEnh();try{localStorage.setItem('lb_enh',JSON.stringify(getEnh()))}catch{}});$('txt').addEventListener('input',schedEnh);
+try{const e=JSON.parse(localStorage.getItem('lb_enh')||'null');if(e){$('en_on').checked=!!e.ench;$('gm_on').checked=!!e.gems;document.querySelectorAll('.jb').forEach(c=>c.checked=(e.add||[]).includes(c.value))}}catch{}
+schedEnh();
+const CATS=[['flask','Flasks','flask'],['food','Food','food'],['potion','Potions','potion'],['augmentation','Augment runes','rune']];
+const consSel={flask:new Set(),food:new Set(),potion:new Set(),augmentation:new Set()},consFilter={};
+function renderCons(){$('consBox').innerHTML=CATS.map(([k,t])=>`<div style="margin-bottom:8px"><div style="font-weight:600;font-size:12px">${t} <span class="it" id="cn_${k}"></span></div><input class="cf" data-k="${k}" placeholder="Filter, or type a custom name + Enter" style="width:100%;margin:3px 0"><div id="cl_${k}" style="max-height:110px;overflow:auto"></div></div>`).join('');CATS.forEach(([k])=>renderList(k))}
+function renderList(k){const C=lootInfo?.consumables||{},ck=CATS.find(c=>c[0]===k)[2],f=(consFilter[k]||'').toLowerCase(),known=C[ck]||[];
+ const opts=[{value:'disabled',label:'(none)'},...known,...[...consSel[k]].filter(v=>v!=='disabled'&&!known.some(o=>o.value===v)).map(v=>({value:v,label:v+' (custom)'}))];
+ $('cl_'+k).innerHTML=opts.filter(o=>consSel[k].has(o.value)||!f||(o.label+o.value).toLowerCase().includes(f)).map(o=>`<label class="in"><input type="checkbox" class="cs" data-k="${k}" value="${esc(o.value)}" ${consSel[k].has(o.value)?'checked':''}>${esc(o.label)}</label>`).join('');updCount()}
+function updCount(){let n=0;for(const[k]of CATS){const c=consSel[k].size;$('cn_'+k).textContent=c?`(${c} selected)`:'';n+=c}$('combo').textContent=n?`${n} consumable option${n>1?'s':''} selected`:''}
+$('consBox').oninput=e=>{if(e.target.classList.contains('cf')){consFilter[e.target.dataset.k]=e.target.value;renderList(e.target.dataset.k)}};
+$('consBox').onkeydown=e=>{if(e.key==='Enter'&&e.target.classList.contains('cf')){const k=e.target.dataset.k,v=e.target.value.trim();if(/^[\w:.\-]+$/.test(v)){consSel[k].add(v);consFilter[k]='';renderList(k);const i=document.querySelector(`.cf[data-k=${k}]`);i.value='';i.focus()}}};
+$('consBox').onchange=e=>{if(e.target.classList.contains('cs')){const s=consSel[e.target.dataset.k];e.target.checked?s.add(e.target.value):s.delete(e.target.value);updCount()}};
+
+// ---- Talent builds found in the export (the active talents= line + saved loadouts) ----
+let talBuilds=[],talSel=new Set(),talTimer=0;
+function renderTal(){const el=$('tal');$('s_tal').hidden=talBuilds.length<2;if(talBuilds.length<2)return;
+ if(![...talSel].some(s=>talBuilds.some(b=>b.string===s&&b.usable)))talSel=new Set(talBuilds.filter(b=>b.active&&b.usable).map(b=>b.string));
+ el.innerHTML=  talBuilds.map(b=>`<label class="in" title="${esc(b.string)}"><input type="checkbox" class="tb" value="${esc(b.string)}" ${talSel.has(b.string)?'checked':''} ${b.usable?'':'disabled'}>${esc(b.name)}${b.active?' <span class="it">(in the export)</span>':''}${b.usable?'':' <span class="it">(other specialization, unusable)</span>'}</label>`).join('')+
+  `<div class="it" style="margin-top:3px">${talSel.size>1?`${talSel.size} builds selected: each is simulated separately, so the run takes ${talSel.size}× as long.`:'Pick one build to simulate it instead of the exported one, or several to compare them.'}</div>`}
+async function refreshWeap(){try{const w=await api.weaponsOf($('txt').value);$('wtxt').textContent=w?`${cap(w.cls)} can wield: ${w.names.join(', ')}${w.shield?' · shields':''}.`:''}catch{$('wtxt').textContent=''}}
+async function refreshTal(){refreshWeap();try{talBuilds=await api.talents($('txt').value)}catch{talBuilds=[]}renderTal()}
+$('tal').onchange=e=>{if(!e.target.classList.contains('tb'))return;e.target.checked?talSel.add(e.target.value):talSel.delete(e.target.value);renderTal()};
+$('txt').addEventListener('input',()=>{clearTimeout(talTimer);talTimer=setTimeout(refreshTal,300)});
+const talArgs=()=>talBuilds.length>1?talBuilds.filter(b=>talSel.has(b.string)&&b.usable).map(b=>({string:b.string})):[];
+// Several builds: comparison table on top, the full result of the clicked build below.
+function showMulti(m,key){const hd=r=>key==='top'?(r.rows[0]?r.rows[0].mean:r.base):key==='bis'?r.final:r.base;
+ const order=m.builds.map((b,i)=>i).sort((a,b)=>hd(m.builds[b].result)-hd(m.builds[a].result)),top=hd(m.builds[order[0]].result);
+ const draw=i=>{const b=m.builds[i];({top:showTop,drop:showDrop,bis:showBis})[key](b.result);const body=$('res').innerHTML,sum=$('sum').innerHTML,cp=copyText;
+  $('sum').innerHTML=`<b>${esc(b.name)}</b> · `+sum;
+  $('res').innerHTML=`<table><tr><th>Talent build</th><th>${key==='top'?'Best DPS':key==='bis'?'Final DPS':'Current DPS'}</th><th>vs best</th></tr>`+order.map(j=>{const v=hd(m.builds[j].result);return `<tr class="${j===i?'chg':''}" data-bi="${j}" style="cursor:pointer"><td>${esc(m.builds[j].name)}</td><td>${fmt(v)}</td><td class="${v>=top?'pos':'neg'}">${v>=top?'best':sgn(v-top)}</td></tr>`}).join('')+`</table><div class="it" style="margin:4px 0 10px">Click a build to see its detailed result.</div>`+body;
+  setCopy(order.map(j=>`${m.builds[j].name}: ${fmt(hd(m.builds[j].result))} DPS`).join('\n')+`\n\n[${b.name}]\n`+cp)};
+ $('res').onclick=e=>{const r=e.target.closest('[data-bi]');if(r)draw(+r.dataset.bi)};draw(order[0])}
+const showAny=(key,r)=>r.builds?showMulti(r,key):({top:showTop,drop:showDrop,bis:showBis})[key](r);
+
+// ---- Layout helpers: result tabs, settings dialog, accordion summaries ----
+// Threads: all logical processors minus the ones left free (default 6) so WoW and other apps keep running.
+const thrRes=()=>Math.max(0,Math.floor(+$('rsv').value)||0),thrCount=()=>Math.max(1,(navigator.hardwareConcurrency||8)-thrRes());
+function thrUpd(){$('thrinfo').textContent=`Simulations use ${thrCount()} of ${navigator.hardwareConcurrency||8} logical processors.`}
+$('rsv').oninput=thrUpd;thrUpd();
+// Theme: auto (system) / light / dark, remembered in this browser.
+function setTheme(t){if(t==='auto')delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=t;try{localStorage.setItem('lb_theme',t)}catch{}}
+{let t='auto';try{t=localStorage.getItem('lb_theme')||'auto'}catch{}$('theme').value=t;setTheme(t)}
+$('theme').onchange=()=>setTheme($('theme').value);
+function showTab(t){document.querySelectorAll('.tab').forEach(b=>{const on=b.dataset.tab===t;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
+ for(const k of ['res','hist','log'])$('p_'+k).hidden=k!==t;$('copy').style.display=t==='res'?'':'none'}
+document.querySelector('.tabs').onclick=e=>{const b=e.target.closest('.tab');if(b)showTab(b.dataset.tab)};
+const collapseSections=()=>document.querySelectorAll('#setup details.sec').forEach(d=>d.open=false);
+$('colall').onclick=collapseSections;$('expall').onclick=()=>document.querySelectorAll('#setup details.sec:not([hidden])').forEach(d=>d.open=true);
+$('setbtn').onclick=()=>$('setdlg').showModal();$('setclose').onclick=()=>$('setdlg').close();
+$('setdlg').addEventListener('click',e=>{if(e.target===$('setdlg'))$('setdlg').close()});
+new MutationObserver(()=>{$('setdot').hidden=!!$('simc').textContent&&$('simc').textContent!=='No simc selected'}).observe($('simc'),{childList:true,characterData:true,subtree:true});
+const cap=t=>t?t[0].toUpperCase()+t.slice(1):'';
+function updSum(){const set=(k,t)=>{const e=$('sm_'+k);if(e)e.textContent=t};
+ const t=$('txt').value,cls=(/^\s*(warrior|paladin|deathknight|hunter|shaman|evoker|rogue|monk|druid|demonhunter|priest|mage|warlock)\s*=/mi.exec(t)||[])[1],spec=(/^\s*spec\s*=\s*(\w+)/mi.exec(t)||[])[1];
+ let e=0,b=0;for(const l of t.split(/\r?\n/)){const x=l.trim();if(/^\w+=,?id=/.test(x))e++;else if(/^#\s*\w+=,?id=/.test(x))b++}
+ set('char',t.trim()?`${cap(spec)} ${cap(cls)} · ${e} equipped · ${b} in bags`:'paste the /simc export');
+ const sel=talBuilds.filter(x=>talSel.has(x.string)&&x.usable);set('tal',sel.length>1?`${sel.length} builds compared`:sel[0]?sel[0].name:'');
+ const cat=$('cat').checked?('Catalyst'+($('catmax').value!==''?` (max ${$('catmax').value})`:'')):'no Catalyst';
+ set('opt',[mode==='top'?`${$('top').value} finalists`:mode==='bis'?`${$('rounds').value} rounds`:'',cat].filter(Boolean).join(' · '));
+ const bo=bosses.find(x=>x.id===$('boss').value);
+ set('fight',(bo?`${bo.name.split(' — ')[0]} (${($('bdiff').selectedOptions[0]||{}).textContent||''})`:`${$('fs').selectedOptions[0].textContent.split(' (')[0]}, ${$('tg').value} target${+$('tg').value>1?'s':''}`)+` · ${$('dur').value}s`);
+ const ov=['c_flask','c_food','c_potion','c_rune'].filter(i=>$(i).value).length;
+ set('buff',[{full:'full raid buffs',none:'no raid buffs',custom:'custom raid buffs'}[$('raid').value],$('nocons').checked?'no consumables':ov?`${ov} override${ov>1?'s':''}`:'',$('extra').value.trim()?'extra options':''].filter(Boolean).join(' · '));
+ const ni=document.querySelectorAll('.ins:checked').length;set('loot',ni?`${ni} instance${ni>1?'s':''}`+($('upg').value==='max'?' · fully upgraded':''):mode==='bis'?'bag items only':'pick instances');
+ set('craft',$('cr_on').checked?(window.__crTotal!=null?`${window.__crTotal} variants`:'on'):'off');
+ const nc=Object.values(consSel).reduce((a,x)=>a+x.size,0);set('cons',(nc?`${nc} option${nc>1?'s':''}`:'keep current')+` · from round ${$('consfrom').value}`);
+ const eo=getEnh();set('enh',[eo.ench?'enchants':'',eo.gems?'gems'+(eo.add.length?` (+${eo.add.length} socket${eo.add.length>1?'s':''})`:''):''].filter(Boolean).join(' · ')||'keep current')}
+['input','change','click'].forEach(ev=>document.addEventListener(ev,()=>setTimeout(updSum,0)));
+// Pasting a recognisable export folds the Character section away (its summary line stays); typing never folds it.
+$('txt').addEventListener('paste',()=>setTimeout(()=>{if(/^\s*\w+\s*=\s*"/m.test($('txt').value)&&/^#?\s*\w+=,?id=/m.test($('txt').value))$('s_char').open=false},600));
+$('go').onclick=async()=>{
+ collapseSections();showTab('res');setCopy('');setRep(null);const _f=getFight(),_b=bosses.find(b=>b.id===_f.boss);fightLabel=_b?` · ${_b.name.split(' — ')[0]} (${$('bdiff').selectedOptions[0]?.textContent.split(' ')[0]||''})`:` · ${$('fs').selectedOptions[0].textContent.split(' (')[0]}`;
+ $('go').disabled=true;$('stop').disabled=false;$('log').textContent='';$('sum').textContent='';$('res').innerHTML='<div class="empty">Simulation running…</div>';startProg();let ok=false;
+ const base={text:$('txt').value,threads:thrCount(),reserve:thrRes(),report:$('rep_on').checked,fight:getFight(),precision:$('prec').value,catalyst:{on:$('cat').checked,max:$('catmax').value===''?null:+$('catmax').value},crafted:getCrafted(),builds:talArgs()};
+ try{
+  if(mode==='top'){const r=await api.run({...base,topN:+$('top').value});showAny('top',r);pushHist('Top Gear',r.builds?r.builds.length+' talent builds':r.rows[0]?`${fmt(r.rows[0].mean)} (${sgn(r.rows[0].delta)})`:'no result',r)}
+  else if(mode==='drop'){const r=await api.drop({...base,...lootArgs()});showAny('drop',r);pushHist('Droptimizer',r.builds?r.builds.length+' talent builds':r.rows[0]?`${r.rows[0].name} ${sgn(r.rows[0].delta)}`:'no result',r)}
+  else{const r=await api.bis({...base,...lootArgs(),consumables:Object.fromEntries(Object.entries(consSel).map(([k,s])=>[k,[...s]])),maxRounds:+$('rounds').value||5,consFrom:+$('consfrom').value||2,enhance:getEnh()});showAny('bis',r);pushHist('Best in Slot',r.builds?r.builds.length+' talent builds':`${fmt(r.final)} (${sgn(r.final-r.start)})`,r)}
+  ok=true;
+ }catch(e){const m=msg(e);$('res').innerHTML=/^Cancelled/i.test(m)?'<div class="empty">Cancelled.</div>':`<div class="empty neg" style="white-space:pre-wrap">${esc(m)}</div>`}
+ endProg(ok);$('go').disabled=false;$('stop').disabled=true};
+const HK='lb_hist';
+const loadHist=()=>{try{return JSON.parse(localStorage.getItem(HK)||'[]')}catch{return[]}};
+function renderHist(){const H=loadHist();$('tabh').textContent='History'+(H.length?` (${H.length})`:'');
+ $('hist').innerHTML=!H.length?'<div class="empty">No runs yet.</div>':H.map((h,i)=>`<button class="hrow" data-i="${i}" title="Show these results again"><span>${new Date(h.t).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} · ${esc(h.mode)}${esc(h.fight)}</span><b>${esc(h.head)}</b></button>`).join('')}
+const trimR=r=>({...r,rows:r.rows?r.rows.slice(0,15):undefined,rounds:r.rounds?r.rounds.slice(0,12):undefined});
+function pushHist(mode,head,r){try{const H=loadHist();H.unshift({t:Date.now(),mode,fight:fightLabel,head,r:r.builds?{builds:r.builds.map(b=>({...b,result:trimR(b.result)}))}:trimR(r)});localStorage.setItem(HK,JSON.stringify(H.slice(0,10)))}catch{}renderHist()}
+$('hist').onclick=e=>{const b=e.target.closest('.hrow');if(!b)return;const h=loadHist()[+b.dataset.i];if(!h)return;fightLabel=h.fight;showTab('res');showAny(h.mode==='Top Gear'?'top':h.mode==='Droptimizer'?'drop':'bis',h.r)};
+$('hclear').onclick=()=>{try{localStorage.removeItem(HK)}catch{}renderHist()};renderHist();
+$('copy').onclick=async()=>{try{await navigator.clipboard.writeText(copyText);$('copy').textContent='Copied';setTimeout(()=>$('copy').textContent='Copy',1500)}catch{$('copy').textContent='Copy failed'}};
+document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter'&&!$('go').disabled)$('go').click()});
+try{const t=localStorage.getItem('lb_export');if(t&&!$('txt').value){$('txt').value=t;$('txt').dispatchEvent(new Event('input'))}}catch{}
+$('txt').addEventListener('input',()=>{try{localStorage.setItem('lb_export',$('txt').value)}catch{}});
+showTab('res');updSum();
+</script></body></html>

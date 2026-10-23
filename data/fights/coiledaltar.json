@@ -1,0 +1,238 @@
+{
+ "id": "coiledaltar",
+ "name": "The Coiled Altar",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/CoiledAltar.lua + Icy Veins boss guide (mechanics).",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing, a second boss pool (the sim fights one target).",
+ "defaultDuration": 360,
+ "stages": [
+  {
+   "id": 1,
+   "atPct": 0
+  },
+  {
+   "id": 2,
+   "atPct": 33
+  },
+  {
+   "id": 3,
+   "atPct": 66
+  }
+ ],
+ "mechanics": {
+  "toxic": {
+   "label": "Toxic Deluge (collect orbs)",
+   "type": "movement",
+   "duration": 3,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration"
+   ]
+  },
+  "axe": {
+   "label": "Axegrinder (avoid the axes)",
+   "type": "movement",
+   "duration": 3,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration"
+   ]
+  },
+  "guillotine": {
+   "label": "Guillotine (group soak, step out of Widow's Kiss)",
+   "type": "movement",
+   "duration": 3,
+   "chance": 0.4,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance"
+   ]
+  },
+  "gloombomb": {
+   "label": "Gloombomb (ranged run away)",
+   "type": "movement",
+   "duration": 5,
+   "chance": 0.3,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance"
+   ]
+  },
+  "dreadmarch": {
+   "label": "Dreadmarch (guide the ghosts)",
+   "type": "movement",
+   "duration": 4,
+   "chance": 0.3,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance"
+   ]
+  },
+  "spiritcackle": {
+   "label": "Spiritcackle (interrupt add)",
+   "type": "adds",
+   "stage": 2,
+   "count": 1,
+   "health": 800000,
+   "duration": 20,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "health",
+    "duration"
+   ]
+  },
+  "soulbinding": {
+   "label": "Soulbinding: Zul'jan takes +100% damage (assumed 20s at the start of stage 3)",
+   "type": "vulnerable",
+   "stage": 3,
+   "multiplier": 2.0,
+   "duration": 20,
+   "timesFrom": "guide",
+   "assumed": [
+    "times",
+    "duration"
+   ]
+  }
+ },
+ "difficulties": {
+  "mythic": {
+   "label": "Mythic",
+   "times": {
+    "toxic": {
+     "1": [
+      2,
+      43
+     ]
+    },
+    "axe": {
+     "1": [
+      12
+     ]
+    },
+    "guillotine": {
+     "1": [
+      43
+     ],
+     "3": [
+      17,
+      56,
+      64,
+      100
+     ]
+    },
+    "gloombomb": {
+     "2": [
+      18,
+      37
+     ],
+     "3": [
+      24,
+      38,
+      44,
+      63
+     ]
+    },
+    "dreadmarch": {
+     "2": [
+      6,
+      34
+     ],
+     "3": [
+      48,
+      55,
+      97,
+      104
+     ]
+    },
+    "spiritcackle": {
+     "2": [
+      13,
+      33
+     ],
+     "3": [
+      62,
+      90,
+      97
+     ]
+    },
+    "soulbinding": {
+     "3": [
+      0
+     ]
+    }
+   }
+  },
+  "heroic": {
+   "label": "Heroic / Normal",
+   "times": {
+    "toxic": {
+     "1": [
+      2,
+      28,
+      35,
+      42
+     ]
+    },
+    "axe": {
+     "1": [
+      12
+     ]
+    },
+    "guillotine": {
+     "1": [
+      28,
+      35
+     ],
+     "3": [
+      17
+     ]
+    },
+    "gloombomb": {
+     "2": [
+      20,
+      22,
+      38,
+      40
+     ],
+     "3": [
+      26,
+      33,
+      51,
+      67,
+      86
+     ]
+    },
+    "dreadmarch": {
+     "2": [
+      6,
+      34
+     ],
+     "3": [
+      38,
+      43,
+      44,
+      49,
+      61,
+      88,
+      101,
+      108
+     ]
+    },
+    "spiritcackle": {
+     "2": [
+      13,
+      33
+     ],
+     "3": []
+    },
+    "soulbinding": {
+     "3": [
+      0
+     ]
+    }
+   }
+  }
+ }
+}

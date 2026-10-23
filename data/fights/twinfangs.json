@@ -1,0 +1,94 @@
+{
+ "id": "twinfangs",
+ "name": "The Twin Fangs",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/TwinFangs.lua + Icy Veins boss guide (mechanics).",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing, a second boss pool (the sim fights one target).",
+ "defaultDuration": 360,
+ "mechanics": {
+  "emergence": {
+   "label": "Venomous Emergence (3 adds, priority)",
+   "type": "adds",
+   "count": 3,
+   "health": 1000000,
+   "duration": 25,
+   "timesFrom": "guide",
+   "assumed": [
+    "health",
+    "duration",
+    "times"
+   ]
+  },
+  "deluge": {
+   "label": "Caustic Deluge / Blood Torrent (soak globules)",
+   "type": "movement",
+   "duration": 3,
+   "chance": 0.4,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance",
+    "repeat"
+   ]
+  },
+  "depths": {
+   "label": "Stir the Depths (waves)",
+   "type": "movement",
+   "duration": 3,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "repeat"
+   ]
+  },
+  "feast": {
+   "label": "Ravenous Feast (3 soaks with knockback)",
+   "type": "movement",
+   "duration": 6,
+   "chance": 0.4,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance",
+    "repeat"
+   ]
+  },
+  "submerge": {
+   "label": "Intermission: bosses submerged (targetability unconfirmed)",
+   "type": "invulnerable",
+   "duration": 20,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "whether the bosses are targetable"
+   ]
+  }
+ },
+ "difficulties": {
+  "all": {
+   "label": "All difficulties",
+   "times": {
+    "emergence": [
+     45
+    ],
+    "deluge": [
+     8
+    ],
+    "depths": [
+     47
+    ],
+    "feast": [
+     57
+    ],
+    "submerge": [
+     130
+    ]
+   },
+   "repeat": {
+    "emergence": 100,
+    "deluge": 60,
+    "depths": 100,
+    "feast": 100
+   }
+  }
+ }
+}

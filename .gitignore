@@ -1,0 +1,4 @@
+node_modules/
+dist/
+test/inputs.log
+test/ui/*.png

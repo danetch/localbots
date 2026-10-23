@@ -1,0 +1,24 @@
+{
+  "notes": "Edit freely (Crafted gear card > Edit crafted rules). 'ilvl' is the crafted item level tested (331 = max, Myth crafts with Mistcrests). 'statPairs' are crafted_stats ids: 32 crit, 36 haste, 40 versatility, 49 mastery. 'embellishments' are keyed by the lowercase name used in simc's embellishment table; 'slots' use simc slot names ('finger' = both rings). Slots come from community guides (Level Upper) and are UNVERIFIED for entries marked in 'unverified'. 'extraItems' lets you add craftable base items by hand, e.g. {\"id\": 239664, \"name\": \"Arcanoweave Cord\", \"slot\": \"waist\"}; they are used even if the automatic recipe scan finds nothing.",
+  "ilvl": 331,
+  "statPairs": ["32/36", "32/49", "32/40", "36/49", "36/40", "49/40"],
+  "embellishments": {
+    "arcanoweave lining":              { "slots": ["wrist", "back", "waist", "feet"] },
+    "sunfire silk lining":             { "slots": ["wrist", "back", "waist", "feet"] },
+    "snakeskin lining":                { "slots": ["wrist", "back", "waist", "feet"] },
+    "adorned fang":                    { "slots": ["wrist", "waist", "feet"] },
+    "stabilizing gemstone bandolier":  { "slots": ["wrist", "feet"] },
+    "devouring banding":               { "slots": ["wrist", "feet"] },
+    "polished ammolite":               { "slots": ["finger"] },
+    "prismatic focusing iris":         { "slots": ["finger"] },
+    "blessed pango charm":             { "slots": ["finger"] },
+    "darkmoon sigil: hunt":            { "slots": ["main_hand", "off_hand"] },
+    "darkmoon sigil: void":            { "slots": ["main_hand", "off_hand"] },
+    "darkmoon sigil: blood":           { "slots": ["main_hand", "off_hand"] },
+    "darkmoon sigil: rot":             { "slots": ["main_hand", "off_hand"] },
+    "hunter's ritual stone":           { "slots": ["main_hand", "off_hand"] },
+    "coiled snake-eye":                { "slots": ["main_hand"] }
+  },
+  "unverified": ["sunfire silk lining", "snakeskin lining", "darkmoon sigil: blood", "darkmoon sigil: rot", "devouring banding", "stabilizing gemstone bandolier", "blessed pango charm"],
+  "extraItems": []
+}

@@ -1,0 +1,183 @@
+{
+ "id": "ulatek",
+ "name": "Ula'tek",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Ulatek.lua + Icy Veins boss guide (mechanics).",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing, a second boss pool (the sim fights one target).",
+ "defaultDuration": 480,
+ "stages": [
+  {
+   "id": 1,
+   "at": 0
+  },
+  {
+   "id": 2,
+   "at": 138
+  },
+  {
+   "id": 3,
+   "at": 268
+  }
+ ],
+ "mechanics": {
+  "caustic": {
+   "label": "Caustic Waves (move through the gaps)",
+   "type": "movement",
+   "duration": 3,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration"
+   ]
+  },
+  "coils": {
+   "label": "Spectral Coils (split soaks)",
+   "type": "movement",
+   "duration": 4,
+   "chance": 0.5,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance"
+   ]
+  },
+  "heart": {
+   "label": "Rage of the Shackled: Venomous Heart exposed (+100% damage, 20s)",
+   "type": "vulnerable",
+   "multiplier": 2.0,
+   "duration": 20,
+   "timesFrom": "bigwigs",
+   "assumed": []
+  },
+  "viper": {
+   "label": "Blightscale Viper / Rawlings (adds)",
+   "type": "adds",
+   "count": 2,
+   "health": 800000,
+   "duration": 25,
+   "timesFrom": "guide",
+   "assumed": [
+    "count",
+    "health",
+    "duration",
+    "times"
+   ]
+  },
+  "submerged": {
+   "label": "Phase 2 + intermission: boss submerged (only adds can be hit)",
+   "type": "invulnerable",
+   "stage": 2,
+   "duration": 130,
+   "timesFrom": "guide",
+   "assumed": [
+    "duration"
+   ]
+  },
+  "warden": {
+   "label": "Doomscale Warden and egg adds",
+   "type": "adds",
+   "stage": 2,
+   "count": 3,
+   "health": 2500000,
+   "duration": 45,
+   "timesFrom": "guide",
+   "assumed": [
+    "count",
+    "health",
+    "duration",
+    "times"
+   ]
+  },
+  "clutch": {
+   "label": "Blightscale Clutch / Shrieker adds",
+   "type": "adds",
+   "stage": 3,
+   "count": 2,
+   "health": 1200000,
+   "duration": 30,
+   "timesFrom": "guide",
+   "assumed": [
+    "count",
+    "health",
+    "duration",
+    "times"
+   ]
+  },
+  "prey": {
+   "label": "Circling Prey / Serpent's Bite",
+   "type": "movement",
+   "stage": 3,
+   "duration": 5,
+   "chance": 0.4,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance"
+   ]
+  },
+  "finalheart": {
+   "label": "Final heart phase (+100% damage, 20s)",
+   "type": "vulnerable",
+   "stage": 3,
+   "multiplier": 2.0,
+   "duration": 20,
+   "timesFrom": "bigwigs",
+   "assumed": []
+  }
+ },
+ "difficulties": {
+  "heroic": {
+   "label": "Heroic / Mythic",
+   "times": {
+    "caustic": {
+     "1": [
+      42,
+      52
+     ],
+     "3": [
+      44,
+      50,
+      55
+     ]
+    },
+    "coils": {
+     "1": [
+      20,
+      94
+     ]
+    },
+    "heart": {
+     "1": [
+      118
+     ]
+    },
+    "viper": {
+     "1": [
+      72
+     ]
+    },
+    "submerged": [
+     0
+    ],
+    "warden": [
+     10,
+     50
+    ],
+    "clutch": [
+     10,
+     60,
+     110
+    ],
+    "prey": [
+     51,
+     61,
+     110
+    ],
+    "finalheart": [
+     205
+    ]
+   },
+   "repeat": {
+    "clutch": 0
+   }
+  }
+ }
+}

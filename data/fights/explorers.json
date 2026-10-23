@@ -1,0 +1,174 @@
+{
+ "id": "explorers",
+ "name": "The Lost Explorers",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Explorers.lua + Icy Veins boss guide (mechanics).",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing, a second boss pool (the sim fights one target).",
+ "defaultDuration": 300,
+ "stages": [
+  {
+   "id": 1,
+   "at": 0
+  },
+  {
+   "id": 2,
+   "atPct": 25
+  },
+  {
+   "id": 3,
+   "atPct": 50
+  },
+  {
+   "id": 4,
+   "atPct": 75
+  }
+ ],
+ "mechanics": {
+  "junk": {
+   "label": "Throw Junk (break crates)",
+   "type": "movement",
+   "duration": 2,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "repeat"
+   ]
+  },
+  "flames": {
+   "label": "Icebound Flames",
+   "type": "movement",
+   "duration": 3,
+   "chance": 0.4,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance",
+    "repeat"
+   ]
+  },
+  "blink": {
+   "label": "Blink Nova (ranged move away)",
+   "type": "movement",
+   "duration": 3,
+   "chance": 0.3,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance",
+    "repeat"
+   ]
+  },
+  "hazard": {
+   "label": "Mushroom Toss / Explosive Surprise / Mighty Thud / Frostfire Volley",
+   "type": "movement",
+   "duration": 4,
+   "chance": 0.5,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance",
+    "repeat"
+   ]
+  },
+  "fish": {
+   "label": "Carry the fish to a boss (feeding phase)",
+   "type": "movement",
+   "duration": 8,
+   "timesFrom": "guide",
+   "assumed": [
+    "duration"
+   ]
+  }
+ },
+ "difficulties": {
+  "all": {
+   "label": "All difficulties",
+   "times": {
+    "junk": {
+     "1": [
+      4,
+      20,
+      23,
+      27
+     ],
+     "2": [
+      4,
+      27
+     ],
+     "3": [
+      4,
+      20,
+      27
+     ],
+     "4": [
+      4,
+      7,
+      11,
+      23
+     ]
+    },
+    "flames": {
+     "1": [
+      5,
+      31
+     ],
+     "2": [
+      2,
+      16,
+      32
+     ],
+     "3": [
+      5,
+      11,
+      22
+     ],
+     "4": [
+      2,
+      13,
+      27
+     ]
+    },
+    "blink": {
+     "1": [
+      10,
+      31
+     ],
+     "4": [
+      21
+     ]
+    },
+    "hazard": {
+     "2": [
+      3,
+      13,
+      32
+     ],
+     "3": [
+      3,
+      32
+     ],
+     "4": [
+      8,
+      27
+     ]
+    },
+    "fish": {
+     "2": [
+      0
+     ],
+     "3": [
+      0
+     ],
+     "4": [
+      0
+     ]
+    }
+   },
+   "repeat": {
+    "junk": 35,
+    "flames": 35,
+    "blink": 35,
+    "hazard": 35
+   }
+  }
+ }
+}

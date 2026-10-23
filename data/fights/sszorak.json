@@ -1,0 +1,121 @@
+{
+ "id": "sszorak",
+ "name": "Sszorak",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Sszorak.lua + Icy Veins boss guide (mechanics).",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing, a second boss pool (the sim fights one target).",
+ "defaultDuration": 300,
+ "mechanics": {
+  "maelstrom": {
+   "label": "Howling Maelstrom: Dig In (+30% damage taken, 25s)",
+   "type": "vulnerable",
+   "multiplier": 1.3,
+   "duration": 25,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "offset within the intermission"
+   ]
+  },
+  "positioning": {
+   "label": "Intermission: move to the middle / knockbacks",
+   "type": "movement",
+   "duration": 8,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration"
+   ]
+  },
+  "surge": {
+   "label": "Venomous Surge (bombs)",
+   "type": "movement",
+   "duration": 3,
+   "chance": 0.3,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance"
+   ]
+  },
+  "crosswinds": {
+   "label": "Raging Crosswinds (pair up and collide)",
+   "type": "movement",
+   "duration": 4,
+   "chance": 0.5,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance"
+   ]
+  }
+ },
+ "difficulties": {
+  "mythic": {
+   "label": "Mythic (assumed mapping)",
+   "times": {
+    "maelstrom": [
+     100,
+     220
+    ],
+    "positioning": [
+     95,
+     215
+    ],
+    "surge": [
+     29
+    ],
+    "crosswinds": [
+     39
+    ]
+   },
+   "repeat": {
+    "surge": 47,
+    "crosswinds": 47
+   }
+  },
+  "heroic": {
+   "label": "Heroic",
+   "times": {
+    "maelstrom": [
+     111,
+     231
+    ],
+    "positioning": [
+     106,
+     226
+    ],
+    "surge": [
+     32
+    ],
+    "crosswinds": [
+     43
+    ]
+   },
+   "repeat": {
+    "surge": 52,
+    "crosswinds": 52
+   }
+  },
+  "normal": {
+   "label": "Normal",
+   "times": {
+    "maelstrom": [
+     125,
+     245
+    ],
+    "positioning": [
+     120,
+     240
+    ],
+    "surge": [
+     36
+    ],
+    "crosswinds": [
+     49
+    ]
+   },
+   "repeat": {
+    "surge": 59,
+    "crosswinds": 59
+   }
+  }
+ }
+}

@@ -1,0 +1,93 @@
+{
+ "id": "vashnik",
+ "name": "Vashnik the Malignant",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Vashnik.lua + Icy Veins boss guide (mechanics).",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing, a second boss pool (the sim fights one target).",
+ "defaultDuration": 300,
+ "mechanics": {
+  "imbibe": {
+   "label": "Imbibe: fountain adds (2 fire, 1 blood, 5 shadow)",
+   "type": "adds",
+   "count": 8,
+   "health": 1000000,
+   "duration": 40,
+   "timesFrom": "guide",
+   "assumed": [
+    "health",
+    "duration"
+   ]
+  },
+  "froth": {
+   "label": "Plague Froth (taken away from the group)",
+   "type": "movement",
+   "duration": 3,
+   "chance": 0.2,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance",
+    "repeat"
+   ]
+  },
+  "infection": {
+   "label": "Adaptive Infection (run away / keep moving)",
+   "type": "movement",
+   "duration": 4,
+   "chance": 0.15,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance",
+    "repeat"
+   ]
+  }
+ },
+ "difficulties": {
+  "heroic": {
+   "label": "Heroic / Mythic",
+   "times": {
+    "imbibe": [
+     20
+    ],
+    "froth": [
+     13,
+     30,
+     33
+    ],
+    "infection": [
+     18,
+     52
+    ]
+   },
+   "repeat": {
+    "imbibe": 90,
+    "froth": 40,
+    "infection": 60
+   }
+  },
+  "normal": {
+   "label": "Normal / LFR",
+   "times": {
+    "imbibe": [
+     20
+    ],
+    "froth": [
+     10,
+     13,
+     17,
+     26,
+     36
+    ],
+    "infection": [
+     8,
+     32
+    ]
+   },
+   "repeat": {
+    "imbibe": 90,
+    "froth": 40,
+    "infection": 60
+   }
+  }
+ }
+}
