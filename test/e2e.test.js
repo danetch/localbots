@@ -1,6 +1,7 @@
 // End-to-end: loads main.js with a stubbed `electron`, a fake simc (test/fakesimc.js).
 const test = require('node:test'), assert = require('node:assert'), fs = require('fs'), os = require('os'), path = require('path'), Module = require('module');
 const ud = fs.mkdtempSync(path.join(os.tmpdir(), 'lb-')), H = {}, logs = [];
+process.env.FAKESIMC_LOG = path.join(ud, 'inputs.log');   // own fake-simc log: test files run in parallel
 const electron = { app: { getPath: () => ud, getVersion: () => '0.2.0', isPackaged: false, whenReady: () => ({ then: f => f() }), on() {}, quit() {} },
   BrowserWindow: function () { this.webContents = { send: (ch, l) => { if (ch === 'sim:log') logs.push(l); }, setWindowOpenHandler() {}, on() {} }; this.setTitle = this.setMenuBarVisibility = this.loadFile = () => {}; },
   ipcMain: { handle: (n, f) => (H[n] = f) }, dialog: {}, shell: {} };
@@ -31,7 +32,7 @@ test('best in slot: enchants and gems join at round 2, sockets added, DR table',
   assert.ok(r.set.every(s => !/^ench:|^gems$/.test(s.slot)), 'pseudo-slots hidden from the set table');
   assert.strictEqual(r.dr.length, 4); assert.ok(r.dr.find(d => d.stat === 'crit').rating > 1300);
   assert.ok(r.rounds.length >= 1 && r.rounds.every(x => x.round > 1 || x.changes.every(c => !/^ench:|^gems$/.test(c.slot))), 'round 1 is gear only');
-  const inputs = fs.readFileSync(path.join(__dirname, 'inputs.log'), 'utf8');
+  const inputs = fs.readFileSync(process.env.FAKESIMC_LOG, 'utf8');
   assert.ok(/profileset_output_data=stats/.test(inputs));
   assert.ok(!/gem_id=240983\/|240983.*240983/.test(inputs.split('=====').pop()), 'diamond used once');
 });

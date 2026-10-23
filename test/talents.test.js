@@ -40,7 +40,7 @@ test('several builds run one after the other end to end', async () => {
   fs.writeFileSync(ud + '/settings.json', JSON.stringify({ simcPath: path.join(__dirname, 'fakesimc.js') }));
   fs.chmodSync(path.join(__dirname, 'fakesimc.js'), 0o755);
   require('../main.js');
-  const log = path.join(__dirname, 'inputs.log'); fs.rmSync(log, { force: true });
+  const log = path.join(ud, 'inputs.log'); process.env.FAKESIMC_LOG = log; fs.rmSync(log, { force: true });   // own fake-simc log: test files run in parallel
   const o = { text: EXPORT, threads: 1, topN: 5, fight: { fightStyle: 'Patchwerk' }, precision: 'fast' };
   const r = await H['sim:topgear']({}, { ...o, builds: [{ string: A }, { string: B }] });
   assert.deepStrictEqual(r.builds.map(b => b.name), ['Raid', 'M+']); assert.ok(r.builds.every(b => b.result.rows.length >= 1));

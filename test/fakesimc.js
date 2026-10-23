@@ -3,7 +3,7 @@
 // 240904) + a small hash; buffed stats per profileset (crit rating grows with crit gems) like profileset_output_data=stats.
 const fs=require('fs');const a=process.argv.slice(2);const inp=fs.readFileSync(a[0],'utf8');
 const out=a.find(x=>x.startsWith('json2=')).slice(6);
-fs.appendFileSync(__dirname+'/inputs.log','=====\n'+inp+'\nARGS '+a.slice(1).join(' ')+'\n');
+fs.appendFileSync(process.env.FAKESIMC_LOG||__dirname+'/inputs.log','=====\n'+inp+'\nARGS '+a.slice(1).join(' ')+'\n');
 const names=[...new Set([...inp.matchAll(/profileset\."(c\d+)"\+=/g)].map(m=>m[1]))];
 const hash=s=>[...s].reduce((h,c)=>(h*31+c.charCodeAt(0))>>>0,7);
 const lines=inp.split('\n');
