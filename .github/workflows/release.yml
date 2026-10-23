@@ -32,7 +32,13 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: npm install
-      - run: npm test
+      - name: npm test
+        shell: bash
+        run: npm test 2>&1 | tee test-output.txt; exit ${PIPESTATUS[0]}
+      - name: Report failing tests as annotations
+        if: failure()
+        shell: bash
+        run: grep -E "^not ok|error:|expected|actual|Error|at .*test" -A2 test-output.txt | head -60 | while IFS= read -r l; do echo "::error::$l"; done
   win:
     needs: [check, test]
     runs-on: windows-latest
