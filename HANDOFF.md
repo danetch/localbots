@@ -387,7 +387,7 @@ Read the user's real userData (loot.json, progression.json, last-bis-result.json
   combination (planMoves, up to 4 rounds, Jewelbinder sockets as ticked), then the finalists are simulated again with the plan.
   Baseline keeps the current gems. Result summary shows the plan.
 - Top Gear results: one column in game order (the character sheet is kept for Best in Slot).
-- Icon: build/icon.svg (original: three rising gold bars + epic purple gem, navy tile, gold rim), build/icon.png (512), build/icon.ico
+- Icon (v0.3.5): build/icon.svg = simple gold anvil + spark on the navy tile with gold rim (was bars + gem in 0.3.3), build/icon.png (512), build/icon.ico
   (16-256), renderer/icon.png (window + header). package.json win.icon / nsis installer icons.
 - Tests: 39 pass.
 
