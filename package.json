@@ -53,7 +53,8 @@
       {
         "provider": "github",
         "owner": "danetch",
-        "repo": "localbots"
+        "repo": "localbots",
+        "releaseType": "release"
       }
     ]
   }

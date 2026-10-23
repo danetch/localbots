@@ -19,7 +19,7 @@ npm start      # run from source
 npm test       # unit + end-to-end tests (fake simc)
 ```
 
-Releases: bump `version` in `package.json`, commit, then `git tag vX.Y.Z && git push --tags`.
-The `release` workflow runs the tests, builds the Windows installer and publishes it as a GitHub release, which installed apps pick up.
+Releases: bump `version` in `package.json` and push to `main`.
+When that version has no release yet, the `release` workflow runs the tests, builds the Windows installer and publishes it as a GitHub release, which installed apps pick up.
 
 Project notes and design decisions: [HANDOFF.md](HANDOFF.md).

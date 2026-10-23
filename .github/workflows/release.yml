@@ -1,20 +1,46 @@
-# Build the Windows installer and publish it as a GitHub Release when a version tag is pushed (git tag v0.2.0 && git push --tags).
-# The installer is NOT code signed: Windows SmartScreen will warn until a certificate is added (CSC_LINK / CSC_KEY_PASSWORD secrets).
+# Release = push to main with a new "version" in package.json. If release v<version> does not exist yet, the tests run (Linux), then the
+# Windows installer is built and published as GitHub release v<version> (electron-builder also uploads latest.yml for the in-app updater).
+# The installer is NOT code signed: Windows SmartScreen warns until a certificate is added (CSC_LINK / CSC_KEY_PASSWORD secrets).
 name: release
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
 jobs:
-  win:
-    runs-on: windows-latest
-    permissions:
-      contents: write
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      exists: ${{ steps.v.outputs.exists }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          v=$(node -p "require('./package.json').version")
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          if gh release view "v$v" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
+  test:
+    needs: check
+    if: needs.check.outputs.exists == 'false'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: npm install
       - run: npm test
+  win:
+    needs: [check, test]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install
       - run: npx electron-builder --win --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
