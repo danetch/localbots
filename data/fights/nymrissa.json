@@ -1,8 +1,8 @@
 {
  "id": "nymrissa",
  "name": "Nymrissa Wavecaller — The Tidebound Grotto",
- "source": "BigWigs (BigWigsMods/BigWigs b26c019) MidnightLairs/Nymrissa.lua + Method boss guide (mechanics).",
- "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the pull. timesFrom: bigwigs = timeline durations read from BigWigs (pull timers only), guide = from the guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. BigWigs matches timeline bars by rounded duration: Abyssal Rain 8/23/33, Alluring Bubble 18, bubble adds 7/25, Chilling Frost 17/35, Swirling Whirlpools 89/107, plus a 44 s bar that rotates adds -> Chilling Frost -> Abyssal Rain; read here as pull timers 25 (adds), 35 (frost), 107 (whirlpools), each repeating every 3 x 44 = 132 s (assumed). Not modelled: Abyssal Rain and Pop! (raid damage), Wavecaller's Might stacks and Unending Tides (enrage), Iceblade Flurry / Water Jet (tank), failed murlocs turning into Berserkers.",
+ "source": "BigWigs (BigWigsMods/BigWigs b26c019) MidnightLairs/Nymrissa.lua + Method boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the pull. timesFrom: bigwigs = timeline durations read from BigWigs (pull timers only), guide = from the guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. BigWigs matches timeline bars by rounded duration: Abyssal Rain 8/23/33, Alluring Bubble 18, bubble adds 7/25, Chilling Frost 17/35, Swirling Whirlpools 89/107, plus a 44 s bar that rotates adds -> Chilling Frost -> Abyssal Rain; Real logs show a 110 s cycle (bubble adds 23, frost 38 + 82, whirlpools 111). Not modelled: Abyssal Rain and Pop! (raid damage), Wavecaller's Might stacks and Unending Tides (enrage), Iceblade Flurry / Water Jet (tank), failed murlocs turning into Berserkers.",
  "defaultDuration": 300,
  "mechanics": {
   "shorerunners": {
@@ -11,12 +11,11 @@
    "count": 5,
    "health": 400000,
    "duration": 15,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "count",
     "health",
-    "duration",
-    "repeat"
+    "duration"
    ]
   },
   "frostscale": {
@@ -25,21 +24,19 @@
    "count": 1,
    "health": 1500000,
    "duration": 10,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "health",
-    "duration",
-    "repeat"
+    "duration"
    ]
   },
   "whirlpools": {
    "label": "Swirling Whirlpools (move to the gap and stack)",
    "type": "movement",
    "duration": 5,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
-    "duration",
-    "repeat"
+    "duration"
    ]
   },
   "frost": {
@@ -47,11 +44,10 @@
    "type": "movement",
    "duration": 4,
    "chance": 0.2,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "duration",
-    "chance",
-    "repeat"
+    "chance"
    ]
   }
  },
@@ -60,43 +56,49 @@
    "label": "Normal / Heroic",
    "times": {
     "shorerunners": [
-     25
+     23
     ],
     "whirlpools": [
-     107
+     111
     ],
     "frost": [
-     35
+     38,
+     82
     ]
    },
    "repeat": {
-    "shorerunners": 132,
-    "whirlpools": 132,
-    "frost": 132
-   }
+    "shorerunners": 110,
+    "whirlpools": 110,
+    "frost": 110
+   },
+   "duration": 247,
+   "checked": "Lorrgs 50 kills, median 247 s: Alluring Bubble 23/133/243, Swirling Whirlpools 111/221, Chilling Frost 37/81/147/191/257 (110 s cycle)."
   },
   "mythic": {
    "label": "Mythic",
    "times": {
     "shorerunners": [
-     25
+     23
     ],
     "frostscale": [
-     25
+     23
     ],
     "whirlpools": [
-     107
+     111
     ],
     "frost": [
-     35
+     38,
+     82
     ]
    },
    "repeat": {
-    "shorerunners": 132,
-    "frostscale": 132,
-    "whirlpools": 132,
-    "frost": 132
-   }
+    "shorerunners": 110,
+    "frostscale": 110,
+    "whirlpools": 110,
+    "frost": 110
+   },
+   "duration": 388,
+   "checked": "Lorrgs 50 kills, median 388 s: Alluring Bubble 23/133/243/353, Swirling Whirlpools 111/221/331, Chilling Frost 38/82/148/192/258/302/368 (110 s cycle)."
   }
  }
 }

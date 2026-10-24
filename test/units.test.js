@@ -261,15 +261,19 @@ test('specs: armor type from the class line of the export', () => {
 
 test('boss: council fights add cleaved bosses (desired targets), absent stages and shared submerges become invulnerable windows', () => {
   const b = L('boss'), defs = b.list([require('path').join(__dirname, '..', 'data', 'fights')]), get = id => defs.find(d => d.id === id);
-  const tf = b.build(get('twinfangs'), { difficulty: 'all', duration: 300 });
+  const tf = b.build(get('twinfangs'), { difficulty: 'mythic', duration: 300 });
   assert.strictEqual(tf.targets, 2); assert.deepStrictEqual(tf.extraArgs, ['ignore_invulnerable_targets=1']);
-  assert.ok(tf.events.includes('raid_events+=/invulnerable,name=ithraz_away,target=Dummy_Enemy_1,timestamps=130,duration=20'));
-  const ca = b.build(get('coiledaltar'), { difficulty: 'mythic', duration: 300 });   // stage 3 at 66 % = 198 s, Malacrass from +20 s
-  assert.ok(ca.events.includes('raid_events+=/invulnerable,name=malacrass_away,target=Dummy_Enemy_1,timestamps=0,duration=218'));
+  assert.ok(tf.events.includes('raid_events+=/invulnerable,name=ithraz_away_1,target=Dummy_Enemy_1,timestamps=136,duration=28'));
+  const ca = b.build(get('coiledaltar'), { difficulty: 'mythic', duration: 300 });   // Mythic phase 3 at 68 % (real logs) = 204 s
+  assert.ok(ca.events.includes('raid_events+=/invulnerable,name=malacrass_away,target=Dummy_Enemy_1,timestamps=0,duration=204'));
+  // per-difficulty stages and kill length (Lorrgs medians): Twin Fangs submerges every 155 s on Mythic, 169 s on Heroic
+  assert.deepStrictEqual(b.build(get('twinfangs'), { difficulty: 'mythic' }).summary.find(s => s.type === 'invulnerable').times, [136, 291]);
+  assert.strictEqual(b.build(get('twinfangs'), { difficulty: 'heroic' }).length, 291);
+  assert.deepStrictEqual(b.build(get('nymrissa'), { difficulty: 'mythic' }).summary[0].times, [23, 133, 243, 353]);
   const se = b.build(get('sentinels'), { difficulty: 'all', duration: 300 });         // split raid: single target
   assert.strictEqual(se.targets, 1); assert.deepStrictEqual(se.extraArgs, []);
   const ny = b.build(get('nymrissa'), { difficulty: 'mythic', duration: 300 });
-  assert.strictEqual(ny.targets, 1); assert.ok(ny.events.some(e => /^raid_events\+=\/adds,name=frostscale,timestamps=25:157:289/.test(e)));
+  assert.strictEqual(ny.targets, 1); assert.ok(ny.events.some(e => /^raid_events\+=\/adds,name=frostscale,timestamps=23:133:243/.test(e)));
   const fa = L('fight').fightArgs({ targets: 2, raidEvents: tf.events, bossArgs: [...tf.extraArgs, 'html=x'] });
   assert.ok(fa.includes('desired_targets=2') && fa.includes('ignore_invulnerable_targets=1') && !fa.includes('html=x'));
 });

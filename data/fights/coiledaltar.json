@@ -1,29 +1,15 @@
 {
  "id": "coiledaltar",
  "name": "The Coiled Altar",
- "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/CoiledAltar.lua + Icy Veins boss guide (mechanics).",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/CoiledAltar.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
  "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing.",
  "defaultDuration": 360,
- "stages": [
-  {
-   "id": 1,
-   "atPct": 0
-  },
-  {
-   "id": 2,
-   "atPct": 33
-  },
-  {
-   "id": 3,
-   "atPct": 66
-  }
- ],
  "mechanics": {
   "toxic": {
    "label": "Toxic Deluge (collect orbs)",
    "type": "movement",
    "duration": 3,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "duration"
    ]
@@ -32,7 +18,7 @@
    "label": "Axegrinder (avoid the axes)",
    "type": "movement",
    "duration": 3,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "duration"
    ]
@@ -42,7 +28,7 @@
    "type": "movement",
    "duration": 3,
    "chance": 0.4,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "duration",
     "chance"
@@ -64,7 +50,7 @@
    "type": "movement",
    "duration": 4,
    "chance": 0.3,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "duration",
     "chance"
@@ -77,23 +63,20 @@
    "count": 1,
    "health": 800000,
    "duration": 20,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "health",
     "duration"
    ]
   },
   "soulbinding": {
-   "label": "Soulbinding: Zul'jan takes +100% damage (assumed 20s at the start of stage 3)",
+   "label": "Soulbinding intermission: Zul'jan takes +100% damage",
    "type": "vulnerable",
-   "stage": 3,
+   "stage": 4,
    "multiplier": 2.0,
-   "duration": 20,
-   "timesFrom": "guide",
-   "assumed": [
-    "times",
-    "duration"
-   ]
+   "duration": 16,
+   "timesFrom": "logs",
+   "assumed": []
   }
  },
  "difficulties": {
@@ -103,23 +86,32 @@
     "toxic": {
      "1": [
       2,
-      43
+      45,
+      87,
+      130
+     ],
+     "3": [
+      12,
+      53,
+      113,
+      154
      ]
     },
     "axe": {
      "1": [
-      12
+      14,
+      99
      ]
     },
     "guillotine": {
      "1": [
-      43
+      47,
+      132
      ],
      "3": [
-      17,
-      56,
-      64,
-      100
+      30,
+      94,
+      194
      ]
     },
     "gloombomb": {
@@ -136,33 +128,56 @@
     },
     "dreadmarch": {
      "2": [
-      6,
-      34
+      16,
+      53,
+      101,
+      138,
+      186
      ],
      "3": [
-      48,
-      55,
-      97,
-      104
+      66,
+      163
      ]
     },
     "spiritcackle": {
      "2": [
-      13,
-      33
+      22,
+      55,
+      107,
+      140,
+      192
      ],
      "3": [
-      62,
-      90,
-      97
+      72,
+      168
      ]
     },
     "soulbinding": {
-     "3": [
-      0
+     "4": [
+      13
      ]
     }
-   }
+   },
+   "duration": 623,
+   "stages": [
+    {
+     "id": 1,
+     "at": 0
+    },
+    {
+     "id": 2,
+     "atPct": 27
+    },
+    {
+     "id": 4,
+     "atPct": 61
+    },
+    {
+     "id": 3,
+     "atPct": 68
+    }
+   ],
+   "checked": "Lorrgs 19 kills, median 623 s: phase 2 169, intermission 379, Soulbinding 392, phase 3 421 (27/61/68 %); Toxic Deluge 2/45/87/130 + P3 433/474/534/575, Axegrinder 14/99, Guillotine 47/132, Dreadmarch 185/222/270/307/355 + 487/584, Spiritcackle 191/224/276/309/361 + 493/589, Grim Guillotine 451/515/615."
   },
   "heroic": {
    "label": "Heroic / Normal",
@@ -170,23 +185,26 @@
     "toxic": {
      "1": [
       2,
-      28,
-      35,
-      42
+      45,
+      87
+     ],
+     "3": [
+      26,
+      84,
+      143
      ]
     },
     "axe": {
      "1": [
-      12
+      14
      ]
     },
     "guillotine": {
      "1": [
-      28,
-      35
+      46
      ],
      "3": [
-      17
+      43
      ]
     },
     "gloombomb": {
@@ -206,33 +224,45 @@
     },
     "dreadmarch": {
      "2": [
-      6,
-      34
+      18,
+      55
      ],
      "3": [
-      38,
-      43,
-      44,
-      49,
-      61,
-      88,
-      101,
-      108
+      85
      ]
     },
     "spiritcackle": {
      "2": [
-      13,
-      33
-     ],
-     "3": []
+      24,
+      57
+     ]
     },
     "soulbinding": {
-     "3": [
-      0
+     "4": [
+      25
      ]
     }
-   }
+   },
+   "duration": 329,
+   "stages": [
+    {
+     "id": 1,
+     "at": 0
+    },
+    {
+     "id": 2,
+     "atPct": 28
+    },
+    {
+     "id": 4,
+     "atPct": 51
+    },
+    {
+     "id": 3,
+     "atPct": 64
+    }
+   ],
+   "checked": "Lorrgs 50 kills, median 329 s: phase 2 93, intermission 168, Soulbinding 193, phase 3 209 (28/51/64 %); Toxic Deluge 2/45/87 + P3 235/293/352, Axegrinder 14, Guillotine 46, Dreadmarch 111/148 + 294, Spiritcackle 117/150, Grim Guillotine 252."
   }
  },
  "mainBoss": "Zul'jan",
@@ -240,9 +270,9 @@
   {
    "name": "Malacrass",
    "present": {
-    "3": 20
+    "3": 0
    }
   }
  ],
- "council": "P1 Zul'jan alone, P2 Malacrass with adds, intermission (Malacrass links to Zul'jan, who takes +100 % damage), P3 both bosses stacked and cleaved, separate health (Icy Veins). Simulated as one target until 20 s into stage 3 (end of the assumed intermission), then 2 targets."
+ "council": "P1 Zul'jan alone, P2 Malacrass with adds, intermission (Malacrass links to Zul'jan, who takes +100 % damage), P3 both bosses stacked and cleaved, separate health (Icy Veins). Simulated as one target until phase 3, then 2 targets."
 }

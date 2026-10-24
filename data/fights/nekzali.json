@@ -1,23 +1,9 @@
 {
  "id": "nekzali",
  "name": "Nek'zali the Soulcoiler",
- "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Nekzali.lua + Icy Veins boss guide (mechanics).",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Nekzali.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
  "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing.",
  "defaultDuration": 300,
- "stages": [
-  {
-   "id": 1,
-   "at": 0
-  },
-  {
-   "id": 2,
-   "atPct": 45
-  },
-  {
-   "id": 3,
-   "atPct": 55
-  }
- ],
  "mechanics": {
   "amani": {
    "label": "Restless Amani (shielded adds)",
@@ -68,8 +54,8 @@
   }
  },
  "difficulties": {
-  "all": {
-   "label": "All difficulties",
+  "heroic": {
+   "label": "Normal / Heroic",
    "times": {
     "amani": {
      "1": [
@@ -103,7 +89,76 @@
    "repeat": {
     "amani": 45,
     "rend": 50
-   }
+   },
+   "duration": 231,
+   "stages": [
+    {
+     "id": 1,
+     "at": 0
+    },
+    {
+     "id": 2,
+     "atPct": 41
+    },
+    {
+     "id": 3,
+     "atPct": 64
+    }
+   ],
+   "checked": "Lorrgs 50 kills, median 231 s: Ritual of Awakening (intermission) 94, phase 3 147 (41 % / 64 % of the kill)."
+  },
+  "mythic": {
+   "label": "Mythic",
+   "times": {
+    "amani": {
+     "1": [
+      15,
+      40
+     ],
+     "3": [
+      15,
+      40
+     ]
+    },
+    "rend": {
+     "1": [
+      15,
+      40,
+      50
+     ],
+     "3": [
+      15,
+      40,
+      50
+     ]
+    },
+    "echoes": [
+     0
+    ],
+    "untargetable": [
+     0
+    ]
+   },
+   "repeat": {
+    "amani": 45,
+    "rend": 50
+   },
+   "duration": 366,
+   "stages": [
+    {
+     "id": 1,
+     "at": 0
+    },
+    {
+     "id": 2,
+     "atPct": 34
+    },
+    {
+     "id": 3,
+     "atPct": 66
+    }
+   ],
+   "checked": "Lorrgs 50 kills, median 366 s: Ritual of Awakening (intermission) 123, phase 2 151, phase 3 240 (34 % / 66 % of the kill)."
   }
  }
 }

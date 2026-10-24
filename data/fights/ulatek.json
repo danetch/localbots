@@ -1,29 +1,15 @@
 {
  "id": "ulatek",
  "name": "Ula'tek",
- "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Ulatek.lua + Icy Veins boss guide (mechanics).",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Ulatek.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
  "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing.",
- "defaultDuration": 480,
- "stages": [
-  {
-   "id": 1,
-   "at": 0
-  },
-  {
-   "id": 2,
-   "at": 138
-  },
-  {
-   "id": 3,
-   "at": 268
-  }
- ],
+ "defaultDuration": 580,
  "mechanics": {
   "caustic": {
    "label": "Caustic Waves (move through the gaps)",
    "type": "movement",
    "duration": 3,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "duration"
    ]
@@ -33,7 +19,7 @@
    "type": "movement",
    "duration": 4,
    "chance": 0.5,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "duration",
     "chance"
@@ -44,7 +30,7 @@
    "type": "vulnerable",
    "multiplier": 2.0,
    "duration": 20,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": []
   },
   "viper": {
@@ -65,7 +51,7 @@
    "label": "Phase 2 + intermission: boss submerged (only adds can be hit)",
    "type": "invulnerable",
    "stage": 2,
-   "duration": 130,
+   "duration": 125,
    "timesFrom": "guide",
    "assumed": [
     "duration"
@@ -119,18 +105,18 @@
    "stage": 3,
    "multiplier": 2.0,
    "duration": 20,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": []
   }
  },
  "difficulties": {
   "heroic": {
-   "label": "Heroic / Mythic",
+   "label": "Normal / Heroic",
    "times": {
     "caustic": {
      "1": [
-      42,
-      52
+      48,
+      100
      ],
      "3": [
       44,
@@ -141,12 +127,15 @@
     "coils": {
      "1": [
       20,
-      94
+      115
      ]
     },
     "heart": {
      "1": [
-      118
+      135
+     ],
+     "3": [
+      11
      ]
     },
     "viper": {
@@ -172,12 +161,102 @@
      110
     ],
     "finalheart": [
-     205
+     301
     ]
    },
    "repeat": {
     "clutch": 0
-   }
+   },
+   "duration": 581,
+   "stages": [
+    {
+     "id": 1,
+     "at": 0
+    },
+    {
+     "id": 2,
+     "at": 138
+    },
+    {
+     "id": 3,
+     "at": 273
+    }
+   ],
+   "checked": "Lorrgs 50 kills, median 581 s: Rage of the Shackled + Venomous Heart 135/284/574, Defect: Weakened 273, Caustic Waves 48/100, Spectral Coils 20/115."
+  },
+  "mythic": {
+   "label": "Mythic",
+   "times": {
+    "caustic": {
+     "1": [
+      56,
+      113
+     ],
+     "3": [
+      44,
+      50,
+      55
+     ]
+    },
+    "coils": {
+     "1": [
+      33,
+      127
+     ]
+    },
+    "heart": {
+     "1": [
+      145
+     ],
+     "3": [
+      5
+     ]
+    },
+    "viper": {
+     "1": [
+      72
+     ]
+    },
+    "submerged": [
+     0
+    ],
+    "warden": [
+     10,
+     50
+    ],
+    "clutch": [
+     10,
+     60,
+     110
+    ],
+    "prey": [
+     51,
+     61,
+     110
+    ],
+    "finalheart": [
+     294
+    ]
+   },
+   "repeat": {
+    "clutch": 0
+   },
+   "duration": 602,
+   "stages": [
+    {
+     "id": 1,
+     "at": 0
+    },
+    {
+     "id": 2,
+     "at": 148
+    },
+    {
+     "id": 3,
+     "at": 290
+    }
+   ],
+   "checked": "Lorrgs only 2 kills, ~602 s: Rage of the Shackled + Venomous Heart 145/295/584, Caustic Waves 56/113, Spectral Coils 33/127."
   }
  }
 }

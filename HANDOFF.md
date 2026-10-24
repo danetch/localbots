@@ -466,3 +466,22 @@ embellishment").
 - Still assumed: Twin Fangs submerge only once at 130 s (guide: 3 submerges before enrage, cycle length unknown); Nymrissa repeat periods,
   add counts/health; the third Lost Explorer is never in cleave range.
 - Tests: 45 pass.
+
+=== 24 OCT: BOSS TIMINGS CHECKED AGAINST REAL LOGS (Lorrgs.io) ===
+- Source: api2.lorrgs.io (read through the user's built-in browser; lorrgs.io/WCL are blocked in the sandbox). Endpoints: /api/zones,
+  /api/bosses/<slug>/spells, /api/spec_ranking/<spec>/<boss>?difficulty=mythic|heroic&metric=dps -> reports[].fights[] with duration,
+  phases [{ts, phase_id}] (dynamic bosses) and boss.casts [{id, ts ms, c = cast count}]. Used rogue-outlaw top 50 per boss/difficulty;
+  boss casts are present for ~2-6 of the 50 fights, phases and durations for all. Lorrgs only lists "relevant" boss spells, so mechanics it
+  does not show (Plague Froth, Adaptive Infection, Gloombomb, Throw Junk, Icebound Flames, Essence Rend, Restless Amani, ...) stay as before.
+- Engine: difficulties[d].stages (per-difficulty phase starts) and difficulties[d].duration (median real kill; the Fight card switches the
+  length to it when boss/difficulty change, unless the user typed another length). Each difficulty has a `checked` note with the real
+  numbers; timesFrom "logs" = checked against real kills. Health-driven phases are stored as % of the median kill (atPct).
+- Changes: Nymrissa 110 s cycle (was 132); Twin Fangs split Heroic (169 s cycle, submerge 150) / Mythic (155 s, submerges 136 + 291, ~28 s
+  each; was one 20 s submerge at 130); Kith'ix 109 s cycle (was 104), Extinguish per difficulty; Sszorak Dig In every 127 s (M) / 138 s (H)
+  (was 120); Vashnik Imbibe every 84 s (was 90) + Mythic entry; Sentinels intermission ~15 s before each phase change at 57/159/260 s (was
+  90/180/270); Nek'zali intermission/P3 at 41/64 % (H) and 34/66 % (M) (was 45/55 %); Lost Explorers new phase every 61 s (was 25 %);
+  Coiled Altar P2 / intermission (Soulbinding, own stage 4) / P3 at 28/51/64 % (H) and 27/61/68 % (M), Malacrass from P3 start, P1-P3 cast
+  timings from logs; Ula'tek hearts 135/284/574 (H), 145/295/584 (M), default length 580 s.
+- Thin data: Kith'ix Mythic and Ula'tek Mythic = 2 kills, Coiled Altar Mythic = 19, Twin Fangs Heroic casts from 2 logs.
+- Real simc check (cc01837): Twin Fangs Mythic no damage at 138-163 / 292-318 s (logs 136-164 / 291-319); Coiled Altar Heroic Malacrass
+  from 211 s (logs 209). Tests: 45 pass.

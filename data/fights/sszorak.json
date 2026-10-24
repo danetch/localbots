@@ -1,7 +1,7 @@
 {
  "id": "sszorak",
  "name": "Sszorak",
- "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Sszorak.lua + Icy Veins boss guide (mechanics).",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Sszorak.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
  "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing.",
  "defaultDuration": 300,
  "mechanics": {
@@ -10,7 +10,7 @@
    "type": "vulnerable",
    "multiplier": 1.3,
    "duration": 25,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "offset within the intermission"
    ]
@@ -19,7 +19,7 @@
    "label": "Intermission: move to the middle / knockbacks",
    "type": "movement",
    "duration": 8,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "duration"
    ]
@@ -29,7 +29,7 @@
    "type": "movement",
    "duration": 3,
    "chance": 0.3,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "duration",
     "chance"
@@ -40,7 +40,7 @@
    "type": "movement",
    "duration": 4,
    "chance": 0.5,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "duration",
     "chance"
@@ -49,50 +49,58 @@
  },
  "difficulties": {
   "mythic": {
-   "label": "Mythic (assumed mapping)",
+   "label": "Mythic",
    "times": {
     "maelstrom": [
-     100,
-     220
+     100
     ],
     "positioning": [
-     95,
-     215
+     95
     ],
     "surge": [
-     29
+     29,
+     76
     ],
     "crosswinds": [
-     39
+     40,
+     87
     ]
    },
    "repeat": {
-    "surge": 47,
-    "crosswinds": 47
-   }
+    "maelstrom": 127,
+    "positioning": 127,
+    "surge": 127,
+    "crosswinds": 127
+   },
+   "duration": 360,
+   "checked": "Lorrgs 50 kills, median 360 s: Dig In 100/227/354, Venomous Surge 29/76/156/203/283/330, Raging Crosswinds 40/87/167/214/294/341 (127 s cycle)."
   },
   "heroic": {
    "label": "Heroic",
    "times": {
     "maelstrom": [
-     111,
-     231
+     111
     ],
     "positioning": [
-     106,
-     226
+     106
     ],
     "surge": [
-     32
+     32,
+     84
     ],
     "crosswinds": [
-     43
+     44,
+     97
     ]
    },
    "repeat": {
-    "surge": 52,
-    "crosswinds": 52
-   }
+    "maelstrom": 138,
+    "positioning": 138,
+    "surge": 138,
+    "crosswinds": 138
+   },
+   "duration": 233,
+   "checked": "Lorrgs 50 kills, median 233 s: Dig In 111/249, Venomous Surge 32/84/170/223, Raging Crosswinds 44/97/183/235 (138 s cycle). Normal not in the logs (unchanged)."
   },
   "normal": {
    "label": "Normal",

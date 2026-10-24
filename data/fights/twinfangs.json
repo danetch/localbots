@@ -1,9 +1,9 @@
 {
  "id": "twinfangs",
  "name": "The Twin Fangs",
- "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/TwinFangs.lua + Icy Veins boss guide (mechanics).",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/TwinFangs.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
  "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing.",
- "defaultDuration": 360,
+ "defaultDuration": 300,
  "mechanics": {
   "emergence": {
    "label": "Venomous Emergence (3 adds, priority)",
@@ -11,11 +11,10 @@
    "count": 3,
    "health": 1000000,
    "duration": 25,
-   "timesFrom": "guide",
+   "timesFrom": "logs",
    "assumed": [
     "health",
-    "duration",
-    "times"
+    "duration"
    ]
   },
   "deluge": {
@@ -23,21 +22,19 @@
    "type": "movement",
    "duration": 3,
    "chance": 0.4,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "duration",
-    "chance",
-    "repeat"
+    "chance"
    ]
   },
   "depths": {
    "label": "Stir the Depths (waves)",
    "type": "movement",
    "duration": 3,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
-    "duration",
-    "repeat"
+    "duration"
    ]
   },
   "feast": {
@@ -45,51 +42,89 @@
    "type": "movement",
    "duration": 6,
    "chance": 0.4,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "duration",
-    "chance",
-    "repeat"
+    "chance"
    ]
   },
   "submerge": {
    "label": "Intermission: both bosses submerge (targetability unconfirmed)",
    "type": "invulnerable",
-   "duration": 20,
-   "timesFrom": "bigwigs",
+   "duration": 28,
+   "timesFrom": "logs",
    "assumed": [
-    "duration",
     "whether the bosses are targetable"
    ],
    "allBosses": true
   }
  },
  "difficulties": {
-  "all": {
-   "label": "All difficulties",
+  "heroic": {
+   "label": "Normal / Heroic",
+   "duration": 291,
    "times": {
-    "emergence": [
-     45
-    ],
     "deluge": [
-     8
+     10,
+     78
+    ],
+    "emergence": [
+     40,
+     107
     ],
     "depths": [
-     47
+     52,
+     120
     ],
     "feast": [
-     57
+     68,
+     135
     ],
     "submerge": [
-     130
+     150
     ]
    },
    "repeat": {
-    "emergence": 100,
-    "deluge": 60,
-    "depths": 100,
-    "feast": 100
-   }
+    "deluge": 169,
+    "emergence": 169,
+    "depths": 169,
+    "feast": 169,
+    "submerge": 169
+   },
+   "checked": "Lorrgs 50 kills, median 291 s (casts from 2 logs): Caustic Deluge 10/78/179/247, Venomous Emergence 40/107/209/277, Stir the Depths 52/120/222, Ravenous Feast 68/135/237, Sanguine Storm + Vile Flood (submerge) 150/154, next deluge 179 -> ~29 s submerge, 169 s cycle."
+  },
+  "mythic": {
+   "label": "Mythic",
+   "duration": 400,
+   "times": {
+    "deluge": [
+     9,
+     70
+    ],
+    "emergence": [
+     36,
+     97
+    ],
+    "depths": [
+     47,
+     108
+    ],
+    "feast": [
+     61,
+     122
+    ],
+    "submerge": [
+     136
+    ]
+   },
+   "repeat": {
+    "deluge": 155,
+    "emergence": 155,
+    "depths": 155,
+    "feast": 155,
+    "submerge": 155
+   },
+   "checked": "Lorrgs 50 kills, median 400 s: Caustic Deluge 9/70/164/225/319/380, Venomous Emergence 36/97/191/252/346, Stir the Depths 47/108/202/263/357, Ravenous Feast 61/122/216/277/371, submerge (Sanguine Storm / Vile Flood) 136/291, next deluge 164 -> ~28 s submerge, 155 s cycle."
   }
  },
  "mainBoss": "Vexhul",

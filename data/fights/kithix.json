@@ -1,7 +1,7 @@
 {
  "id": "kithix",
  "name": "Kith'ix — The Unbinding of Kith'ix",
- "source": "BigWigs (BigWigsMods/BigWigs) TheUnbindingOfKithix/Kithix.lua + Icy Veins boss guide (mechanics).",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheUnbindingOfKithix/Kithix.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
  "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing.",
  "defaultDuration": 300,
  "stages": [
@@ -21,7 +21,7 @@
    "count": 3,
    "health": 1500000,
    "duration": 30,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "count",
     "health",
@@ -41,7 +41,7 @@
    "label": "Extinguish (move to Light's Embrace orb)",
    "type": "movement",
    "duration": 3,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "duration"
    ]
@@ -50,7 +50,7 @@
    "label": "Suffocating Darkness (move into the Bulwark)",
    "type": "movement",
    "duration": 4,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "duration"
    ]
@@ -93,12 +93,11 @@
      29
     ],
     "extinguish": [
-     29,
-     42,
-     67
+     36,
+     78
     ],
     "intermission": [
-     52
+     57
     ],
     "nullGate": [
      1,
@@ -109,11 +108,13 @@
     ]
    },
    "repeat": {
-    "voidswarm": 104,
-    "appendage": 104,
-    "extinguish": 104,
-    "intermission": 104
-   }
+    "voidswarm": 109,
+    "appendage": 109,
+    "extinguish": 109,
+    "intermission": 109
+   },
+   "duration": 310,
+   "checked": "Lorrgs only 2 kills, 310 s: Voidswarm 5/114/223, Suffocating Darkness 57/166, Extinguish 36/78/145/187 (109 s cycle)."
   },
   "heroic": {
    "label": "Heroic",
@@ -129,12 +130,11 @@
      32
     ],
     "extinguish": [
-     29,
-     52,
-     57
+     37,
+     94
     ],
     "intermission": [
-     52
+     57
     ],
     "nullGate": [
      3,
@@ -145,11 +145,13 @@
     ]
    },
    "repeat": {
-    "voidswarm": 104,
-    "appendage": 104,
-    "extinguish": 104,
-    "intermission": 104
-   }
+    "voidswarm": 109,
+    "appendage": 109,
+    "extinguish": 109,
+    "intermission": 109
+   },
+   "duration": 232,
+   "checked": "Lorrgs 50 kills, median 232 s: Voidswarm 5/114/223, Suffocating Darkness 57/166, Extinguish 37/94/146/203 (109 s cycle). Stage 2 not visible in the logs (kept at 75 %)."
   },
   "normal": {
    "label": "Normal / LFR",
@@ -179,10 +181,10 @@
     ]
    },
    "repeat": {
-    "voidswarm": 104,
-    "appendage": 104,
-    "extinguish": 104,
-    "intermission": 104
+    "voidswarm": 109,
+    "appendage": 109,
+    "extinguish": 109,
+    "intermission": 109
    }
   }
  }

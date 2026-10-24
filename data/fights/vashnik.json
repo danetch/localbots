@@ -1,7 +1,7 @@
 {
  "id": "vashnik",
  "name": "Vashnik the Malignant",
- "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Vashnik.lua + Icy Veins boss guide (mechanics).",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Vashnik.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
  "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing.",
  "defaultDuration": 300,
  "mechanics": {
@@ -11,7 +11,7 @@
    "count": 8,
    "health": 1000000,
    "duration": 40,
-   "timesFrom": "guide",
+   "timesFrom": "logs",
    "assumed": [
     "health",
     "duration"
@@ -43,11 +43,11 @@
   }
  },
  "difficulties": {
-  "heroic": {
-   "label": "Heroic / Mythic",
+  "mythic": {
+   "label": "Mythic",
    "times": {
     "imbibe": [
-     20
+     24
     ],
     "froth": [
      13,
@@ -60,16 +60,42 @@
     ]
    },
    "repeat": {
-    "imbibe": 90,
+    "imbibe": 84,
     "froth": 40,
     "infection": 60
-   }
+   },
+   "duration": 394,
+   "checked": "Lorrgs: Imbibe 24/108/192/276/360 on Heroic (median 250 s) and Mythic (median 394 s). Plague Froth / Adaptive Infection are not shown by Lorrgs (unchanged)."
+  },
+  "heroic": {
+   "label": "Heroic",
+   "times": {
+    "imbibe": [
+     24
+    ],
+    "froth": [
+     13,
+     30,
+     33
+    ],
+    "infection": [
+     18,
+     52
+    ]
+   },
+   "repeat": {
+    "imbibe": 84,
+    "froth": 40,
+    "infection": 60
+   },
+   "duration": 250,
+   "checked": "Lorrgs: Imbibe 24/108/192/276/360 on Heroic (median 250 s) and Mythic (median 394 s). Plague Froth / Adaptive Infection are not shown by Lorrgs (unchanged)."
   },
   "normal": {
    "label": "Normal / LFR",
    "times": {
     "imbibe": [
-     20
+     24
     ],
     "froth": [
      10,
@@ -84,7 +110,7 @@
     ]
    },
    "repeat": {
-    "imbibe": 90,
+    "imbibe": 84,
     "froth": 40,
     "infection": 60
    }

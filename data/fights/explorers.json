@@ -1,27 +1,9 @@
 {
  "id": "explorers",
  "name": "The Lost Explorers",
- "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Explorers.lua + Icy Veins boss guide (mechanics).",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Explorers.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
  "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing.",
  "defaultDuration": 300,
- "stages": [
-  {
-   "id": 1,
-   "at": 0
-  },
-  {
-   "id": 2,
-   "atPct": 25
-  },
-  {
-   "id": 3,
-   "atPct": 50
-  },
-  {
-   "id": 4,
-   "atPct": 75
-  }
- ],
  "mechanics": {
   "junk": {
    "label": "Throw Junk (break crates)",
@@ -50,7 +32,7 @@
    "type": "movement",
    "duration": 3,
    "chance": 0.3,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "duration",
     "chance",
@@ -129,8 +111,8 @@
     },
     "blink": {
      "1": [
-      10,
-      31
+      17,
+      48
      ],
      "4": [
       21
@@ -168,7 +150,27 @@
     "flames": 35,
     "blink": 35,
     "hazard": 35
-   }
+   },
+   "stages": [
+    {
+     "id": 1,
+     "at": 0
+    },
+    {
+     "id": 2,
+     "at": 61
+    },
+    {
+     "id": 3,
+     "at": 122
+    },
+    {
+     "id": 4,
+     "at": 183
+    }
+   ],
+   "duration": 300,
+   "checked": "Lorrgs 50 kills (Heroic median 180 s, Mythic 333 s): phase changes 61/121/176-184/230-244/306/366, i.e. every ~61 s (was 25 % of the fight); Blink Nova 17/48 in the first phase. Stage 4 timings repeat until the end."
   }
  },
  "mainBoss": "Gebbo",

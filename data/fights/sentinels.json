@@ -1,7 +1,7 @@
 {
  "id": "sentinels",
  "name": "Entombed Sentinels",
- "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Sentinels.lua + Icy Veins boss guide (mechanics).",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Sentinels.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
  "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing.",
  "defaultDuration": 300,
  "mechanics": {
@@ -9,10 +9,9 @@
    "label": "Toxic Droplets (step on them)",
    "type": "movement",
    "duration": 2,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
-    "duration",
-    "repeat"
+    "duration"
    ]
   },
   "miasma": {
@@ -20,11 +19,10 @@
    "type": "movement",
    "duration": 5,
    "chance": 0.25,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "duration",
-    "chance",
-    "repeat"
+    "chance"
    ]
   },
   "coagulation": {
@@ -33,21 +31,19 @@
    "count": 1,
    "health": 3000000,
    "duration": 45,
-   "timesFrom": "bigwigs",
+   "timesFrom": "logs",
    "assumed": [
     "health",
-    "duration",
-    "repeat"
+    "duration"
    ]
   },
   "intermission": {
    "label": "Helical Toxins intermission (DPS stop attacking)",
    "type": "invulnerable",
    "duration": 15,
-   "timesFrom": "guide",
+   "timesFrom": "logs",
    "assumed": [
-    "times",
-    "duration"
+    "duration (the gap in boss casts is ~30 s, the raid may keep hitting adds)"
    ]
   }
  },
@@ -56,27 +52,26 @@
    "label": "All difficulties",
    "times": {
     "droplets": [
-     12,
-     32
+     15
     ],
     "miasma": [
-     16,
-     41
+     18
     ],
     "coagulation": [
-     8
+     12
     ],
     "intermission": [
-     90,
-     180,
-     270
+     45
     ]
    },
    "repeat": {
-    "droplets": 40,
-    "miasma": 50,
-    "coagulation": 60
-   }
+    "intermission": 102,
+    "droplets": 33,
+    "miasma": 52,
+    "coagulation": 53
+   },
+   "duration": 300,
+   "checked": "Lorrgs 50 kills (Heroic median 249 s, Mythic 347 s): phase changes 57/159-162/260-265 (same on both), boss casts stop ~30-65 s and ~138-168 s; Venom Coagulation 12/70/122/174/226/279, Toxic Droplets 15/72/105/138/177/209/242/282, Unstable Miasma 18/75/117/179/221/285."
   }
  },
  "council": "Two bosses, but the raid splits into one group per boss (Method: council / split raid), so a DPS player only hits one of them: simulated as a single target."
