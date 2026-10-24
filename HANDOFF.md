@@ -533,3 +533,42 @@ embellishment").
   with "-" (0.5.0-beta.1) is published as a GitHub pre-release; season* branches never publish full releases.
 - Smoke test (real Electron under Xvfb, fresh profile): startup refresh 404 (manifest not pushed yet) handled silently, automatic loot
   update starts and reports the network failure, PTR toggle saves and shows the badge. Tests: 50 pass.
+
+=== 24 OCT: SEASON 3 PREPARATION (part 2: tools) ===
+- lib/journal.js + tools/journal-draft.js: draft fight files from the in-game Adventure Guide (wago DB2 JournalEncounter,
+  JournalEncounterSection, JournalEncounterCreature, SpellName, Spell; available from the first PTR build). Section Type 0 stage header
+  (a nested header that is not "Stage/Phase/Intermission…" = a group of adds), 1 creature, 2 ability (SpellID; titles are placeholders,
+  names/text from the spell, "$@spelldesc<id>" / "$@spellname<id>" references followed), 3 overview. IconFlags (checked on S2): 1 tank,
+  2 dps, 4 healer, 8 heroic, 16 deadly, 32 important, 64 interrupt, 128 magic, 512 poison, 4096 mythic. Bosses = journal creatures at the
+  top of the guide (single boss when the encounter is named after a creature). Suggested types from text + icons: invulnerable,
+  vulnerable (more / LESS damage taken), damage_done_buff, adds, movement; "skip" (tank, healer-only, add's own ability), "unknown".
+  Validated on 10 S2 bosses (run in the user's browser on wago): Twin Fangs council Vexhul+Ithraz, Submerge, Venomous Emergence adds;
+  Sszorak Dig In vulnerable; Ula'tek Venomous Heart + 4 stages; Sentinels Vitriolic Stasis = less damage taken. Weak: allies listed as
+  adds (Lady Liadrin), objects (Vashnik's fountains), ~1/3 "unknown". Drafts: "draft": true, "ptr": true with --ptr, no timings,
+  kill length prior (lib/boss.js priorLength: this season's median kill; mean of the two longest for a raid's last two bosses: 480 s H /
+  607 s M; others 282 / 375). The tool never overwrites an existing file (lists new abilities instead).
+- lib/bigwigs.js + tools/bw-update.js: parse a module's rounded-duration ladders (case-insensitive: Nymrissa uses durationRounded),
+  stages (`stage == n`), difficulty (self:Mythic() branches, per-difficulty handlers like Twin Fangs' MythicEvents); match mechanics by
+  spell id = BigWigs key, else by name; propose / --write first-cast times for mechanics whose timesFrom is none/bigwigs/assumed
+  (logs are never overwritten). "CHECK" when one condition lists several durations (Sszorak: 100 or 111 or 125 = one per difficulty).
+- lib/wcl.js + tools/wcl-timeline.js: Warcraft Logs API v2 (client credentials). zones() (find the PTR zone), topKills(encounter,
+  difficulty) via speed rankings, zoneFights(zone, encounter, window) = public reports (raid testing), fight(code, id) = enemy casts
+  (paginated, nextPageTimestamp until null) + phaseTransitions + length; aggregate() = Lorrgs-style medians of the n-th cast (casts < 4 s
+  apart merged); cycle() turns cast times into times + repeat (Nymrissa frost 38/82 + 110, Twin Fangs deluge 9/70 + 155). Schema checked
+  on the published docs; NOT yet run (needs the user's API client: https://www.warcraftlogs.com/api/clients). warcraftlogs.com is not
+  reachable from the sandbox: run it in the user's browser on a warcraftlogs.com page (same-origin fetch) or on a PC.
+- Tests: 54 pass.
+
+=== SEASON 3 RUNBOOK (when the PTR has the new raid) ===
+1. wago /api/builds/latest -> wowt build; JournalInstance on that build vs live -> new raid instance id(s).
+2. node tools/journal-draft.js --instance <id> --ptr   (or the same code in the user's browser on wago) -> data/fights/<boss>.json drafts.
+   Review every mechanic type; councils (cleaved or split?); stage starts are placeholders.
+3. data/season-ptr.json (copy season.json: id MID3/…, name, tierSet, upgradeTracks = item_bonus type-34 groups of the new raid's drops
+   (lib/loot.js trackGroups on the PTR build), craftedIlvl, raids, sources {warcraftLogsZone, lorrgsZones, bigwigs}); progression-ptr.json
+   (tracks / sources / boss overrides); crafted-ptr.json if crafting changes. New expansion: expansion.qualityRanks.
+4. node tools/make-data.js; push to main -> every 0.5.0+ app gets the PTR files; users who tick "Season preview" see the PTR bosses.
+   Optionally a beta app version (x.y.z-beta.N on a season3 branch) for code changes.
+5. During raid testing: BigWigs adds the new raid folder -> sparse clone, node tools/bw-update.js <fight> <module> (--write after review);
+   Warcraft Logs testing reports -> tools/wcl-timeline.js --zones, then --zone <ptr zone> --encounter <id> -> times + repeat.
+6. Season start: season.json <- season-ptr.json (drop "ptr" from the fights, keep the old season's files or retire them), release.
+   First days: Lorrgs (api2.lorrgs.io) real timings; after ~2 weeks: Warcraft Logs median kills per item level (difficulties[d].kills).

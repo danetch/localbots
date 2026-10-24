@@ -291,3 +291,85 @@ test('boss: kill length from Warcraft Logs median kills at the export item level
   assert.ok(b.killLength(tf, 'heroic', 345).length < 275);                          // extended past the last bracket
   assert.strictEqual(b.build(get('nymrissa'), { difficulty: 'heroic' }).length, 282);   // default = median guild kill
 });
+
+test('journal: draft fight from Adventure Guide rows (stages, council, adds, spell references, types)', () => {
+  const J = L('journal'), { readTable } = L('loot');
+  const t = {
+    encounter: 'Name_lang,Description_lang,Map_0,Map_1,ID,JournalInstanceID,DungeonEncounterID,OrderIndex,FirstSectionID\nThe Twins,,0,0,9,1,0,0,10',
+    creature: 'Name_lang,Description_lang,ID,JournalEncounterID\nAlpha,,1,9\nBeta,,2,9\nWhelp,,3,9',
+    section: 'ID,Title_lang,BodyText_lang,JournalEncounterID,OrderIndex,ParentSectionID,FirstChildSectionID,NextSiblingSectionID,Type,IconCreatureDisplayInfoID,UiModelSceneID,SpellID,IconFlags,IconFlags2,DifficultyMask\n' + [
+      '10,Overview,,9,0,0,0,11,3,0,0,0,0,0,-1', '11,Alpha,,9,1,0,13,12,1,0,0,0,0,0,-1', '12,Beta,,9,2,0,16,0,1,0,0,0,0,0,-1',
+      '13,Section 1,,9,0,11,14,15,2,0,0,501,0,0,-1', '14,Whelp,,9,0,13,17,0,1,0,0,0,2,0,-1', '17,Section 2,,9,0,14,0,0,2,0,0,505,1,0,-1',
+      '15,Section 3,,9,1,11,0,0,2,0,0,502,1,0,-1', '16,Section 4,,9,0,12,0,18,2,0,0,503,4096,0,-1', '18,Section 5,,9,1,12,0,0,2,0,0,504,0,0,-1'].join('\n'),
+    spellName: 'ID,Name_lang\n501,Call Whelps\n502,Bite\n503,Harden\n504,Gore Rain\n505,Whelp Nip\n506,Puddle',
+    spell: 'ID,NameSubtext_lang,Description_lang,AuraDescription_lang\n501,,"Alpha calls her progeny from the deep.",\n502,,"Bites the tank.",\n503,,"Beta hardens, reducing her damage taken by $s1% for $d.",\n504,,"$@spelldesc506",\n505,,"Nips.",\n506,,"Leaves a |cFFFFFFFF|Hspell:506|h[Puddle]|h|r on the ground. Avoid it.",',
+  };
+  const [d] = J.draft(t, readTable, ['9'], { ptr: true });
+  assert.strictEqual(d.id, 'the_twins'); assert.ok(d.ptr && d.draft);
+  assert.strictEqual(d.mainBoss, 'Alpha'); assert.deepStrictEqual(d.bosses, [{ name: 'Beta' }]);   // Whelp is under an ability: an add
+  const m = d.mechanics;
+  assert.strictEqual(m.call_whelps.type, 'adds'); assert.strictEqual(m.whelp.type, 'adds');
+  assert.strictEqual(m.bite.type, 'skip');                                   // tank ability
+  assert.strictEqual(m.harden.type, 'vulnerable'); assert.ok(m.harden.multiplier < 1); assert.strictEqual(m.harden.difficulty, 'mythic');
+  assert.strictEqual(m.gore_rain.type, 'movement');                         // description followed through $@spelldesc506
+  assert.ok(!m.whelp_nip);                                                   // an add's own ability is left out
+  assert.ok(Object.values(m).every(x => x.timesFrom === 'none'));
+});
+
+test('bigwigs: rounded-duration ladders -> first casts per stage and difficulty, matched by spell id or name; logs are never overwritten', () => {
+  const B = L('bigwigs');
+  const lua = [
+    'function mod:GetOptions()', '\treturn {', '\t\t1001, -- Big Wave', '\t\t1002, -- Spawn Eggs', '\t}', 'end',
+    'function mod:ENCOUNTER_TIMELINE_EVENT_ADDED(_, eventInfo)', '\tlocal rounded = self:RoundNumber(eventInfo.duration, 0)',
+    '\tif rounded == 12 or rounded == 40 then', '\t\tbarInfo = self:BigWave(eventInfo)',
+    '\telseif durationRounded == 25 then', '\t\tif self:Mythic() then', '\t\t\tbarInfo = self:Frenzy(eventInfo)', '\t\telse', '\t\t\tbarInfo = self:SpawnEggs(eventInfo)', '\t\tend',
+    '\tend', '\tif stage == 2 then', '\t\tif rounded == 7 then', '\t\t\tbarInfo = self:BigWave(eventInfo)', '\t\tend', '\tend', 'end',
+    'function mod:BigWave()', '\treturn { msg = "x", key = 1001 }', 'end', 'function mod:SpawnEggs()', '\treturn { msg = "y", key = 1002 }', 'end',
+  ].join('\n');
+  const bw = B.parse(lua);
+  assert.deepStrictEqual(bw.mechanics.BigWave.stages, { 1: [12, 40], 2: [7] }); assert.strictEqual(bw.mechanics.BigWave.key, 1001);
+  assert.strictEqual(bw.mechanics.Frenzy.mythic, true); assert.strictEqual(bw.mechanics.SpawnEggs.mythic, false);
+  const def = { mechanics: { wave: { label: 'Big Wave', spell: 1001, timesFrom: 'none' }, eggs: { label: 'Spawn Eggs', timesFrom: 'none' }, frenzy: { label: 'Frenzy', timesFrom: 'logs' } },
+    difficulties: { heroic: { times: {} }, mythic: { times: {} } } };
+  const ch = B.plan(def, bw);
+  assert.deepStrictEqual(ch.filter(c => c.key === 'wave').map(c => c.difficulty), ['heroic', 'mythic']);
+  assert.deepStrictEqual(ch.find(c => c.key === 'wave').to, { 1: [12, 40], 2: [7] });
+  assert.ok(ch.find(c => c.key === 'wave').check);                                // 12 or 40 in one condition
+  assert.deepStrictEqual(ch.filter(c => c.key === 'eggs').map(c => c.difficulty), ['heroic']);   // not Mythic (else branch)
+  assert.ok(!ch.some(c => c.key === 'frenzy'));                                    // timings from logs stay
+  B.apply(def, ch); assert.strictEqual(def.mechanics.wave.timesFrom, 'bigwigs'); assert.deepStrictEqual(def.difficulties.heroic.times.eggs, [25]);
+});
+
+test('wcl: client credentials, paginated enemy casts, aggregation like Lorrgs, cycle detection', async () => {
+  const W = L('wcl'), calls = [];
+  const fakeFetch = async (url, o) => {
+    calls.push(url);
+    if (url.endsWith('/oauth/token')) { assert.match(o.headers.Authorization, /^Basic /); return { ok: true, json: async () => ({ access_token: 'T' }) }; }
+    assert.strictEqual(o.headers.Authorization, 'Bearer T');
+    const { query, variables } = JSON.parse(o.body);
+    if (/fights\(fightIDs/.test(query)) return { ok: true, json: async () => ({ data: { reportData: { report: { fights: [{ id: 3, startTime: 1000, endTime: 301000, kill: true, difficulty: 5, phaseTransitions: [{ id: 2, startTime: 151000 }] }], masterData: { abilities: [{ gameID: 77, name: 'Bubble' }] } } } } }) };
+    if (/events\(/.test(query)) {
+      const first = variables.s === 1000;
+      return { ok: true, json: async () => ({ data: { reportData: { report: { events: first
+        ? { data: [{ type: 'cast', timestamp: 24000, abilityGameID: 77 }, { type: 'cast', timestamp: 25000, abilityGameID: 77 }, { type: 'begincast', timestamp: 26000, abilityGameID: 77 }], nextPageTimestamp: 100000 }
+        : { data: [{ type: 'cast', timestamp: 134000, abilityGameID: 77 }], nextPageTimestamp: null } } } } }) };
+    }
+    throw new Error('unexpected query');
+  };
+  const c = W.client({ id: 'a', secret: 'b', fetch: fakeFetch });
+  const f = await c.fight('ABC', 3);
+  assert.strictEqual(f.duration, 300); assert.deepStrictEqual(f.phases, [{ id: 2, t: 150 }]);
+  assert.deepStrictEqual(f.casts.map(x => x.t), [23, 24, 133]);                    // begincast ignored, 2 event pages
+  assert.strictEqual(calls.filter(u => u.endsWith('/oauth/token')).length, 1);     // token reused
+  const A = W.aggregate([f, { ...f, casts: f.casts.map(x => ({ ...x, t: x.t + 2 })) }]);
+  assert.deepStrictEqual(A.abilities[77].casts, [[25, 2], [135, 2]]);              // 23/24 merged (gap < 4 s), medians of 2 fights
+  assert.deepStrictEqual(W.cycle([38, 82, 148, 192, 258, 302, 368]), { times: [38, 82], repeat: 110 });   // Nymrissa Chilling Frost
+  assert.deepStrictEqual(W.cycle([9, 70, 164, 225, 319, 380]), { times: [9, 70], repeat: 155 });         // Twin Fangs deluge
+  assert.deepStrictEqual(W.cycle([5, 114, 223]), { times: [5], repeat: 109 });
+});
+
+test('boss: kill length prior for a boss without logs (same part of a raid, this season)', () => {
+  const b = L('boss'), defs = [280, 300, 260, 400, 560].map((m, i) => ({ difficulties: { heroic: { kills: { median: m } }, mythic: { kills: { median: m + 100 } } } }));
+  assert.deepStrictEqual(b.priorLength(defs, false), { heroic: 280, mythic: 380 });   // without the two longest
+  assert.deepStrictEqual(b.priorLength(defs, true), { heroic: 480, mythic: 580 });   // mean of the two longest
+});
