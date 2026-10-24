@@ -587,3 +587,30 @@ embellishment").
 === 24 OCT: FLEETING CONSUMABLES HIDDEN ===
 - "Fleeting" flasks / potions (cauldron versions of the regular ones, same effect) join lib/loot.js NOT_COMBAT, applied when building
   loot.json and in loot:info (older loot.json too). User's data: flasks 16 -> 8, potions 47 -> 34.
+
+=== 24 OCT: v0.6.0 FOOD LIST CHECKED BY SIMC, CRAFTED CARD REWORKED ===
+- Food (lib/foods.js, main.js checkFoods at "Update loot data"): the list was capped to the 150 newest food items (Midnight has more:
+  Royal Roast, Blooming Feast, Glitter Skewers... were cut) and simc could load only 8 of the 139 listed. Now: no cap for food, Hearty
+  foods dropped by name (same effect, kept through death; simc refuses them), then each food is simulated with the user's simc on a
+  gearless frost mage probe (warriors / rogues without a weapon don't start), once more with gear_mastery_rating=2000: primary stat,
+  "highest secondary" (the stat follows the extra mastery: feasts, Champion's Bento...) or fixed secondaries. No damage stat or not
+  loadable -> dropped; same effect -> merged (`also`); weaker of the same kind -> dropped. VERIFIED with simc 12.1.5.70529 on the user's
+  food list: 12 kept (Royal Roast +51 primary, Amani Cornucopia +73 highest secondary, 4 single +59, 5 pairs 22/22, Farstrider 16/16),
+  ~5 s. Labels "Name — +59 Mastery". loot.json foodVer = 1; without it (or without simc) the full list minus Hearty is shown and
+  loot:status asks for a refresh once simc is set. simc's own food table: engine/player/unique_gear_midnight.cpp (selector_food,
+  primary_food, secondary_food). Some foods it registers still fail by name ("Unable to find consumable": Sun-Seared Lumifin,
+  Void-Kissed Fish Rolls, Fel-Kissed Filet, Bloodthistle-Wrapped Cutlets, Mana-Infused Stew, Venom-Spiced Cutlets, Sweet-and-Sour Skewers).
+- Crafted base items: the recipe scan read SpellEffect only (pre-Dragonflight recipes), so the user's list was all Shadowlands. Now also
+  wago CraftingData.CraftedItemID + CraftingDataItemQuality.ItemID (columns from WoWDBDefs; NOT yet run against wago from here: wago is
+  blocked in the sandbox and the user's PC was offline -> check the log line "Crafted base items found" after the next update), epic
+  quality only (ItemSparse OverallQualityID >= 4), newest expansion. loot.json craftVer = 2 (loot:status refreshes older files).
+- crafted_stats: simc only replaces stat types 24/25 (placeholders). VERIFIED: Arcanoweave Bracers 239660 fixed Haste/Vers (crafted_stats
+  changes nothing), Murder Row Fleet Feet 244463 has placeholders (no secondaries at all without crafted_stats). lib/items.js now
+  stores `cph` (placeholders) and `fixc` (epic id >= 200000 without them); make().craftStats(id) -> true / false / null (unknown:
+  pairs kept). Fixed-stat pieces get one variant without crafted_stats; Top Gear's pair probe only looks at pieces with pairs.
+  Bundled data/items.json regenerated from simc 12.1.5.70529 (457 cph, 6270 fixc).
+- Crafted card: "Embellished crafts" (unchanged) / "Crafts without embellishment" = one checkbox per slot group present in the crafted
+  data (trinkets, rings, neck, cloak, bracers, belt, boots, ...; crafted.groupOf) -> getCrafted().plainSlots (old `plain: true` = all) /
+  stat pairs hidden when no known piece has placeholders, with "x of y" note. Crafted trinkets = Darkmoon Decks Void 245750, Hunt 245829,
+  Rot 245846, Blood 245855 (simc implements them; Outlaw 331 deck vs 344 Zul'jin's Guillotine: ~ -2.4 %).
+- Tests: 59 pass.

@@ -166,13 +166,13 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
  <details class="card sec" id="s_craft" data-modes="top drop bis"><summary><span class="n"></span>Crafted gear<span class="sm" id="sm_craft"></span></summary>
   <label class="in"><input type="checkbox" id="cr_on">Add crafted items to the pool (max level)</label>
   <div class="it" id="cr_st">Run “Update loot data” to list craftable items.</div>
-  <div style="font-weight:600;font-size:12px;margin-top:6px">Embellishments to test</div><div id="cr_emb" style="max-height:150px;overflow:auto"></div>
-  <label class="in"><input type="checkbox" id="cr_plain">Also test crafts without embellishment</label>
-  <div style="font-weight:600;font-size:12px;margin-top:6px">Crafted stat pairs</div><div id="cr_pairs"></div>
+  <div style="font-weight:600;font-size:12px;margin-top:6px">Embellished crafts</div><div id="cr_emb" style="max-height:150px;overflow:auto"></div>
+  <div style="font-weight:600;font-size:12px;margin-top:6px">Crafts without embellishment</div><div class="it">Pick the slots to try a plain crafted piece in (crafted trinkets are only tested here).</div><div id="cr_plain"></div>
+  <div id="cr_pairbox"><div style="font-weight:600;font-size:12px;margin-top:6px">Crafted stat pairs</div><div id="cr_pairnote" class="it"></div><div id="cr_pairs"></div></div>
   <div class="it" style="margin-top:6px">Crafted weapons are added automatically when you tick a weapon embellishment (only types your class can wield).</div>
   <div style="font-weight:600;font-size:12px;margin-top:6px">What will be tested</div><div id="cr_prev" class="it">Tick “Add crafted items” to see which pieces are added.</div>
   <div class="row"><button id="cr_edit">Edit crafted rules…</button></div>
-  <div class="it">Only embellished pieces count toward the limit of 2 (the same embellishment twice is allowed). Top Gear first ranks your ticked stat pairs once, searches slots and embellishments with the best pair, then tries every stat-pair combination of the crafted pieces of the best finalists together, so ticking all pairs is fine.</div></details>
+  <div class="it">Only embellished pieces count toward the limit of 2 (the same embellishment twice is allowed). Stat pairs only apply to crafted pieces whose secondary stats you choose; the others keep their fixed stats. Top Gear first ranks your ticked stat pairs once, searches slots and embellishments with the best pair, then tries every stat-pair combination of the crafted pieces of the best finalists together, so ticking all pairs is fine.</div></details>
 
  <details class="card sec" id="s_enh" data-modes="top bis"><summary><span class="n"></span>Enchants &amp; gems<span class="sm" id="sm_enh"></span></summary>
   <label class="in"><input type="checkbox" id="en_on">Find the best enchants (rings, chest, legs, weapons)</label>
@@ -395,9 +395,13 @@ function showBis(r){setRep(r.report);const g=r.final-r.start;setCopy(`Best in Sl
 
 
 const SNAME={32:'Crit',36:'Haste',40:'Vers',49:'Mastery'};
+const CR_G=[['trinket','Trinkets'],['finger','Rings'],['neck','Neck'],['back','Cloak'],['wrist','Bracers'],['waist','Belt'],['feet','Boots'],['hands','Gloves'],['head','Head'],['shoulder','Shoulders'],['chest','Chest'],['legs','Legs']];
 function renderCrafted(){schedCraft();const c=lootInfo?.crafted;if(!c){$('cr_st').textContent='Run “Update loot data” to list craftable items.';return}
- const keep=new Set([...document.querySelectorAll('.cre:checked')].map(x=>x.value)),keepP=new Set([...document.querySelectorAll('.crp:checked')].map(x=>x.value)),first=!document.querySelector('.crp');
- $('cr_st').textContent=`${c.items} craftable base item(s) known · crafted item level ${c.ilvl}`+(c.items?'':' — none found: add some under "extraItems" in Edit crafted rules');
+ const keep=new Set([...document.querySelectorAll('.cre:checked')].map(x=>x.value)),keepG=new Set([...document.querySelectorAll('.crg:checked')].map(x=>x.value)),keepP=new Set([...document.querySelectorAll('.crp:checked')].map(x=>x.value)),first=!document.querySelector('.crp');
+ $('cr_st').textContent=`${c.items} craftable base item(s) known · crafted item level ${c.ilvl}`+(c.items?'':' — none found: add some under "extraItems" in Edit crafted rules')+(c.old?' · click “Update loot data” to read the current recipe tables':'');
+ const G=Object.fromEntries((c.groups||[]).map(g=>[g.group,g.items]));
+ $('cr_plain').innerHTML=CR_G.filter(([g])=>G[g]).map(([g,t])=>`<label class="in" title="${esc(G[g].join(', '))}"><input type="checkbox" class="crg" value="${g}" ${keepG.has(g)?'checked':''}><span>${t} <span class="it">(${G[g].length<=4?esc(G[g].join(', ')):G[g].length+' items, your armor type is used'})</span></span></label>`).join('')||'<div class="it">No crafted base items known.</div>';
+ $('cr_pairbox').hidden=c.pairable===0;$('cr_pairnote').textContent=c.pairable!=null&&c.pairable<c.bases?`Only for the crafted pieces whose stats you choose (${c.pairable} of ${c.bases}); the others keep their fixed stats.`:'';
  $('cr_emb').innerHTML=c.emb.map(e=>`<label class="in"><input type="checkbox" class="cre" value="${esc(e.name)}" ${keep.has(e.name)?'checked':''}>${esc(e.name)} <span class="it">(${e.slots.join(', ')}${e.unverified?' · slots unverified':''})</span></label>`).join('')||'<div class="it">No embellishment rules.</div>';
  $('cr_pairs').innerHTML=c.pairs.map(p=>`<label class="in" style="display:inline-flex;margin-right:8px"><input type="checkbox" class="crp" value="${p}" ${first||keepP.has(p)?'checked':''}>${p.split('/').map(s=>SNAME[s]||s).join(' / ')}</label>`).join('');
 }
@@ -407,11 +411,11 @@ var crTimer=0;
 async function refreshCraftPrev(){const el=$('cr_prev');if(!$('cr_on').checked){window.__crTotal=null;el.textContent='Tick “Add crafted items” to see which pieces are added.';return}
  const r=await api.craftPreview({text:$('txt').value,crafted:getCrafted()}).catch(e=>({error:msg(e)}));
  if(r.error){el.textContent=r.error;return}
- window.__crTotal=r.total;el.innerHTML=`<b>${r.total}</b> crafted variant(s) added to the pool, from your class's armor and accessories (every craftable piece × each ticked stat pair × each embellishment allowed in its slot):`+
+ window.__crTotal=r.total;el.innerHTML=`<b>${r.total}</b> crafted variant(s) added to the pool, from your class's armor and accessories (each embellishment in the slots it allows, plain pieces in the slots you picked, × each ticked stat pair where the stats can be chosen):`+
   r.slots.map(s=>`<div style="margin-top:3px"><b>${esc(s.slot)}</b> · ${s.n} variant(s)<br>${s.items.map(esc).join(', ')}</div>`).join('')}
 function schedCraft(){clearTimeout(crTimer);crTimer=setTimeout(refreshCraftPrev,300)}
 $('cr_on').closest('details').addEventListener('change',schedCraft);$('txt').addEventListener('input',schedCraft);
-const getCrafted=()=>({on:$('cr_on').checked,emb:[...document.querySelectorAll('.cre:checked')].map(x=>x.value),pairs:[...document.querySelectorAll('.crp:checked')].map(x=>x.value),plain:$('cr_plain').checked});
+const getCrafted=()=>({on:$('cr_on').checked,emb:[...document.querySelectorAll('.cre:checked')].map(x=>x.value),pairs:[...document.querySelectorAll('.crp:checked')].map(x=>x.value),plainSlots:[...document.querySelectorAll('.crg:checked')].map(x=>x.value)});
 // ---- Enchants & gems (Best in Slot) ----
 const getEnh=()=>({ench:$('en_on').checked,gems:$('gm_on').checked,add:[...document.querySelectorAll('.jb:checked')].map(c=>c.value)});
 var enTimer=0;const SLN={main_hand:'main hand',off_hand:'off hand',finger1:'ring 1',finger2:'ring 2'};const sln=s=>SLN[s]||s;
@@ -430,7 +434,7 @@ const consSel={flask:new Set(),food:new Set(),potion:new Set(),augmentation:new 
 function renderCons(){$('consBox').innerHTML=CATS.map(([k,t])=>`<div style="margin-bottom:8px"><div style="font-weight:600;font-size:12px">${t} <span class="it" id="cn_${k}"></span></div><input class="cf" data-k="${k}" placeholder="Filter, or type a custom name + Enter" style="width:100%;margin:3px 0"><div id="cl_${k}" style="max-height:110px;overflow:auto"></div></div>`).join('');CATS.forEach(([k])=>renderList(k))}
 function renderList(k){const C=lootInfo?.consumables||{},ck=CATS.find(c=>c[0]===k)[2],f=(consFilter[k]||'').toLowerCase(),known=C[ck]||[];
  const opts=[{value:'disabled',label:'(none)'},...known,...[...consSel[k]].filter(v=>v!=='disabled'&&!known.some(o=>o.value===v)).map(v=>({value:v,label:v+' (custom)'}))];
- $('cl_'+k).innerHTML=opts.filter(o=>consSel[k].has(o.value)||!f||(o.label+o.value).toLowerCase().includes(f)).map(o=>`<label class="in"><input type="checkbox" class="cs" data-k="${k}" value="${esc(o.value)}" ${consSel[k].has(o.value)?'checked':''}>${esc(o.label)}</label>`).join('');updCount()}
+ $('cl_'+k).innerHTML=opts.filter(o=>consSel[k].has(o.value)||!f||(o.label+o.value+(o.also||[]).join(' ')).toLowerCase().includes(f)).map(o=>`<label class="in"><input type="checkbox" class="cs" data-k="${k}" value="${esc(o.value)}" ${consSel[k].has(o.value)?'checked':''}><span>${esc(o.label)}${o.also?.length?` <span class="it">(same: ${esc(o.also.join(', '))})</span>`:''}</span></label>`).join('');updCount()}
 function updCount(){let n=0;for(const[k]of CATS){const c=consSel[k].size;$('cn_'+k).textContent=c?`(${c} selected)`:'';n+=c}$('combo').textContent=n?`${n} consumable option${n>1?'s':''} selected`:''}
 $('consBox').oninput=e=>{if(e.target.classList.contains('cf')){consFilter[e.target.dataset.k]=e.target.value;renderList(e.target.dataset.k)}};
 $('consBox').onkeydown=e=>{if(e.key==='Enter'&&e.target.classList.contains('cf')){const k=e.target.dataset.k,v=e.target.value.trim();if(/^[\w:.\-]+$/.test(v)){consSel[k].add(v);consFilter[k]='';renderList(k);const i=document.querySelector(`.cf[data-k=${k}]`);i.value='';i.focus()}}};

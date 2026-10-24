@@ -373,3 +373,73 @@ test('boss: kill length prior for a boss without logs (same part of a raid, this
   assert.deepStrictEqual(b.priorLength(defs, false), { heroic: 280, mythic: 380 });   // without the two longest
   assert.deepStrictEqual(b.priorLength(defs, true), { heroic: 480, mythic: 580 });   // mean of the two longest
 });
+
+test('foods: effect from the two probes, duplicates merged, weaker foods of the same kind dropped', () => {
+  const F = L('foods');
+  const s = o => ({ strength: 0, agility: 0, intellect: 664, crit: 168, haste: 0, mastery: 0, vers: 0, ...o });
+  const b1 = s({}), b2 = s({ mastery: 2040 });
+  assert.deepStrictEqual(F.effectOf(s({ intellect: 715 }), s({ intellect: 715, mastery: 2040 }), b1, b2), { kind: 'primary', amount: 51 });
+  assert.deepStrictEqual(F.effectOf(s({ crit: 241 }), s({ mastery: 2112 }), b1, b2), { kind: 'best', amount: 73 }, 'feast follows the highest secondary');
+  assert.deepStrictEqual(F.effectOf(s({ mastery: 59 }), s({ mastery: 2099 }), b1, b2), { kind: 'fixed', stats: { mastery: 59 } }, 'fixed mastery stays mastery');
+  assert.deepStrictEqual(F.effectOf(s({ crit: 191, vers: 22 }), s({ crit: 191, vers: 22, mastery: 2040 }), b1, b2), { kind: 'fixed', stats: { crit: 23, vers: 22 } });
+  assert.strictEqual(F.effectOf(s({}), s({ mastery: 2040 }), b1, b2), null, 'no damage stat');
+  const f = (label, effect) => ({ value: label.toLowerCase().replace(/\W+/g, '_'), label, effect });
+  const r = F.reduce([f('Royal Roast', { kind: 'primary', amount: 51 }), f('Silvermoon Parade', { kind: 'primary', amount: 51 }), f('Spellfire Filet', { kind: 'primary', amount: 36 }),
+    f('Amani Cornucopia', { kind: 'best', amount: 73 }), f('Blooming Feast', { kind: 'best', amount: 67 }),
+    f('Braised Blood Hunter', { kind: 'fixed', stats: { vers: 59 } }), f('Felberry Figs', { kind: 'fixed', stats: { vers: 46 } }),
+    f('Wise Tails', { kind: 'fixed', stats: { crit: 22, vers: 22 } }), f('Spiced Biscuits', { kind: 'fixed', stats: { crit: 16, vers: 16 } }),
+    f('Farstrider Rations', { kind: 'fixed', stats: { haste: 16, mastery: 16 } }), f('Tea', null)]);
+  assert.deepStrictEqual(r.map(x => x.value), ['royal_roast', 'amani_cornucopia', 'braised_blood_hunter', 'wise_tails', 'farstrider_rations']);
+  assert.strictEqual(r[0].label, 'Royal Roast — +51 primary stat'); assert.deepStrictEqual(r[0].also, ['Silvermoon Parade']);
+  assert.strictEqual(r[1].label, 'Amani Cornucopia — +73 highest secondary stat');
+  assert.strictEqual(r[3].label, 'Wise Tails — +22 Crit +22 Vers');
+  assert.deepStrictEqual(F.preFilter([{ label: 'Hearty Royal Roast' }, { label: 'Royal Roast' }]), [{ label: 'Royal Roast' }]);
+});
+
+test('foods: classify drives simc probes (fake runner), unloadable foods dropped', async () => {
+  const F = L('foods');
+  const json = o => ({ sim: { players: [{ collected_data: { buffed_stats: { attribute: { strength: 0, agility: 0, intellect: o.int || 600 }, stats: { crit_rating: o.crit || 100, haste_rating: 0, mastery_rating: o.mast || 0, versatility_rating: 0 } } } }] } });
+  const run = async txt => { const food = /food=(\w+)/.exec(txt)[1], extra = /gear_mastery_rating/.test(txt) ? 2000 : 0;
+    if (food === 'hearty_x') return null;
+    return json({ int: food === 'roast' ? 650 : 600, crit: food === 'feast' && !extra ? 170 : 100, mast: extra + (food === 'feast' && extra ? 70 : 0) + (food === 'skewers' ? 59 : 0) }); };
+  const r = await F.classify([{ value: 'roast', label: 'Roast' }, { value: 'feast', label: 'Feast' }, { value: 'skewers', label: 'Skewers' }, { value: 'hearty_x', label: 'Hearty X' }, { value: 'tea', label: 'Tea' }], run);
+  assert.deepStrictEqual(r.list.map(x => x.label), ['Roast — +50 primary stat', 'Feast — +70 highest secondary stat', 'Skewers — +59 Mastery']);
+  assert.deepStrictEqual(r.dropped.sort(), ['Hearty X', 'Tea']);
+});
+
+test('crafted: stat pairs only on placeholder items, plain crafts per slot group (trinkets), CraftingData ids', () => {
+  const C = L('crafted'), INV = { 9: ['wrist'], 12: ['trinket1', 'trinket2'], 8: ['feet'] };
+  const crafted = [{ id: 1, name: 'Fixed Bracers', cls: 4, sub: 2, inv: 9 }, { id: 2, name: 'Deck', cls: 4, sub: 0, inv: 12 }, { id: 3, name: 'Choice Boots', cls: 4, sub: 2, inv: 8 }];
+  const o = { rules: { ilvl: 331, embellishments: { a: { slots: ['wrist', 'feet'] } } }, emb: ['a'], pairs: ['32/36', '36/49'], cls: 4, crafted, hasPairs: id => id === 3 };
+  const v = C.variants({ ...o, plainSlots: ['trinket'] }, INV);
+  assert.deepStrictEqual(v.filter(x => x.slot === 'wrist').map(x => x.item), [',id=1,ilevel=331,embellishment=a'], 'fixed stats: one variant, no crafted_stats');
+  assert.deepStrictEqual(v.filter(x => x.slot === 'feet').map(x => x.item), [',id=3,ilevel=331,crafted_stats=32/36,embellishment=a', ',id=3,ilevel=331,crafted_stats=36/49,embellishment=a']);
+  assert.deepStrictEqual(v.filter(x => /^trinket/.test(x.slot)).map(x => x.slot + x.item), ['trinket1,id=2,ilevel=331', 'trinket2,id=2,ilevel=331']);
+  assert.strictEqual(v.find(x => x.slot === 'trinket1').label, 'Crafted Deck (331)');
+  assert.ok(!C.variants({ ...o, emb: [], plainSlots: [] }, INV).length, 'nothing ticked');
+  assert.strictEqual(C.variants({ ...o, emb: [], plain: true }, INV).length, 5, 'older settings: plain = every slot');
+  assert.strictEqual(C.groupOf('finger2'), 'finger'); assert.strictEqual(C.groupOf('wrists'), 'wrist');
+  const loot = L('loot');
+  const csv = rows => rows.map(r => r.join(',')).join('\n') + '\n';
+  const ids = C.craftingDataIds((t, w, f) => { const [h, ...rs] = t.trim().split('\n').map(l => l.split(',')); const out = []; for (const r of rs) { const o = {}; for (const [k, n] of Object.entries(w)) o[k] = r[h.indexOf(n[0])]; if (!f || f(o)) out.push(o); } return out; },
+    { cdata: csv([['ID', 'Type', 'CraftedItemID'], [1, 0, 245829], [2, 0, 0]]), cdq: csv([['ID', 'ItemID', 'CraftingDataID'], [5, 239660, 1]]) });
+  assert.deepStrictEqual([...ids].sort(), ['239660', '245829']);
+  assert.ok(loot.build);
+});
+
+test('items: crafted-stat placeholders read from simc item data (bundled copy)', () => {
+  const I = L('items'), m = I.make(require('../data/items.json'));
+  assert.strictEqual(m.craftStats(244463), true, 'Murder Row Fleet Feet: stats to choose');
+  assert.strictEqual(m.craftStats(239660), false, 'Arcanoweave Bracers: fixed Haste/Vers');
+  assert.strictEqual(m.craftStats(245829), false, 'Darkmoon Deck: Hunt: no secondary stats');
+  assert.strictEqual(m.craftStats(501), null, 'unknown id');
+});
+
+test('loot: food list not capped to 150 items, Hearty foods left out', () => {
+  const c = L('loot'), it = (id, sub) => ({ id: String(id), cls: '0', sub: String(sub) }), sp = (id, name) => ({ id: String(id), name, exp: '11' });
+  const items = [], sparse = [];
+  for (let i = 0; i < 200; i++) { items.push(it(1000 + i, 5)); sparse.push(sp(1000 + i, `Food ${i}`)); }
+  items.push(it(5000, 5)); sparse.push(sp(5000, 'Hearty Food 1'));
+  const b = c.buildConsumables(items, sparse);
+  assert.strictEqual(b.food.length, 200); assert.ok(b.food.some(o => o.label === 'Food 0'));
+});

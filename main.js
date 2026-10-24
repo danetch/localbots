@@ -15,6 +15,7 @@ const engineLib = require('./lib/engine');
 const upgradeLib = require('./lib/upgrade');
 const enhLib = require('./lib/enhance');
 const drLib = require('./lib/dr');
+const foodsLib = require('./lib/foods');
 const crypto = require('crypto');
 const { resolve: resolveIlvl } = require('./lib/progression');
 
@@ -74,6 +75,19 @@ function runSimc(simcPath, inputFile, jsonFile, extra, onLine) {
       try { resolve(JSON.parse(fs.readFileSync(jsonFile, 'utf8'))); }
       catch (e) { reject(new Error(`simc finished but its JSON output could not be read (${e.message})`)); }
     });
+  });
+}
+
+// One short simc run outside the simulation queue (food check at "Update loot data") -> json2 | null. Never throws.
+function simcQuick(simcPath, text, dir, n) {
+  return new Promise(res => {
+    const f = path.join(dir, `p${n}.simc`), j = path.join(dir, `p${n}.json`);
+    try { fs.writeFileSync(f, text); } catch { return res(null); }
+    let p; try { p = spawn(simcPath, [...(ptrMode() ? ['ptr=1'] : []), f, `json2=${j}`, 'iterations=1', 'max_time=5', 'threads=1']); } catch { return res(null); }
+    const kill = setTimeout(() => { try { p.kill(); } catch {} }, 30000);
+    p.stdout.resume(); p.stderr.resume();
+    p.on('error', () => { clearTimeout(kill); res(null); });
+    p.on('close', code => { clearTimeout(kill); try { res(code === 0 ? JSON.parse(fs.readFileSync(j, 'utf8')) : null); } catch { res(null); } });
   });
 }
 
@@ -412,9 +426,9 @@ function craftedVariants(c, text, { base, dual } = {}) {
   // Crafted weapons only matter through weapon embellishments: they are added when one is ticked (types: what the class can wield).
   const wantW = sel.map(keyOf).some(k => (R2.embellishments[k]?.slots || []).some(x => /_hand$/.test(x)));
   const out = craftedLib.variants({ crafted, extra: R.extraItems, rules: R2, emb: sel.map(keyOf), embNames: Object.fromEntries(sel.map(n => [keyOf(n), names[n] || n])),
-    pairs: (c.pairs?.length ? c.pairs : R.statPairs), plain: !!c.plain, cls, includeWeapons: wantW, weapons: weaponsFor(text), titan: itemsLib.isTitan(text), dual, primary: specs.primaryOf(text), primOf: itemsDb().prim }, loot.INV);
+    pairs: (c.pairs?.length ? c.pairs : R.statPairs), plain: c.plainSlots ? false : !!c.plain, plainSlots: c.plainSlots, hasPairs: id => itemsDb().craftStats(id) !== false, cls, includeWeapons: wantW, weapons: weaponsFor(text), titan: itemsLib.isTitan(text), dual, primary: specs.primaryOf(text), primOf: itemsDb().prim }, loot.INV);
   if (base) for (const v of out) { const e = (/enchant_id=\d+/.exec(base[v.slot] || '') || [''])[0]; if (e) v.item += ',' + e; }   // l'enchantement équipé suit la pièce
-  if (!out.length) throw new Error('Crafted gear: nothing to test with these choices (pick at least one embellishment, or “also test without embellishment”).');
+  if (!out.length) throw new Error('Crafted gear: nothing to test with these choices (tick an embellishment, or a slot under “Crafts without embellishment”).');
   return out;
 }
 // What the Crafted gear card will add, for the preview under it: per slot, the base items and the number of variants.
@@ -477,16 +491,16 @@ ipcMain.handle('sim:topgear', run(async (o, tmp) => {
   const pairOf = it => (/crafted_stats=([^,]*)/.exec(it || '') || [])[1], famKey = it => String(it).replace(/,crafted_stats=[^,]*/, '');
   const famItems = new Map(), craftSlot = new Map();
   for (const v of cv) { const k = famKey(v.item); if (!famItems.has(k)) famItems.set(k, []); if (!famItems.get(k).includes(v.item)) famItems.get(k).push(v.item); parsed.labels[v.item] = v.label; craftSlot.set(v.item, v.slot.replace(/[12]$/, '')); }
-  const pairs = [...new Set(cv.map(v => pairOf(v.item)))];
+  const pairs = [...new Set(cv.map(v => pairOf(v.item)).filter(Boolean))];   // items with fixed stats have no crafted_stats
   let cvUse = cv;
   if (pairs.length > 1) {
     const PROBE = ['wrist', 'wrists', 'back', 'waist', 'feet', 'hands', 'legs', 'chest', 'head', 'shoulder', 'shoulders', 'finger1', 'finger2', 'neck'];   // armor first: crafted stats are a big part of its budget
-    const ref = PROBE.map(sl => cv.find(v => v.slot === sl && base[sl])).find(Boolean) || cv[0], refVars = cv.filter(v => v.slot === ref.slot && famKey(v.item) === famKey(ref.item));
+    const cvp = cv.filter(v => pairOf(v.item)), ref = PROBE.map(sl => cvp.find(v => v.slot === sl && base[sl])).find(Boolean) || cvp[0], refVars = cv.filter(v => v.slot === ref.slot && famKey(v.item) === famKey(ref.item));
     const pp = await pass(simcPath, KG.text, KG.diffs(refVars.map(v => ({ [v.slot]: v.item }))), fine(0.2), threads, tmp, log, fight, [0, 0.05], 'Crafted stats probe');
     const top = pp.results.sort((a, b) => b.mean - a.mean)[0], bestPair = top ? pairOf(refVars[top.idx].item) : pairs[0];
     const SN = { 32: 'Crit', 36: 'Haste', 40: 'Vers', 49: 'Mastery' }, pn = p => p.split('/').map(x => SN[x] || x).join('/');
     log(`>> Crafted stats probe (${ref.base}, ${ref.slot}): ${pp.results.map(r => `${pn(pairOf(refVars[r.idx].item))} ${((r.mean / pp.base - 1) * 100).toFixed(2)} %`).join(' · ')} → combinations use ${pn(bestPair)}, then every pair is tried on the finalists`);
-    cvUse = cv.filter(v => pairOf(v.item) === bestPair);
+    cvUse = cv.filter(v => !pairOf(v.item) || pairOf(v.item) === bestPair);
   }
   if (cvUse.length) { craftedLib.addToPools(parsed, cvUse, rules); log(`>> Crafted: ${cvUse.length} crafted pieces added to the pools${cvUse.length < cv.length ? ` (${cv.length} with every stat pair)` : ''}`); }
   // Too many combinations (crafted variants multiply fast): every candidate is first simulated alone in the current gear, and only the
@@ -848,9 +862,13 @@ ipcMain.handle('loot:info', () => {
   if (curGroups.size && known.size) for (const id of [...inSeason]) if (l.instances[id]?.type === 2 && loot.seasonOf(l.instances[id].groups, curGroups, known) === 'old') { inSeason.delete(id); oldSeason.push(l.instances[id].name); }
   if (inSeason.size) tiers.unshift({ id: 'season', name: `This season (${P.season})`, instances: [...inSeason], left: Object.values(l.instances).some(i => i.groups) ? oldSeason.sort() : null });
   const R = loadCraftRules(), key = n => (l.embellishments || []).find(e => e.name.toLowerCase() === n)?.name;
-  const craftedInfo = { items: (l.crafted || []).length + (R.extraItems || []).length, ilvl: R.ilvl, pairs: R.statPairs,
+  const bases = [...(l.crafted || []).flatMap(c => (loot.INV[c.inv] || []).filter(() => c.cls === 4).map(sl => ({ id: c.id, name: c.name, slot: sl }))), ...(R.extraItems || []).filter(x => x.slot)];
+  const groups = {}; for (const b of bases) { const g = craftedLib.groupOf(b.slot); (groups[g] ??= new Set()).add(b.name); }
+  const fixed = bases.filter(b => itemsDb().craftStats(b.id) === false).length;
+  const craftedInfo = { items: (l.crafted || []).length + (R.extraItems || []).length, ilvl: R.ilvl, pairs: R.statPairs, old: !l.craftVer,
+    groups: Object.entries(groups).map(([g, n]) => ({ group: g, items: [...n].sort() })), pairable: bases.length - fixed, bases: bases.length,
     emb: Object.entries(R.embellishments || {}).filter(([n]) => !(l.embellishments || []).length || key(n)).map(([n, v]) => ({ name: key(n) || n, slots: v.slots, unverified: (R.unverified || []).includes(n) })) };
-  return { crafted: craftedInfo, builtAt: l.builtAt, hasTier: !!l.tierSets?.length, weapons: loot.WEAPONS, tiers, consumables: !l.consumables ? null : Object.fromEntries(Object.entries(l.consumables).map(([k, v]) => [k, loot.combatOnly(l.consVer ? v : v.filter(o => !/guessed/.test(o.label)))])),   // profession phials hidden (also in older loot.json)
+  return { crafted: craftedInfo, builtAt: l.builtAt, hasTier: !!l.tierSets?.length, weapons: loot.WEAPONS, tiers, consumables: !l.consumables ? null : Object.fromEntries(Object.entries(l.consumables).map(([k, v]) => [k, loot.combatOnly(l.consVer ? v : v.filter(o => !/guessed/.test(o.label)))]).map(([k, v]) => [k, k === 'food' && !l.foodVer ? foodsLib.preFilter(v) : v])),   // profession phials hidden (also in older loot.json)
     instances: Object.entries(l.instances).map(([id, i]) => ({ id, name: i.name, items: Object.values(i.bosses).reduce((n, b) => n + b.items.length, 0) }))
       .sort((a, b) => b.id - a.id) };
 });
@@ -859,6 +877,8 @@ const liveBuild = async () => JSON.parse(await download('https://wago.tools/api/
 // Does the loot data need a refresh? -> { reason } | null. No data, data made for an older patch, or older than 14 days.
 ipcMain.handle('loot:status', async () => {
   const l = loadLoot(); if (!l) return { reason: 'no game data yet' };
+  if (!l.craftVer) return { reason: 'new crafted item tables' };
+  if (!l.foodVer && loadSettings().simcPath) return { reason: 'food list to check with simc' };
   let b = null; try { b = ptrMode() ? JSON.parse(await download('https://wago.tools/api/builds/latest', 'game builds', 15000)).wowt?.version : await liveBuild(); } catch { /* offline: only the age rule applies */ }
   const short = v => String(v).split('.').slice(0, 3).join('.');
   if (b && l.gameBuild && short(b) !== short(l.gameBuild)) return { reason: `new game patch ${short(b)}` };
@@ -873,6 +893,22 @@ ipcMain.handle('data:refresh', async () => {
   if (r.updated.length) emitLog(`>> Boss and season data updated from GitHub (${r.updated.join(', ')}).`);
   return { ...r, ...DF().info() };
 });
+// Food list reduced with simc (lib/foods.js): only foods simc can load that give a damage stat, duplicates merged.
+async function checkFoods(built, log) {
+  const { simcPath } = loadSettings(), food = built.consumables?.food || [];
+  if (!food.length) return;
+  if (!simcPath || !fs.existsSync(simcPath)) { log('>> Food: select the simc binary, then update again, to keep only the foods that add damage.'); return; }
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'polygnome-food-')); let n = 0;
+  try {
+    log(`>> Food: checking ${food.length} foods with simc (stat each one gives)…`);
+    const r = await foodsLib.classify(food, txt => simcQuick(simcPath, txt, dir, n++));
+    if (!r.list.length) throw new Error('no food recognised');
+    built.consumables.food = r.list; built.foodVer = 1;
+    log(`>> Food: ${r.list.length} kept (a damage stat, duplicates merged); ${r.dropped.length} left out (no damage stat, not loadable by simc, or weaker than another).`);
+    for (const d of r.dropped) trace(`   food left out: ${d}`);
+  } catch (e) { log(`>> Food check failed (${e.message}): full food list kept.`); }
+  finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch {} }
+}
 ipcMain.handle('loot:update', async () => {
   const log = emitLog;
   const names = { instance: 'JournalInstance', encounter: 'JournalEncounter', encItem: 'JournalEncounterItem', item: 'Item', sparse: 'ItemSparse', tier: 'JournalTier', tierX: 'JournalTierXInstance' };
@@ -888,6 +924,10 @@ ipcMain.handle('loot:update', async () => {
   t.skill = await optional('SkillLineAbility (recipes)', wago('SkillLineAbility'), 'crafted base items come from “extraItems” only');
   t.effects = t.skill && await optional('SpellEffect (recipes, large file)', wago('SpellEffect'), 'crafted base items come from “extraItems” only');
   if (!t.skill || !t.effects) { delete t.skill; delete t.effects; }
+  // Dragonflight+ recipes (CraftingData): without them only older crafted items are found
+  t.cdata = await optional('CraftingData (crafted items)', wago('CraftingData'), 'current crafted items come from “extraItems” only');
+  t.cdq = t.cdata && await optional('CraftingDataItemQuality (crafted items)', wago('CraftingDataItemQuality'), null);
+  if (!t.cdata) delete t.cdata; if (!t.cdq) delete t.cdq;
   // Bonus trees: tell which season a raid belongs to (its drops' upgrade tracks). Optional: without them "This season" uses the Journal only.
   for (const [k, n] of [['map', 'Map'], ['xTree', 'ItemXBonusTree'], ['treeNode', 'ItemBonusTreeNode'], ['bonus', 'ItemBonus']]) { t[k] = await optional(`${n} (season detection)`, wago(n), '“This season” uses the Adventure Guide only'); if (!t[k]) break; }
   if (!t.map || !t.xTree || !t.treeNode || !t.bonus) { delete t.map; delete t.xTree; delete t.treeNode; delete t.bonus; }
@@ -899,11 +939,12 @@ ipcMain.handle('loot:update', async () => {
   let built;
   try { built = loot.build(t); }
   catch (e) {
-    if (!t.skill) throw e;
+    if (!t.skill && !t.cdata) throw e;
     log(`>> Recipe tables could not be read (${e.message}): building without crafted base items.`);
-    delete t.skill; delete t.effects; built = loot.build(t);
+    delete t.skill; delete t.effects; delete t.cdata; delete t.cdq; built = loot.build(t);
   }
-  built.gameBuild = ptrBuild || await liveBuild().catch(() => null); built.ptr = !!ptrBuild;
+  built.gameBuild = ptrBuild || await liveBuild().catch(() => null); built.ptr = !!ptrBuild; built.craftVer = 2;
+  await checkFoods(built, log);
   writeJson(lootFile(), built);
   // Enchants, gems and socket bonuses for "Enchants & gems" (Best in Slot) and for carrying gems onto new pieces.
   const enhT = {}; for (const [k, u0] of Object.entries(enhLib.URLS)) { const u = ptrUrl(u0); enhT[k] = await optional(`${k === 'perm' ? 'enchant list' : k === 'ie' ? 'enchant effects' : k === 'gemData' ? 'gem data' : 'item bonus data'} (simc)`, u, 'keeping the bundled enchant/gem data'); if (!enhT[k]) break; }
@@ -986,3 +1027,4 @@ app.whenReady().then(() => {
   win.loadFile('renderer/index.html');
 });
 app.on('window-all-closed', () => { child?.kill(); app.quit(); });
+module.exports = { checkFoods };   // for tests
