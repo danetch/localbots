@@ -578,3 +578,8 @@ embellishment").
 - 0.5.0: season config, data updates from GitHub, automatic loot refresh, season preview, beta channel, Season 3 tools.
 - 0.5.1: beta-channel fallback (above). Warcraft Logs API: V2 (GraphQL, client credentials); waiting for the user's API client to run
   tools/wcl-timeline.js once for real.
+- Warcraft Logs API VERIFIED (24 Oct, user's API client, run in the user's browser on warcraftlogs.com; credentials are NOT stored in
+  the repo: ask the user again or use WCL_CLIENT_ID / WCL_CLIENT_SECRET on a PC). Twin Fangs Mythic top 8: same cycles as Lorrgs
+  (deluge 9/70 + 155, emergence 36/97 + 155, submerge 136/291), median 332 s. worldData.zones (44 zones): live raids 53 The Venomous
+  Abyss, frozen 46 "VS / DR / MQD" and 50 Sporefall (S1), 55 Mythic+ Season 2; no raid-testing zone yet (12.1.7 PTR has no new raid):
+  it will appear in the same list when testing starts.
