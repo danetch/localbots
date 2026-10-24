@@ -443,3 +443,32 @@ test('loot: food list not capped to 150 items, Hearty foods left out', () => {
   const b = c.buildConsumables(items, sparse);
   assert.strictEqual(b.food.length, 200); assert.ok(b.food.some(o => o.label === 'Food 0'));
 });
+
+test('watch: changes between two states, failed checks never count as new', () => {
+  const W = require('../tools/watch');
+  const old = { ptrBuild: { live: '12.1.5.1', ptr: '12.1.7.1', beta: null }, ptrRaids: { build: '12.1.7.1', extra: { 900: 'Delve X' } },
+    bigwigs: ['MidnightLairs', 'TheVenomousAbyss'], simc: { branch: 'midnight', live: '12.1.5.1', ptr: '12.1.7.1', profiles: ['MID1', 'MID2'] }, wcl: [{ id: 53, name: 'Abyss' }] };
+  assert.deepStrictEqual(W.changes(old, old), []);
+  const now = { ptrBuild: { live: '12.1.5.1', ptr: '12.2.0.5', beta: null }, ptrRaids: { build: '12.2.0.5', extra: { 900: 'Delve X', 1310: 'The Next Raid' } },
+    bigwigs: ['MidnightLairs', 'TheNextRaid', 'TheVenomousAbyss'], simc: { branch: 'midnight', live: '12.1.5.1', ptr: '12.2.0.5', profiles: ['MID1', 'MID2', 'MID3'] }, wcl: [{ id: 53, name: 'Abyss' }, { id: 58, name: 'Raid Testing' }] };
+  const ch = W.changes(old, now);
+  assert.deepStrictEqual(ch.map(c => c.key), ['ptrBuild', 'ptrRaids', 'bigwigs', 'simcPtr', 'simcProfiles', 'wcl']);
+  assert.deepStrictEqual(ch.find(c => c.key === 'ptrRaids').newInstances, ['1310']);
+  const { wcl, simc, ...partial } = now;   // checks that failed this run are absent: no change reported for them
+  assert.deepStrictEqual(W.changes(old, partial).map(c => c.key), ['ptrBuild', 'ptrRaids', 'bigwigs']);
+  assert.deepStrictEqual(W.csvIds('ID,Name_lang\n1301,"The Venomous Abyss"\n'), { 1301: 'The Venomous Abyss' });
+});
+
+test('watch: collect reads every source (mocked network)', async () => {
+  const W = require('../tools/watch');
+  const res = (body, ok = true) => ({ ok, status: ok ? 200 : 500, json: async () => body, text: async () => body });
+  const f = async u => /builds\/latest/.test(u) ? res({ wow: { version: '12.1.5.1' }, wowt: { version: '12.2.0.5' } })
+    : /JournalInstance\/csv\?build/.test(u) ? res('ID,Name_lang\n1,A\n2,B\n') : /JournalInstance/.test(u) ? res('ID,Name_lang\n1,A\n')
+    : /client_data_version_ptr/.test(u) ? res('// Client data versioning information for 12.2.0.5') : /client_data_version/.test(u) ? res('// Client data versioning information for 12.1.5.1') : res('', false);
+  const gh = async p => p === '/repos/simulationcraft/simc' ? { default_branch: 'midnight' } : /profiles/.test(p) ? [{ type: 'dir', name: 'MID2' }, { type: 'file', name: 'x' }]
+    : [{ type: 'dir', name: 'Core' }, { type: 'dir', name: 'TheVenomousAbyss' }, { type: 'file', name: 'README.md' }];
+  const r = await W.collect({ f, gh, env: {} });
+  assert.deepStrictEqual(r.errors, []);
+  assert.deepStrictEqual(r.values, { ptrBuild: { live: '12.1.5.1', ptr: '12.2.0.5', beta: null }, ptrRaids: { build: '12.2.0.5', extra: { 2: 'B' } },
+    bigwigs: ['TheVenomousAbyss'], simc: { branch: 'midnight', live: '12.1.5.1', ptr: '12.2.0.5', profiles: ['MID2'] } });
+});

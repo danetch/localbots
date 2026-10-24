@@ -1,0 +1,41 @@
+# Season watch: every day, tools/watch.js looks for a new PTR / beta build, new Adventure Guide instances on the PTR, new BigWigs raid
+# folders, new simc PTR data / season profiles and new Warcraft Logs zones, and opens an issue (label "watch") for each change.
+# Warcraft Logs is checked only if the repo has the secrets WCL_CLIENT_ID / WCL_CLIENT_SECRET (Settings > Secrets > Actions).
+# New PTR instances: draft fight files (tools/journal-draft.js --ptr) are committed to the "season-next" branch for review.
+name: watch
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+  issues: write
+concurrency: watch
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - id: w
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WCL_CLIENT_ID: ${{ secrets.WCL_CLIENT_ID }}
+          WCL_CLIENT_SECRET: ${{ secrets.WCL_CLIENT_SECRET }}
+        run: node tools/watch.js
+      - name: Save the watch state
+        run: |
+          git config user.name "polygnome-watch"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain .github/watch-state.json)" ]; then
+            git add .github/watch-state.json && git commit -m "watch: state update" && git push origin HEAD:main
+          fi
+      - name: Draft fight files for new PTR instances
+        if: steps.w.outputs.new_instances != ''
+        env:
+          IDS: ${{ steps.w.outputs.new_instances }}
+        run: |
+          git fetch origin season-next && git checkout -B season-next origin/season-next || git checkout -B season-next
+          for id in ${IDS//,/ }; do node tools/journal-draft.js --instance "$id" --ptr || echo "::warning::no draft for instance $id"; done
+          git add data/fights
+          if ! git diff --cached --quiet; then git commit -m "watch: draft fight files for PTR instance(s) $IDS" && git push origin season-next; fi

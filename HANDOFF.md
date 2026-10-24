@@ -614,3 +614,12 @@ embellishment").
   stat pairs hidden when no known piece has placeholders, with "x of y" note. Crafted trinkets = Darkmoon Decks Void 245750, Hunt 245829,
   Rot 245846, Blood 245855 (simc implements them; Outlaw 331 deck vs 344 Zul'jin's Guillotine: ~ -2.4 %).
 - Tests: 59 pass.
+
+=== 24 OCT: SEASON WATCH ===
+- .github/workflows/watch.yml runs tools/watch.js daily (06:17 UTC) and on demand (workflow_dispatch). It records
+  .github/watch-state.json (committed only when a value changes; the first run is the baseline) and opens an issue labelled "watch" per
+  change: new PTR / beta build (wago builds), new Adventure Guide instances on the PTR vs live (wago JournalInstance), new BigWigs top-level
+  folders, simc PTR client data version / new profiles/MIDx folder, new Warcraft Logs zones (only with repo secrets WCL_CLIENT_ID /
+  WCL_CLIENT_SECRET). New PTR instances -> tools/journal-draft.js --ptr drafts committed to the "season-next" branch.
+  A failed check keeps its old value (never reported as new). Tests: 61 pass.
+- A weekly Claude scheduled task (Monday) reads the open "watch" issues and reports what to do next (runbook steps).
