@@ -268,7 +268,7 @@ test('boss: council fights add cleaved bosses (desired targets), absent stages a
   assert.ok(ca.events.includes('raid_events+=/invulnerable,name=malacrass_away,target=Dummy_Enemy_1,timestamps=0,duration=204'));
   // per-difficulty stages and kill length (Lorrgs medians): Twin Fangs submerges every 155 s on Mythic, 169 s on Heroic
   assert.deepStrictEqual(b.build(get('twinfangs'), { difficulty: 'mythic' }).summary.find(s => s.type === 'invulnerable').times, [136, 291]);
-  assert.strictEqual(b.build(get('twinfangs'), { difficulty: 'heroic' }).length, 291);
+  assert.strictEqual(b.build(get('twinfangs'), { difficulty: 'heroic' }).length, 366);   // median guild kill (Warcraft Logs)
   assert.deepStrictEqual(b.build(get('nymrissa'), { difficulty: 'mythic' }).summary[0].times, [23, 133, 243, 353]);
   const se = b.build(get('sentinels'), { difficulty: 'all', duration: 300 });         // split raid: single target
   assert.strictEqual(se.targets, 1); assert.deepStrictEqual(se.extraArgs, []);
@@ -276,4 +276,18 @@ test('boss: council fights add cleaved bosses (desired targets), absent stages a
   assert.strictEqual(ny.targets, 1); assert.ok(ny.events.some(e => /^raid_events\+=\/adds,name=frostscale,timestamps=23:133:243/.test(e)));
   const fa = L('fight').fightArgs({ targets: 2, raidEvents: tf.events, bossArgs: [...tf.extraArgs, 'html=x'] });
   assert.ok(fa.includes('desired_targets=2') && fa.includes('ignore_invulnerable_targets=1') && !fa.includes('html=x'));
+});
+
+test('boss: kill length from Warcraft Logs median kills at the export item level', () => {
+  const b = L('boss'), defs = b.list([require('path').join(__dirname, '..', 'data', 'fights')]), get = id => defs.find(d => d.id === id);
+  const items = ['head', 'neck', 'shoulder', 'back', 'chest', 'wrist', 'hands', 'waist', 'legs', 'feet', 'finger1', 'finger2', 'trinket1', 'trinket2'];
+  const exp = n => items.map(s => `# Item (${n})\n${s}=,id=1`).join('\n') + `\n# Staff (${n})\nmain_hand=,id=2`;   // two-hander counts twice
+  assert.strictEqual(b.equippedIlvl(exp(328)), 328);
+  assert.strictEqual(b.equippedIlvl('head=,id=1,ilevel=300\nneck=,id=2'), null);   // not a full export
+  const tf = get('twinfangs');
+  assert.deepStrictEqual(b.killLength(tf, 'heroic', null), { length: 366, from: 'median', kills: 34443 });
+  assert.strictEqual(b.killLength(tf, 'heroic', 327).length, 340);                 // bracket 326-328
+  assert.ok(b.killLength(tf, 'heroic', 316).length >= b.killLength(tf, 'heroic', 321).length);   // monotonic
+  assert.ok(b.killLength(tf, 'heroic', 345).length < 275);                          // extended past the last bracket
+  assert.strictEqual(b.build(get('nymrissa'), { difficulty: 'heroic' }).length, 282);   // default = median guild kill
 });

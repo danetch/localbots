@@ -2,7 +2,7 @@
  "id": "ulatek",
  "name": "Ula'tek",
  "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Ulatek.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
- "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing.",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing. Kill lengths: the median guild kill on Warcraft Logs (difficulty `kills`); with an export, the median kill of raids at your equipped item level (`byIlvl` brackets, Warcraft Logs), extended at 1 % per item level outside them. Phase positions come from the top-50 logs (Lorrgs) and are stored as % of the kill where health-driven.",
  "defaultDuration": 580,
  "mechanics": {
   "caustic": {
@@ -167,7 +167,7 @@
    "repeat": {
     "clutch": 0
    },
-   "duration": 581,
+   "duration": 569,
    "stages": [
     {
      "id": 1,
@@ -182,7 +182,68 @@
      "at": 273
     }
    ],
-   "checked": "Lorrgs 50 kills, median 581 s: Rage of the Shackled + Venomous Heart 135/284/574, Defect: Weakened 273, Caustic Waves 48/100, Spectral Coils 20/115."
+   "checked": "Lorrgs 50 kills, median 581 s: Rage of the Shackled + Venomous Heart 135/284/574, Defect: Weakened 273, Caustic Waves 48/100, Spectral Coils 20/115.",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 569,
+    "kills": 89433,
+    "p25": 584,
+    "p75": 521,
+    "p99": 437,
+    "byIlvl": [
+     [
+      303,
+      583,
+      591
+     ],
+     [
+      306,
+      581,
+      811
+     ],
+     [
+      309,
+      582,
+      984
+     ],
+     [
+      312,
+      579,
+      1958
+     ],
+     [
+      315,
+      578,
+      2579
+     ],
+     [
+      318,
+      579,
+      2884
+     ],
+     [
+      321,
+      580,
+      5711
+     ],
+     [
+      324,
+      578,
+      34414
+     ],
+     [
+      327,
+      543,
+      34977
+     ],
+     [
+      330,
+      455,
+      3521
+     ]
+    ]
+   },
+   "topDuration": 581
   },
   "mythic": {
    "label": "Mythic",
@@ -241,7 +302,7 @@
    "repeat": {
     "clutch": 0
    },
-   "duration": 602,
+   "duration": 599,
    "stages": [
     {
      "id": 1,
@@ -256,7 +317,28 @@
      "at": 290
     }
    ],
-   "checked": "Lorrgs only 2 kills, ~602 s: Rage of the Shackled + Venomous Heart 145/295/584, Caustic Waves 56/113, Spectral Coils 33/127."
+   "checked": "Lorrgs only 2 kills, ~602 s: Rage of the Shackled + Venomous Heart 145/295/584, Caustic Waves 56/113, Spectral Coils 33/127.",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 599,
+    "kills": 837,
+    "p25": 602,
+    "p75": 597,
+    "p99": 584,
+    "byIlvl": [
+     [
+      330,
+      601,
+      419
+     ],
+     [
+      333,
+      598,
+      318
+     ]
+    ]
+   },
+   "topDuration": 602
   }
  }
 }

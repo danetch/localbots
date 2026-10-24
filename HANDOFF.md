@@ -485,3 +485,24 @@ embellishment").
 - Thin data: Kith'ix Mythic and Ula'tek Mythic = 2 kills, Coiled Altar Mythic = 19, Twin Fangs Heroic casts from 2 logs.
 - Real simc check (cc01837): Twin Fangs Mythic no damage at 138-163 / 292-318 s (logs 136-164 / 291-319); Coiled Altar Heroic Malacrass
   from 211 s (logs 209). Tests: 45 pass.
+
+=== 24 OCT: FIGHT LENGTH FROM AVERAGE RAIDS + ITEM LEVEL (Warcraft Logs) ===
+- Problem: Lorrgs = top-50 logs (fast, burst phases a larger share of the kill). Warcraft Logs zone statistics, guild Speed (read through the
+  user's built-in browser; the first page load showed a human check that I did NOT pass, later loads went through). Data endpoint:
+  /zone/statistics/table/53/speed/<boss 0=all>/<difficulty 4 H|5 M>/<size 10|20 for M>/2/<percentile 50|25|75|99>/1/14/<ilvl bracket 0=all,
+  n = 272+3(n-1)..+2>/Any/Any/All/0/normalized/single/0/-1/ -> table Boss | Date range | Parses | Duration | ... Speed counts kills only.
+  Snapshot Oct 9-23 2026 stored per fight: difficulties[d].kills = { median, kills, p25, p75, p99, byIlvl: [[bracket mid, seconds, kills]]
+  (brackets with >= 250 kills) }; difficulties[d].duration = median guild kill; topDuration = the old Lorrgs top-50 median.
+- Findings: Heroic median guild kills are 15-45 % longer than the top 50 (Lost Explorers 260 vs 180 s, Twin Fangs 366 vs 291), Mythic
+  about equal. Kill time falls much faster with raid item level than simc's ~1 %/ilvl (Heroic Nek'zali 329 s at 320-322, 252 at 326-328,
+  214 at 329-331) because item level and skill go together; timer-bound fights (Ula'tek ~580 s) barely move.
+- simc slope (real build cc01837, MID2 Outlaw / Fire / Demonology / BM, all gear 310 -> 320 -> 330): +0.83 to +1.00 % DPS per item level.
+- lib/boss.js equippedIlvl(text) (average of equipped slots, ilevel= or "# Name (N)"; main hand without off hand counts twice; null if
+  < 8 slots) and killLength(def, difficulty, ilvl): brackets made monotonic (lower ilvl never faster), linear interpolation between
+  bracket mid-points, outside them extended at 1.0095^Δilvl. IPC boss:length. Renderer: the Length field is "auto" while it shows 300,
+  is empty, or still holds the last automatic value; boss / difficulty / export changes refresh it; the boss preview's first line explains
+  it ("Length 318s: median Heroic kill for raids at item level 328 (Warcraft Logs, 326-328, 11,694 kills; all raids: 366s)").
+- Burst windows (Dig In, hearts, Soulbinding, Luminous Grace...) keep their real durations, so in a longer kill they are a smaller share,
+  as for average raids. Health-driven phases stay at the top-50 % positions (atPct) and stretch with the length.
+- User's export (Lofo, Demonology): equipped item level 328. Tests: 46 pass.
+- Normal difficulty: no Warcraft Logs data collected (fixed lengths). Refresh the snapshot each season (same endpoint, new zone id).

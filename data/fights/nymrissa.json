@@ -2,7 +2,7 @@
  "id": "nymrissa",
  "name": "Nymrissa Wavecaller — The Tidebound Grotto",
  "source": "BigWigs (BigWigsMods/BigWigs b26c019) MidnightLairs/Nymrissa.lua + Method boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
- "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the pull. timesFrom: bigwigs = timeline durations read from BigWigs (pull timers only), guide = from the guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. BigWigs matches timeline bars by rounded duration: Abyssal Rain 8/23/33, Alluring Bubble 18, bubble adds 7/25, Chilling Frost 17/35, Swirling Whirlpools 89/107, plus a 44 s bar that rotates adds -> Chilling Frost -> Abyssal Rain; Real logs show a 110 s cycle (bubble adds 23, frost 38 + 82, whirlpools 111). Not modelled: Abyssal Rain and Pop! (raid damage), Wavecaller's Might stacks and Unending Tides (enrage), Iceblade Flurry / Water Jet (tank), failed murlocs turning into Berserkers.",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the pull. timesFrom: bigwigs = timeline durations read from BigWigs (pull timers only), guide = from the guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. BigWigs matches timeline bars by rounded duration: Abyssal Rain 8/23/33, Alluring Bubble 18, bubble adds 7/25, Chilling Frost 17/35, Swirling Whirlpools 89/107, plus a 44 s bar that rotates adds -> Chilling Frost -> Abyssal Rain; Real logs show a 110 s cycle (bubble adds 23, frost 38 + 82, whirlpools 111). Not modelled: Abyssal Rain and Pop! (raid damage), Wavecaller's Might stacks and Unending Tides (enrage), Iceblade Flurry / Water Jet (tank), failed murlocs turning into Berserkers. Kill lengths: the median guild kill on Warcraft Logs (difficulty `kills`); with an export, the median kill of raids at your equipped item level (`byIlvl` brackets, Warcraft Logs), extended at 1 % per item level outside them. Phase positions come from the top-50 logs (Lorrgs) and are stored as % of the kill where health-driven.",
  "defaultDuration": 300,
  "mechanics": {
   "shorerunners": {
@@ -71,8 +71,59 @@
     "whirlpools": 110,
     "frost": 110
    },
-   "duration": 247,
-   "checked": "Lorrgs 50 kills, median 247 s: Alluring Bubble 23/133/243, Swirling Whirlpools 111/221, Chilling Frost 37/81/147/191/257 (110 s cycle)."
+   "duration": 282,
+   "checked": "Lorrgs 50 kills, median 247 s: Alluring Bubble 23/133/243, Swirling Whirlpools 111/221, Chilling Frost 37/81/147/191/257 (110 s cycle).",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 282,
+    "kills": 28032,
+    "p25": 326,
+    "p75": 242,
+    "p99": 171,
+    "byIlvl": [
+     [
+      309,
+      263,
+      337
+     ],
+     [
+      312,
+      265,
+      445
+     ],
+     [
+      315,
+      352,
+      1090
+     ],
+     [
+      318,
+      358,
+      2613
+     ],
+     [
+      321,
+      328,
+      5544
+     ],
+     [
+      324,
+      291,
+      8029
+     ],
+     [
+      327,
+      245,
+      6982
+     ],
+     [
+      330,
+      197,
+      2273
+     ]
+    ]
+   },
+   "topDuration": 247
   },
   "mythic": {
    "label": "Mythic",
@@ -97,8 +148,34 @@
     "whirlpools": 110,
     "frost": 110
    },
-   "duration": 388,
-   "checked": "Lorrgs 50 kills, median 388 s: Alluring Bubble 23/133/243/353, Swirling Whirlpools 111/221/331, Chilling Frost 38/82/148/192/258/302/368 (110 s cycle)."
+   "duration": 403,
+   "checked": "Lorrgs 50 kills, median 388 s: Alluring Bubble 23/133/243/353, Swirling Whirlpools 111/221/331, Chilling Frost 38/82/148/192/258/302/368 (110 s cycle).",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 403,
+    "kills": 10071,
+    "p25": 424,
+    "p75": 369,
+    "p99": 282,
+    "byIlvl": [
+     [
+      324,
+      397,
+      313
+     ],
+     [
+      327,
+      413,
+      5497
+     ],
+     [
+      330,
+      383,
+      3879
+     ]
+    ]
+   },
+   "topDuration": 388
   }
  }
 }

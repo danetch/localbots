@@ -2,7 +2,7 @@
  "id": "explorers",
  "name": "The Lost Explorers",
  "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Explorers.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
- "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing.",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing. Kill lengths: the median guild kill on Warcraft Logs (difficulty `kills`); with an export, the median kill of raids at your equipped item level (`byIlvl` brackets, Warcraft Logs), extended at 1 % per item level outside them. Phase positions come from the top-50 logs (Lorrgs) and are stored as % of the kill where health-driven.",
  "defaultDuration": 300,
  "mechanics": {
   "junk": {
@@ -62,8 +62,8 @@
   }
  },
  "difficulties": {
-  "all": {
-   "label": "All difficulties",
+  "heroic": {
+   "label": "Normal / Heroic",
    "times": {
     "junk": {
      "1": [
@@ -169,8 +169,200 @@
      "at": 183
     }
    ],
-   "duration": 300,
-   "checked": "Lorrgs 50 kills (Heroic median 180 s, Mythic 333 s): phase changes 61/121/176-184/230-244/306/366, i.e. every ~61 s (was 25 % of the fight); Blink Nova 17/48 in the first phase. Stage 4 timings repeat until the end."
+   "duration": 260,
+   "checked": "Lorrgs 50 kills (Heroic median 180 s, Mythic 333 s): phase changes 61/121/176-184/230-244/306/366, i.e. every ~61 s (was 25 % of the fight); Blink Nova 17/48 in the first phase. Stage 4 timings repeat until the end.",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 260,
+    "kills": 59850,
+    "p25": 296,
+    "p75": 221,
+    "p99": 154,
+    "byIlvl": [
+     [
+      309,
+      253,
+      325
+     ],
+     [
+      312,
+      231,
+      443
+     ],
+     [
+      315,
+      285,
+      899
+     ],
+     [
+      318,
+      321,
+      3545
+     ],
+     [
+      321,
+      299,
+      11912
+     ],
+     [
+      324,
+      269,
+      20055
+     ],
+     [
+      327,
+      227,
+      16515
+     ],
+     [
+      330,
+      187,
+      5120
+     ]
+    ]
+   },
+   "topDuration": 300
+  },
+  "mythic": {
+   "label": "Mythic",
+   "times": {
+    "junk": {
+     "1": [
+      4,
+      20,
+      23,
+      27
+     ],
+     "2": [
+      4,
+      27
+     ],
+     "3": [
+      4,
+      20,
+      27
+     ],
+     "4": [
+      4,
+      7,
+      11,
+      23
+     ]
+    },
+    "flames": {
+     "1": [
+      5,
+      31
+     ],
+     "2": [
+      2,
+      16,
+      32
+     ],
+     "3": [
+      5,
+      11,
+      22
+     ],
+     "4": [
+      2,
+      13,
+      27
+     ]
+    },
+    "blink": {
+     "1": [
+      17,
+      48
+     ],
+     "4": [
+      21
+     ]
+    },
+    "hazard": {
+     "2": [
+      3,
+      13,
+      32
+     ],
+     "3": [
+      3,
+      32
+     ],
+     "4": [
+      8,
+      27
+     ]
+    },
+    "fish": {
+     "2": [
+      0
+     ],
+     "3": [
+      0
+     ],
+     "4": [
+      0
+     ]
+    }
+   },
+   "repeat": {
+    "junk": 35,
+    "flames": 35,
+    "blink": 35,
+    "hazard": 35
+   },
+   "stages": [
+    {
+     "id": 1,
+     "at": 0
+    },
+    {
+     "id": 2,
+     "at": 61
+    },
+    {
+     "id": 3,
+     "at": 122
+    },
+    {
+     "id": 4,
+     "at": 183
+    }
+   ],
+   "duration": 359,
+   "checked": "Lorrgs 50 kills (Heroic median 180 s, Mythic 333 s): phase changes 61/121/176-184/230-244/306/366, i.e. every ~61 s (was 25 % of the fight); Blink Nova 17/48 in the first phase. Stage 4 timings repeat until the end.",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 359,
+    "kills": 14272,
+    "p25": 392,
+    "p75": 327,
+    "p99": 266,
+    "byIlvl": [
+     [
+      324,
+      381,
+      610
+     ],
+     [
+      327,
+      377,
+      8266
+     ],
+     [
+      330,
+      328,
+      4792
+     ],
+     [
+      333,
+      278,
+      313
+     ]
+    ]
+   },
+   "topDuration": 300
   }
  },
  "mainBoss": "Gebbo",

@@ -2,7 +2,7 @@
  "id": "twinfangs",
  "name": "The Twin Fangs",
  "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/TwinFangs.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
- "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing.",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing. Kill lengths: the median guild kill on Warcraft Logs (difficulty `kills`); with an export, the median kill of raids at your equipped item level (`byIlvl` brackets, Warcraft Logs), extended at 1 % per item level outside them. Phase positions come from the top-50 logs (Lorrgs) and are stored as % of the kill where health-driven.",
  "defaultDuration": 300,
  "mechanics": {
   "emergence": {
@@ -62,7 +62,7 @@
  "difficulties": {
   "heroic": {
    "label": "Normal / Heroic",
-   "duration": 291,
+   "duration": 366,
    "times": {
     "deluge": [
      10,
@@ -91,11 +91,67 @@
     "feast": 169,
     "submerge": 169
    },
-   "checked": "Lorrgs 50 kills, median 291 s (casts from 2 logs): Caustic Deluge 10/78/179/247, Venomous Emergence 40/107/209/277, Stir the Depths 52/120/222, Ravenous Feast 68/135/237, Sanguine Storm + Vile Flood (submerge) 150/154, next deluge 179 -> ~29 s submerge, 169 s cycle."
+   "checked": "Lorrgs 50 kills, median 291 s (casts from 2 logs): Caustic Deluge 10/78/179/247, Venomous Emergence 40/107/209/277, Stir the Depths 52/120/222, Ravenous Feast 68/135/237, Sanguine Storm + Vile Flood (submerge) 150/154, next deluge 179 -> ~29 s submerge, 169 s cycle.",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 366,
+    "kills": 34443,
+    "p25": 412,
+    "p75": 311,
+    "p99": 243,
+    "byIlvl": [
+     [
+      306,
+      386,
+      260
+     ],
+     [
+      309,
+      381,
+      277
+     ],
+     [
+      312,
+      366,
+      336
+     ],
+     [
+      315,
+      383,
+      434
+     ],
+     [
+      318,
+      392,
+      956
+     ],
+     [
+      321,
+      421,
+      4570
+     ],
+     [
+      324,
+      396,
+      10572
+     ],
+     [
+      327,
+      340,
+      11694
+     ],
+     [
+      330,
+      275,
+      4656
+     ]
+    ]
+   },
+   "topDuration": 291
   },
   "mythic": {
    "label": "Mythic",
-   "duration": 400,
+   "duration": 394,
    "times": {
     "deluge": [
      9,
@@ -124,7 +180,33 @@
     "feast": 155,
     "submerge": 155
    },
-   "checked": "Lorrgs 50 kills, median 400 s: Caustic Deluge 9/70/164/225/319/380, Venomous Emergence 36/97/191/252/346, Stir the Depths 47/108/202/263/357, Ravenous Feast 61/122/216/277/371, submerge (Sanguine Storm / Vile Flood) 136/291, next deluge 164 -> ~28 s submerge, 155 s cycle."
+   "checked": "Lorrgs 50 kills, median 400 s: Caustic Deluge 9/70/164/225/319/380, Venomous Emergence 36/97/191/252/346, Stir the Depths 47/108/202/263/357, Ravenous Feast 61/122/216/277/371, submerge (Sanguine Storm / Vile Flood) 136/291, next deluge 164 -> ~28 s submerge, 155 s cycle.",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 394,
+    "kills": 2931,
+    "p25": 407,
+    "p75": 383,
+    "p99": 341,
+    "byIlvl": [
+     [
+      327,
+      408,
+      254
+     ],
+     [
+      330,
+      394,
+      2307
+     ],
+     [
+      333,
+      368,
+      290
+     ]
+    ]
+   },
+   "topDuration": 400
   }
  },
  "mainBoss": "Vexhul",

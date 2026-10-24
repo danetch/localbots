@@ -120,6 +120,9 @@ const run = fn => (_e, o) => withRun(async tmp => {
 });
 ipcMain.handle('talents:parse', (_e, text) => talentsLib.parse(String(text || '')));
 ipcMain.handle('boss:list', () => bossLib.list(bossDirs()).map(b => ({ id: b.id, name: b.name, source: b.source, duration: b.defaultDuration, difficulties: Object.entries(b.difficulties).map(([id, d]) => ({ id, label: d.label, duration: d.duration || b.defaultDuration })) })));
+ipcMain.handle('boss:length', (_e, f) => { const def = bossLib.list(bossDirs()).find(b => b.id === f.boss); if (!def) return null;
+  const diff = def.difficulties[f.difficulty] ? f.difficulty : Object.keys(def.difficulties)[0];
+  return { ...bossLib.killLength(def, diff, bossLib.equippedIlvl(f.text)), median: def.difficulties[diff].kills?.median, label: def.difficulties[diff].label }; });
 ipcMain.handle('boss:preview', (_e, f) => { const def = bossLib.list(bossDirs()).find(b => b.id === f.boss); return def ? bossLib.build(def, { difficulty: f.difficulty, duration: f.duration }) : null; });
 ipcMain.handle('boss:edit', async () => { const d = path.join(app.getPath('userData'), 'fights'); fs.mkdirSync(d, { recursive: true });
   for (const f of fs.readdirSync(path.join(__dirname, 'data', 'fights'))) { const dst = path.join(d, f); if (!fs.existsSync(dst)) fs.copyFileSync(path.join(__dirname, 'data', 'fights', f), dst); }

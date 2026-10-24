@@ -2,7 +2,7 @@
  "id": "kithix",
  "name": "Kith'ix — The Unbinding of Kith'ix",
  "source": "BigWigs (BigWigsMods/BigWigs) TheUnbindingOfKithix/Kithix.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
- "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing.",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing. Kill lengths: the median guild kill on Warcraft Logs (difficulty `kills`); with an export, the median kill of raids at your equipped item level (`byIlvl` brackets, Warcraft Logs), extended at 1 % per item level outside them. Phase positions come from the top-50 logs (Lorrgs) and are stored as % of the kill where health-driven.",
  "defaultDuration": 300,
  "stages": [
   {
@@ -114,7 +114,17 @@
     "intermission": 109
    },
    "duration": 310,
-   "checked": "Lorrgs only 2 kills, 310 s: Voidswarm 5/114/223, Suffocating Darkness 57/166, Extinguish 36/78/145/187 (109 s cycle)."
+   "checked": "Lorrgs only 2 kills, 310 s: Voidswarm 5/114/223, Suffocating Darkness 57/166, Extinguish 36/78/145/187 (109 s cycle).",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 310,
+    "kills": 454,
+    "p25": 318,
+    "p75": 298,
+    "p99": 280,
+    "byIlvl": []
+   },
+   "topDuration": 310
   },
   "heroic": {
    "label": "Heroic",
@@ -150,8 +160,69 @@
     "extinguish": 109,
     "intermission": 109
    },
-   "duration": 232,
-   "checked": "Lorrgs 50 kills, median 232 s: Voidswarm 5/114/223, Suffocating Darkness 57/166, Extinguish 37/94/146/203 (109 s cycle). Stage 2 not visible in the logs (kept at 75 %)."
+   "duration": 268,
+   "checked": "Lorrgs 50 kills, median 232 s: Voidswarm 5/114/223, Suffocating Darkness 57/166, Extinguish 37/94/146/203 (109 s cycle). Stage 2 not visible in the logs (kept at 75 %).",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 268,
+    "kills": 102702,
+    "p25": 289,
+    "p75": 251,
+    "p99": 196,
+    "byIlvl": [
+     [
+      303,
+      280,
+      376
+     ],
+     [
+      306,
+      276,
+      496
+     ],
+     [
+      309,
+      278,
+      559
+     ],
+     [
+      312,
+      273,
+      929
+     ],
+     [
+      315,
+      269,
+      1440
+     ],
+     [
+      318,
+      276,
+      1695
+     ],
+     [
+      321,
+      292,
+      6753
+     ],
+     [
+      324,
+      279,
+      34949
+     ],
+     [
+      327,
+      261,
+      48743
+     ],
+     [
+      330,
+      221,
+      6013
+     ]
+    ]
+   },
+   "topDuration": 232
   },
   "normal": {
    "label": "Normal / LFR",

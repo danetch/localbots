@@ -127,7 +127,7 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
    <option value="HecticAddCleave">Hectic add cleave</option><option value="CleaveAdd">Cleave add</option><option value="CastingPatchwerk">Casting Patchwerk</option>
    <option value="DungeonSlice">Dungeon slice</option><option value="DungeonRoute">Dungeon route</option></select></label>
    <label>Targets<input id="tg" type="number" min="1" max="20" value="1"></label>
-   <label>Length (s)<input id="dur" type="number" min="10" value="300"></label>
+   <label title="Set automatically from real kills for a boss fight; clear it to go back to the automatic length">Length (s)<input id="dur" type="number" min="10" value="300"></label>
    <label>Variance %<input id="vary" type="number" min="0" max="100" value="20"></label></div></details>
 
  <details class="card sec" id="s_buff"><summary><span class="n"></span>Raid buffs &amp; extra options<span class="sm" id="sm_buff"></span></summary>
@@ -243,14 +243,21 @@ async function bossPreview(){const on=!!$('boss').value;$('fs').disabled=$('tg')
  const r=await api.bossPreview({boss:$('boss').value,difficulty:$('bdiff').value,duration:+$('dur').value||300});if(!r){$('bprev').textContent='Boss fight not found.';return}
  const TAG={bigwigs:'BigWigs',guide:'guide',assumed:'guessed'};
  const L=r.summary.map(m=>`• ${m.label}${m.assumed.length?' *':''} [times: ${TAG[m.timesFrom]||m.timesFrom}]: ${m.times.slice(0,8).map(t=>t+'s').join(', ')}${m.times.length>8?' …':''}`).join('\n');
- $('bprev').textContent=`Length ${r.length}s`+(r.stages.length>1?` · stages start at ${r.stages.map(s=>`${s.id}: ${s.at}s`).join(', ')}`:'')+(r.targets>1?`\nBosses cleaved together (separate health): ${r.bosses.join(' + ')}${r.present.filter(p=>p.absent.length).map(p=>` · ${p.name} from ${p.absent[p.absent.length-1][1]}s`).join('')}`:'')+`\n* = effect size guessed. Edit the files to refine (button “Edit…”).\n`+L}
+ $('bprev').textContent=(lenNote||`Length ${r.length}s`)+(r.stages.length>1?` · stages start at ${r.stages.map(s=>`${s.id}: ${s.at}s`).join(', ')}`:'')+(r.targets>1?`\nBosses cleaved together (separate health): ${r.bosses.join(' + ')}${r.present.filter(p=>p.absent.length).map(p=>` · ${p.name} from ${p.absent[p.absent.length-1][1]}s`).join('')}`:'')+`\n* = effect size guessed. Edit the files to refine (button “Edit…”).\n`+L}
 api.bossList().then(B=>{bosses=B;$('boss').innerHTML='<option value="">None (use the style below)</option>'+B.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');
  const f=window.__savedFight||{};if(f.boss&&B.some(b=>b.id===f.boss)){$('boss').value=f.boss;$('boss').onchange();if(f.difficulty)$('bdiff').value=f.difficulty;bossPreview()}});
-// Fight length follows the boss/difficulty's typical kill (median of real logs) unless the user typed another length.
-const killLen=()=>{const b=bosses.find(x=>x.id===$('boss').value);return b&&(b.difficulties.find(d=>d.id===$('bdiff').value)||{}).duration};
-const autoLens=()=>new Set(['300',...bosses.flatMap(b=>[b.duration,...b.difficulties.map(d=>d.duration)]).filter(Boolean).map(String)]);
-$('boss').onchange=()=>{const b=bosses.find(x=>x.id===$('boss').value),auto=autoLens().has($('dur').value);$('bdiff').innerHTML=b?b.difficulties.map(d=>`<option value="${d.id}">${esc(d.label)}</option>`).join(''):'';if(b&&auto)$('dur').value=killLen()||b.duration;bossPreview()};
-$('bdiff').addEventListener('change',()=>{const k=killLen();if(k&&autoLens().has($('dur').value))$('dur').value=k});
+// Fight length follows the typical real kill (Warcraft Logs median guild kill, at the export's item level when known) unless the user
+// typed another length: the field is "auto" while it still shows 300 or the last value set here.
+let autoLen='300',lenNote='';
+async function autoLength(){const on=!!$('boss').value;if(!on){lenNote='';return}
+ const r=await api.bossLength({boss:$('boss').value,difficulty:$('bdiff').value,text:$('txt').value}).catch(()=>null);if(!r)return;
+ const dl={heroic:'Heroic',mythic:'Mythic'}[$('bdiff').value]||r.label;
+ lenNote=r.from==='ilvl'?`Length ${r.length}s: median ${dl} kill for raids at item level ${r.ilvl} (Warcraft Logs, ${r.bracket}${r.kills?`, ${r.kills.toLocaleString('en-US')} kills`:''}; all raids: ${r.median}s).`
+  :r.from==='median'?`Length ${r.length}s: median ${dl} kill on Warcraft Logs${r.kills?` (${r.kills.toLocaleString('en-US')} kills)`:''}. Paste an export to adjust it to your item level.`:'';
+ if($('dur').value===autoLen||$('dur').value==='300'||$('dur').value===''){$('dur').value=r.length;autoLen=String(r.length)}else lenNote='';bossPreview()}
+$('boss').onchange=()=>{const b=bosses.find(x=>x.id===$('boss').value);$('bdiff').innerHTML=b?b.difficulties.map(d=>`<option value="${d.id}">${esc(d.label)}</option>`).join(''):'';autoLength()};
+$('bdiff').addEventListener('change',autoLength);
+{let lt=0;$('txt').addEventListener('input',()=>{clearTimeout(lt);lt=setTimeout(autoLength,400)})}
 $('bdiff').onchange=bossPreview;$('dur').addEventListener('change',bossPreview);$('bedit').onclick=()=>api.bossEdit();
 async function refreshEngine(){try{const e=await api.engineInfo();$('simc').textContent=e.path||'No simc selected';$('eget').hidden=!e.canInstall;
   $('eng').textContent=e.version?`SimulationCraft ${e.version.simc} · WoW ${e.version.wow}${e.version.hotfix?' · hotfix '+e.version.hotfix:''}`+(e.dataBuild&&e.dataBuild!==e.version.wow?` — bundled item data is for ${e.dataBuild}: click “Update loot data”`:''):(e.path?'Could not read the simc version (is it a valid simc?).':e.canInstall?'No simc yet: click “Download / update simc”.':'Select your simc build.')}catch(x){$('eng').textContent=msg(x)}}

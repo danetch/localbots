@@ -2,7 +2,7 @@
  "id": "sszorak",
  "name": "Sszorak",
  "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Sszorak.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
- "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing.",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing. Kill lengths: the median guild kill on Warcraft Logs (difficulty `kills`); with an export, the median kill of raids at your equipped item level (`byIlvl` brackets, Warcraft Logs), extended at 1 % per item level outside them. Phase positions come from the top-50 logs (Lorrgs) and are stored as % of the kill where health-driven.",
  "defaultDuration": 300,
  "mechanics": {
   "maelstrom": {
@@ -72,8 +72,34 @@
     "surge": 127,
     "crosswinds": 127
    },
-   "duration": 360,
-   "checked": "Lorrgs 50 kills, median 360 s: Dig In 100/227/354, Venomous Surge 29/76/156/203/283/330, Raging Crosswinds 40/87/167/214/294/341 (127 s cycle)."
+   "duration": 361,
+   "checked": "Lorrgs 50 kills, median 360 s: Dig In 100/227/354, Venomous Surge 29/76/156/203/283/330, Raging Crosswinds 40/87/167/214/294/341 (127 s cycle).",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 361,
+    "kills": 5136,
+    "p25": 377,
+    "p75": 341,
+    "p99": 302,
+    "byIlvl": [
+     [
+      327,
+      373,
+      996
+     ],
+     [
+      330,
+      358,
+      3565
+     ],
+     [
+      333,
+      325,
+      348
+     ]
+    ]
+   },
+   "topDuration": 360
   },
   "heroic": {
    "label": "Heroic",
@@ -99,8 +125,59 @@
     "surge": 138,
     "crosswinds": 138
    },
-   "duration": 233,
-   "checked": "Lorrgs 50 kills, median 233 s: Dig In 111/249, Venomous Surge 32/84/170/223, Raging Crosswinds 44/97/183/235 (138 s cycle). Normal not in the logs (unchanged)."
+   "duration": 279,
+   "checked": "Lorrgs 50 kills, median 233 s: Dig In 111/249, Venomous Surge 32/84/170/223, Raging Crosswinds 44/97/183/235 (138 s cycle). Normal not in the logs (unchanged).",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 279,
+    "kills": 39982,
+    "p25": 316,
+    "p75": 249,
+    "p99": 195,
+    "byIlvl": [
+     [
+      309,
+      314,
+      265
+     ],
+     [
+      312,
+      314,
+      331
+     ],
+     [
+      315,
+      312,
+      520
+     ],
+     [
+      318,
+      333,
+      1606
+     ],
+     [
+      321,
+      319,
+      6244
+     ],
+     [
+      324,
+      294,
+      11928
+     ],
+     [
+      327,
+      257,
+      13167
+     ],
+     [
+      330,
+      220,
+      4912
+     ]
+    ]
+   },
+   "topDuration": 233
   },
   "normal": {
    "label": "Normal",
