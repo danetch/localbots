@@ -2,3 +2,6 @@ node_modules/
 dist/
 test/inputs.log
 test/ui/*.png
+
+# Warcraft Logs API client (tools/wcl-timeline.js): never commit
+wcl-credentials.json
