@@ -38,6 +38,12 @@ const { resolve: resolveIlvl } = require('./lib/progression');
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 const loadSettings = () => { try { return JSON.parse(fs.readFileSync(settingsFile(), 'utf8')); } catch { return {}; } };
 const saveSettings = s => fs.writeFileSync(settingsFile(), JSON.stringify(s, null, 2));
+// Season preview (PTR / beta) mode: simc runs with ptr=1, game data comes from the PTR build (wago "wowt" product, simc *_ptr.inc tables)
+// into separate files (loot-ptr.json, items-ptr.json, enhance-ptr.json), season-ptr.json / progression-ptr.json / crafted-ptr.json are
+// used when the repo has them, and fights marked "ptr": true are listed (hidden otherwise).
+const ptrMode = () => !!loadSettings().ptr;
+const ud = name => path.join(app.getPath('userData'), ptrMode() ? name.replace(/\.json$/, '-ptr.json') : name);
+const ptrUrl = u => ptrMode() ? u.replace(/\.inc$/, '_ptr.inc') : u;
 
 let win, child = null, cancelled = false, busy = false;
 // Full log of each run in userData/logs (the Activity log tab only keeps the end). trace() writes detail to the file only.
@@ -55,7 +61,8 @@ function runSimc(simcPath, inputFile, jsonFile, extra, onLine) {
     const tail = [];
     const keep = l => { if (/error|invalid|unknown|cannot|unable|exception|not found/i.test(l)) { tail.push(l.trim()); if (tail.length > 6) tail.shift(); } };
     let proc;
-    try { proc = spawn(simcPath, [inputFile, `json2=${jsonFile}`, ...extra]); } catch (e) { return reject(new Error(`Could not start simc: ${e.message}`)); }
+    // ptr=1 (season preview) must precede the profile: simc picks its data set before parsing the character
+    try { proc = spawn(simcPath, [...(ptrMode() ? ['ptr=1'] : []), inputFile, `json2=${jsonFile}`, ...extra]); } catch (e) { return reject(new Error(`Could not start simc: ${e.message}`)); }
     child = proc;
     const feed = d => d.toString().split(/\r?\n|\r/).filter(Boolean).forEach(l => { keep(l); onLine(l); });
     proc.stdout.on('data', feed); proc.stderr.on('data', feed);
@@ -85,10 +92,22 @@ async function withRun(fn) {
   finally { busy = false; cancelled = false; runLog = null; fs.rm(tmp, { recursive: true, force: true }, () => {}); }
 }
 // Boss fight: turns { boss, difficulty } of the fight settings into Patchwerk + timed raid events.
-const bossDirs = () => [path.join(__dirname, 'data', 'fights'), path.join(app.getPath('userData'), 'fights')];
+// Season / boss data: bundled with the app or downloaded from GitHub at startup (lib/datafiles.js), whichever is newer.
+const dataLib = require('./lib/datafiles');
+let dataFiles = null;
+const DF = () => dataFiles || (dataFiles = dataLib.create({ bundled: path.join(__dirname, 'data'), cache: path.join(app.getPath('userData'), 'data-cache'), appVersion: app.getVersion() }));
+const DATA_URL = 'https://raw.githubusercontent.com/danetch/localbots/main/data/';
+const ptrFile = name => { const p = name.replace(/\.json$/, '-ptr.json'); return ptrMode() && fs.existsSync(DF().file(p)) ? DF().file(p) : DF().file(name); };
+const loadSeason = () => JSON.parse(fs.readFileSync(ptrFile('season.json'), 'utf8'));
+const userFightsDir = () => path.join(app.getPath('userData'), 'fights');
+let shipped = null;
+// User fight files that are untouched "Edit…" copies of a shipped version are ignored (the newer data wins).
+const userFightEdited = (file, text) => !dataLib.shippedCopy(text, shipped || (shipped = new Set(JSON.parse(fs.readFileSync(DF().file('shipped-hashes.json'), 'utf8')))));
+const bossDefs = () => bossLib.list([DF().dir('fights'), userFightsDir()], { keep: (dir, file, text) => dir !== userFightsDir() || userFightEdited(file, text) })
+  .filter(b => ptrMode() || !b.ptr).map(b => b.ptr ? { ...b, name: b.name + ' (PTR)' } : b);
 function resolveFight(f) {
   if (!f?.boss) return f;
-  const def = bossLib.list(bossDirs()).find(b => b.id === f.boss);
+  const def = bossDefs().find(b => b.id === f.boss);
   if (!def) throw new Error(`Boss fight “${f.boss}” not found.`);
   const r = bossLib.build(def, { difficulty: f.difficulty, duration: f.duration });
   return { ...f, fightStyle: '', duration: r.length, targets: r.targets, raidEvents: r.events, bossArgs: r.extraArgs };   // no fight_style: simc clears raid_events when fight_style=Patchwerk is given (sim.cpp init_fight_style)
@@ -119,13 +138,13 @@ const run = fn => (_e, o) => withRun(async tmp => {
   return { builds: out };
 });
 ipcMain.handle('talents:parse', (_e, text) => talentsLib.parse(String(text || '')));
-ipcMain.handle('boss:list', () => bossLib.list(bossDirs()).map(b => ({ id: b.id, name: b.name, source: b.source, duration: b.defaultDuration, difficulties: Object.entries(b.difficulties).map(([id, d]) => ({ id, label: d.label, duration: d.duration || b.defaultDuration })) })));
-ipcMain.handle('boss:length', (_e, f) => { const def = bossLib.list(bossDirs()).find(b => b.id === f.boss); if (!def) return null;
+ipcMain.handle('boss:list', () => bossDefs().map(b => ({ id: b.id, name: b.name, source: b.source, duration: b.defaultDuration, difficulties: Object.entries(b.difficulties).map(([id, d]) => ({ id, label: d.label, duration: d.duration || b.defaultDuration })) })));
+ipcMain.handle('boss:length', (_e, f) => { const def = bossDefs().find(b => b.id === f.boss); if (!def) return null;
   const diff = def.difficulties[f.difficulty] ? f.difficulty : Object.keys(def.difficulties)[0];
   return { ...bossLib.killLength(def, diff, bossLib.equippedIlvl(f.text)), median: def.difficulties[diff].kills?.median, label: def.difficulties[diff].label }; });
-ipcMain.handle('boss:preview', (_e, f) => { const def = bossLib.list(bossDirs()).find(b => b.id === f.boss); return def ? bossLib.build(def, { difficulty: f.difficulty, duration: f.duration }) : null; });
-ipcMain.handle('boss:edit', async () => { const d = path.join(app.getPath('userData'), 'fights'); fs.mkdirSync(d, { recursive: true });
-  for (const f of fs.readdirSync(path.join(__dirname, 'data', 'fights'))) { const dst = path.join(d, f); if (!fs.existsSync(dst)) fs.copyFileSync(path.join(__dirname, 'data', 'fights', f), dst); }
+ipcMain.handle('boss:preview', (_e, f) => { const def = bossDefs().find(b => b.id === f.boss); return def ? bossLib.build(def, { difficulty: f.difficulty, duration: f.duration }) : null; });
+ipcMain.handle('boss:edit', async () => { const d = userFightsDir(); fs.mkdirSync(d, { recursive: true });
+  for (const f of fs.readdirSync(DF().dir('fights'))) { const dst = path.join(d, f); if (!fs.existsSync(dst) || !userFightEdited(f, fs.readFileSync(dst, 'utf8'))) fs.copyFileSync(path.join(DF().dir('fights'), f), dst); }
   return shell.openPath(d); });
 
 const writeJson = (file, obj) => { const t = file + '.tmp'; fs.writeFileSync(t, JSON.stringify(obj)); fs.renameSync(t, file); };   // écriture atomique
@@ -213,6 +232,8 @@ async function pass(simcPath, text, list, err, threads, tmp, log, fight, range, 
 }
 
 ipcMain.handle('settings:get', () => loadSettings());
+// Options toggled from Settings (season preview / beta updates); only known keys are stored.
+ipcMain.handle('settings:set', (_e, o) => { const s = loadSettings(); for (const k of ['ptr', 'beta']) if (k in (o || {})) s[k] = !!o[k]; saveSettings(s); lootCache = { key: '', data: null }; return s; });
 
 // ---------- simc engine (download / version) ----------
 const engineDir = () => path.join(app.getPath('userData'), 'engine');
@@ -297,7 +318,7 @@ ipcMain.handle('engine:install', async (_e, opt) => {
 });
 
 // ---------- app updates ----------
-const updater = require('./lib/updater').make(app, emitLog);
+const updater = require('./lib/updater').make(app, emitLog, () => !!loadSettings().beta);
 ipcMain.handle('update:get', () => updater.get());
 ipcMain.handle('update:check', () => updater.check());
 ipcMain.handle('update:install', () => updater.install());
@@ -310,14 +331,14 @@ ipcMain.handle('sim:cancel', () => { cancelled = true; child?.kill(); });
 // Base d'objets (armes à deux mains, embellissements) : copie rafraîchie par « Update loot data », sinon le fichier livré avec l'appli.
 let itemsCache = { key: '', db: null };
 function itemsDb() {
-  const u = path.join(app.getPath('userData'), 'items.json'), f = fs.existsSync(u) ? u : path.join(__dirname, 'data', 'items.json'), key = f + fs.statSync(f).mtimeMs;
+  const u = ud('items.json'), f = fs.existsSync(u) ? u : path.join(__dirname, 'data', 'items.json'), key = f + fs.statSync(f).mtimeMs;
   if (itemsCache.key !== key) itemsCache = { key, db: itemsLib.make(JSON.parse(fs.readFileSync(f, 'utf8'))) };
   return itemsCache.db;
 }
 // Enchants / gems / socket bonuses (lib/enhance.js): copy rebuilt by "Update loot data", else the file shipped with the app.
 let enhCache = { key: '', db: null };
 function enhanceDb() {
-  const u = path.join(app.getPath('userData'), 'enhance.json'), f = fs.existsSync(u) ? u : path.join(__dirname, 'data', 'enhance.json');
+  const u = ud('enhance.json'), f = fs.existsSync(u) ? u : path.join(__dirname, 'data', 'enhance.json');
   try { const key = f + fs.statSync(f).mtimeMs; if (enhCache.key !== key) enhCache = { key, db: JSON.parse(fs.readFileSync(f, 'utf8')) }; return enhCache.db; }
   catch { return { enchants: [], gems: [], socketBonus: {} }; }
 }
@@ -370,9 +391,12 @@ const isDual = (base, rules) => rules.titan || ['one', 'offw'].includes(rules.ki
 
 // ---------- Crafted gear ----------
 const craftUser = () => path.join(app.getPath('userData'), 'crafted.json');
-const craftDefault = () => path.join(__dirname, 'data', 'crafted.json');
-const loadCraftRules = () => JSON.parse(fs.readFileSync(fs.existsSync(craftUser()) ? craftUser() : craftDefault(), 'utf8'));
-ipcMain.handle('craft:edit', () => { if (!fs.existsSync(craftUser())) fs.copyFileSync(craftDefault(), craftUser()); return shell.openPath(craftUser()); });
+const craftDefault = () => ptrFile('crafted.json');
+// The user's copy is used only while it belongs to the current season (else a new season's crafted item level would be hidden).
+const ofSeason = (f, S) => { try { const j = JSON.parse(fs.readFileSync(f, 'utf8')); return (j.seasonId || 'MID2') === S.season.id ? j : null; } catch { return null; } };
+const loadCraftRules = () => { const S = loadSeason(), R = (fs.existsSync(craftUser()) && ofSeason(craftUser(), S)) || JSON.parse(fs.readFileSync(craftDefault(), 'utf8'));
+  return { ...R, ilvl: R.seasonId === S.season.id && R.ilvl ? R.ilvl : S.season.craftedIlvl }; };
+ipcMain.handle('craft:edit', () => { if (!fs.existsSync(craftUser()) || !ofSeason(craftUser(), loadSeason())) { if (fs.existsSync(craftUser())) fs.renameSync(craftUser(), craftUser().replace(/\.json$/, `-old-${Date.now()}.json`)); fs.copyFileSync(craftDefault(), craftUser()); } return shell.openPath(craftUser()); });
 // Returns the crafted candidates [{slot,item,twoHand,emb,label}] for the options of the UI card (or [] when disabled).
 function craftedVariants(c, text, { base, dual } = {}) {
   if (!c?.on) return [];
@@ -436,7 +460,7 @@ ipcMain.handle('sim:topgear', run(async (o, tmp) => {
   // Upgrades: bag items (or all items) raised to the last level of their upgrade track (lib/upgrade.js) before anything else, so Catalyst
   // twins and gems follow the upgraded level.
   if (o.upgradeBags === 'bags' || o.upgradeBags === 'all') {
-    const P = loadProg(), up = upgradeLib.upgradePools(parsed, o.upgradeBags, enhanceDb().upgrade, { ...P, upgradeTracks: P.upgradeTracks || JSON.parse(fs.readFileSync(progDefault(), 'utf8')).upgradeTracks });
+    const P = loadProg(), up = upgradeLib.upgradePools(parsed, o.upgradeBags, enhanceDb().upgrade, P);
     log(`>> Upgrades: ${up.length} ${o.upgradeBags === 'all' ? 'item(s)' : 'bag item(s)'} raised to their track's maximum${up.length ? ': ' + up.map(u => `${u.name} ${u.from} → ${u.to} (${u.track})`).join(', ') : ''}`);
     if (up.some(u => /gladiat|aspirant|combatant|pvp/i.test(u.name))) log('>> Upgrades: PvP items follow the upgrade track their bonus ids show; their real PvP upgrade path may differ.');
   }
@@ -592,10 +616,11 @@ ipcMain.handle('sim:topgear', run(async (o, tmp) => {
 
 // ---------- Progression (tracks & sources) ----------
 const progUser = () => path.join(app.getPath('userData'), 'progression.json');
-const progDefault = () => path.join(__dirname, 'data', 'progression.json');
-const loadProg = () => JSON.parse(fs.readFileSync(fs.existsSync(progUser()) ? progUser() : progDefault(), 'utf8'));
+const progDefault = () => ptrFile('progression.json');
+const loadProg = () => { const S = loadSeason(), P = (fs.existsSync(progUser()) && ofSeason(progUser(), S)) || JSON.parse(fs.readFileSync(progDefault(), 'utf8'));
+  return { ...P, season: S.season.name, tier: S.season.tierSet, upgradeTracks: S.season.upgradeTracks }; };
 ipcMain.handle('prog:get', () => { const p = loadProg(); return { season: p.season, sources: Object.entries(p.sources).map(([id, s]) => ({ id, label: s.label })) }; });
-ipcMain.handle('prog:edit', () => { if (!fs.existsSync(progUser())) fs.copyFileSync(progDefault(), progUser()); return shell.openPath(progUser()); });
+ipcMain.handle('prog:edit', () => { if (!fs.existsSync(progUser()) || !ofSeason(progUser(), loadSeason())) { if (fs.existsSync(progUser())) fs.renameSync(progUser(), progUser().replace(/\.json$/, `-old-${Date.now()}.json`)); fs.copyFileSync(progDefault(), progUser()); } return shell.openPath(progUser()); });
 function makeIlvlFor({ instanceIds, instanceSources, upgrade, ilvl }) {
   const prog = loadProg(), src = i => instanceSources?.[i] || 'custom';
   if (instanceIds.some(i => src(i) === 'custom') && !ilvl) throw new Error('Enter a custom item level, or pick a source for each instance.');
@@ -803,7 +828,7 @@ ipcMain.handle('sim:bis', run(async (o, tmp) => {
 }));
 
 // ---------- Droptimizer ----------
-const lootFile = () => path.join(app.getPath('userData'), 'loot.json');
+const lootFile = () => ud('loot.json');
 let lootCache = { key: '', data: null };   // loot.json peut peser plusieurs Mo : relu seulement s'il a changé
 const loadLoot = () => {
   try { const f = lootFile(), st = fs.statSync(f), k = `${f}|${st.mtimeMs}|${st.size}`; if (lootCache.key !== k) lootCache = { key: k, data: JSON.parse(fs.readFileSync(f, 'utf8')) }; return lootCache.data; }
@@ -815,10 +840,10 @@ ipcMain.handle('loot:info', () => {
     .sort((a, b) => (/season/i.test(b.name) - /season/i.test(a.name)) || (b.id - a.id));
   // "This season": the Journal's Current Season tier plus every instance that has one of the bosses named in progression.json
   const bosses = new Set(Object.values(loadProg().sources).flatMap(s => Object.keys(s.bossOverrides || {})));
-  const cur = tiers.find(t => /current season/i.test(t.name)), inSeason = new Set(cur ? cur.instances : []);
+  const jt = (loadSeason().season.journalTier || 'Current Season').toLowerCase(), cur = tiers.find(t => t.name.toLowerCase() === jt), inSeason = new Set(cur ? cur.instances : []);
   for (const [id, i] of Object.entries(l.instances)) if (Object.values(i.bosses).some(b => bosses.has(b.name.toLowerCase()))) inSeason.add(id);
   // The Journal's Current Season tier still lists last season's raids: drop raids whose drops only use other seasons' upgrade tracks.
-  const P = loadProg(), curGroups = new Set(Object.keys(P.upgradeTracks || JSON.parse(fs.readFileSync(progDefault(), 'utf8')).upgradeTracks || {}).map(Number));
+  const P = loadProg(), curGroups = new Set(Object.keys(P.upgradeTracks || {}).map(Number));
   const known = new Set(Object.values(enhanceDb().upgrade || {}).map(v => v[0])), oldSeason = [];
   if (curGroups.size && known.size) for (const id of [...inSeason]) if (l.instances[id]?.type === 2 && loot.seasonOf(l.instances[id].groups, curGroups, known) === 'old') { inSeason.delete(id); oldSeason.push(l.instances[id].name); }
   if (inSeason.size) tiers.unshift({ id: 'season', name: `This season (${P.season})`, instances: [...inSeason], left: Object.values(l.instances).some(i => i.groups) ? oldSeason.sort() : null });
@@ -829,15 +854,37 @@ ipcMain.handle('loot:info', () => {
     instances: Object.entries(l.instances).map(([id, i]) => ({ id, name: i.name, items: Object.values(i.bosses).reduce((n, b) => n + b.items.length, 0) }))
       .sort((a, b) => b.id - a.id) };
 });
+// Current live game build (wago.tools), e.g. "12.1.5.70575". Used to refresh the loot data automatically after a patch.
+const liveBuild = async () => JSON.parse(await download('https://wago.tools/api/builds/latest', 'game build', 15000)).wow.version;
+// Does the loot data need a refresh? -> { reason } | null. No data, data made for an older patch, or older than 14 days.
+ipcMain.handle('loot:status', async () => {
+  const l = loadLoot(); if (!l) return { reason: 'no game data yet' };
+  let b = null; try { b = ptrMode() ? JSON.parse(await download('https://wago.tools/api/builds/latest', 'game builds', 15000)).wowt?.version : await liveBuild(); } catch { /* offline: only the age rule applies */ }
+  const short = v => String(v).split('.').slice(0, 3).join('.');
+  if (b && l.gameBuild && short(b) !== short(l.gameBuild)) return { reason: `new game patch ${short(b)}` };
+  if (b && !l.gameBuild && Date.now() - Date.parse(l.builtAt) > 2 * 864e5) return { reason: `game build ${b}` };
+  if (Date.now() - Date.parse(l.builtAt) > 14 * 864e5) return { reason: 'data older than 14 days' };
+  return null;
+});
+// Season / boss data from the GitHub repo (small files): -> { updated: [files], generated, from, skipped? }
+ipcMain.handle('data:refresh', async () => {
+  const r = await DF().refresh(DATA_URL, url => download(url, 'boss and season data', 20000));
+  shipped = null;
+  if (r.updated.length) emitLog(`>> Boss and season data updated from GitHub (${r.updated.join(', ')}).`);
+  return { ...r, ...DF().info() };
+});
 ipcMain.handle('loot:update', async () => {
   const log = emitLog;
   const names = { instance: 'JournalInstance', encounter: 'JournalEncounter', encItem: 'JournalEncounterItem', item: 'Item', sparse: 'ItemSparse', tier: 'JournalTier', tierX: 'JournalTierXInstance' };
-  const wago = n => `https://wago.tools/db2/${n}/csv`, t = {};
+  // PTR mode: the latest PTR build of the game (wago product "wowt") and simc's *_ptr.inc tables
+  const ptrBuild = ptrMode() ? JSON.parse(await download('https://wago.tools/api/builds/latest', 'game builds', 15000)).wowt?.version : null;
+  if (ptrMode()) { if (!ptrBuild) throw new Error('No PTR build found on wago.tools.'); log(`>> Season preview: game data from PTR build ${ptrBuild}`); }
+  const wago = n => `https://wago.tools/db2/${n}/csv${ptrBuild ? '?build=' + ptrBuild : ''}`, t = {};
   for (const [k, n] of Object.entries(names)) { log(`>> Downloading ${n}…`); t[k] = await download(wago(n), n); }
   // Données annexes : un échec désactive seulement la fonction concernée (Catalyst, objets artisanaux, règles d'équipement).
   const optional = async (label, url, off) => { try { log(`>> Downloading ${label}…`); return await download(url, label); } catch (e) { log(`>> ${e.message}${off ? ` — ${off}` : ''}`); return null; } };
-  t.sets = await optional('tier set data (simc)', tierLib.SETS_URL, 'Catalyst disabled until the next update');
-  t.embs = await optional('embellishment table (simc)', craftedLib.EMB_URL, 'embellishments are not detected automatically');
+  t.sets = await optional('tier set data (simc)', ptrUrl(tierLib.SETS_URL), 'Catalyst disabled until the next update');
+  t.embs = await optional('embellishment table (simc)', ptrUrl(craftedLib.EMB_URL), 'embellishments are not detected automatically');
   t.skill = await optional('SkillLineAbility (recipes)', wago('SkillLineAbility'), 'crafted base items come from “extraItems” only');
   t.effects = t.skill && await optional('SpellEffect (recipes, large file)', wago('SpellEffect'), 'crafted base items come from “extraItems” only');
   if (!t.skill || !t.effects) { delete t.skill; delete t.effects; }
@@ -845,7 +892,7 @@ ipcMain.handle('loot:update', async () => {
   for (const [k, n] of [['map', 'Map'], ['xTree', 'ItemXBonusTree'], ['treeNode', 'ItemBonusTreeNode'], ['bonus', 'ItemBonus']]) { t[k] = await optional(`${n} (season detection)`, wago(n), '“This season” uses the Adventure Guide only'); if (!t[k]) break; }
   if (!t.map || !t.xTree || !t.treeNode || !t.bonus) { delete t.map; delete t.xTree; delete t.treeNode; delete t.bonus; }
   // simc's item data first: crafting qualities decide the valid consumable names (_2, _3 suffixes), tier/2H/embellishment data come from it too.
-  const itemsTxt = await optional('item data (simc, ~26 MB)', itemsLib.ITEMS_URL, 'keeping the bundled copy');
+  const itemsTxt = await optional('item data (simc, ~26 MB)', ptrUrl(itemsLib.ITEMS_URL), 'keeping the bundled copy');
   const itemsJ = itemsTxt && itemsLib.parse(itemsTxt, []);
   if (itemsJ) t.cq = itemsJ.cq;
   log('>> Building loot database…');
@@ -856,16 +903,17 @@ ipcMain.handle('loot:update', async () => {
     log(`>> Recipe tables could not be read (${e.message}): building without crafted base items.`);
     delete t.skill; delete t.effects; built = loot.build(t);
   }
+  built.gameBuild = ptrBuild || await liveBuild().catch(() => null); built.ptr = !!ptrBuild;
   writeJson(lootFile(), built);
   // Enchants, gems and socket bonuses for "Enchants & gems" (Best in Slot) and for carrying gems onto new pieces.
-  const enhT = {}; for (const [k, u] of Object.entries(enhLib.URLS)) { enhT[k] = await optional(`${k === 'perm' ? 'enchant list' : k === 'ie' ? 'enchant effects' : k === 'gemData' ? 'gem data' : 'item bonus data'} (simc)`, u, 'keeping the bundled enchant/gem data'); if (!enhT[k]) break; }
+  const enhT = {}; for (const [k, u0] of Object.entries(enhLib.URLS)) { const u = ptrUrl(u0); enhT[k] = await optional(`${k === 'perm' ? 'enchant list' : k === 'ie' ? 'enchant effects' : k === 'gemData' ? 'gem data' : 'item bonus data'} (simc)`, u, 'keeping the bundled enchant/gem data'); if (!enhT[k]) break; }
   if (itemsTxt && Object.keys(enhLib.URLS).every(k => enhT[k])) {
-    try { const db = enhLib.build({ ...enhT, itemData: itemsTxt }); if (db.enchants.length && db.gems.length) { writeJson(path.join(app.getPath('userData'), 'enhance.json'), db); log(`>> Enchants & gems ready (${db.enchants.length} enchants, ${db.gems.length} gems).`); } else log('>> Enchant/gem data looked incomplete: keeping the bundled copy.'); }
+    try { const db = enhLib.build({ ...enhT, itemData: itemsTxt }, loadSeason().expansion.qualityRanks); if (db.enchants.length && db.gems.length) { writeJson(ud('enhance.json'), db); log(`>> Enchants & gems ready (${db.enchants.length} enchants, ${db.gems.length} gems).`); } else log('>> Enchant/gem data looked incomplete: keeping the bundled copy.'); }
     catch (e) { log(`>> Enchant/gem data could not be read (${e.message}): keeping the bundled copy.`); }
   }
   if (itemsJ) {
     const { cq, ...j } = itemsJ; j.embBonusIds = (built.embellishments || []).map(e => String(e.bonusId));
-    if (j.two.length > 1000) { writeJson(path.join(app.getPath('userData'), 'items.json'), j); log(`>> Item data ready (build ${j.build}, ${j.two.length} two-handers).`); }
+    if (j.two.length > 1000) { writeJson(ud('items.json'), j); log(`>> Item data ready (build ${j.build}, ${j.two.length} two-handers).`); }
     else log('>> Item data looked incomplete: keeping the bundled copy.');
   }
   log(`>> Crafted base items found: ${built.crafted.length} · embellishments in simc table: ${built.embellishments.length}`);

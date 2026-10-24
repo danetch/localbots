@@ -196,7 +196,7 @@ test('loot: older copy of a remade item and Azerite-style items are left out', (
 });
 
 test('upgrade: bag items raised to their track maximum (Hero / Myth 6/6), nothing above it, unknown tracks untouched', () => {
-  const U = require('../lib/upgrade'), tg = require('../lib/topgear'), db = require('../data/enhance.json'), P = require('../data/progression.json');
+  const U = require('../lib/upgrade'), tg = require('../lib/topgear'), db = require('../data/enhance.json'), P = { ...require('../data/progression.json'), upgradeTracks: require('../data/season.json').season.upgradeTracks };
   assert.deepStrictEqual(U.upgradeItem(',id=1,bonus_id=6652/12843', 'Cloak (311)', db.upgrade, P), { item: ',id=1,bonus_id=6652/12843,ilevel=321', from: 311, to: 321, label: 'Hero 6/6' });
   assert.strictEqual(U.upgradeItem(',id=1,bonus_id=12849,ilevel=318', '', db.upgrade, P).item, ',id=1,bonus_id=12849,ilevel=334');
   assert.strictEqual(U.upgradeItem(',id=1,bonus_id=13848,ilevel=344', '', db.upgrade, P), null, 'Myth 9/6 (344) stays');

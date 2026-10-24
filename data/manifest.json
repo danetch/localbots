@@ -1,0 +1,19 @@
+{
+ "generated": "2026-10-24T03:29:37.360Z",
+ "minApp": "0.5.0",
+ "files": {
+  "season.json": "b61af48f1de355b04ad8c7e7adf7999ea40eafce77ec53ea7d79cbf2ff28d3d3",
+  "progression.json": "e08a8a28ac7277dc53be6f275fc3c0242a7d050051b3ed94204244f6d1f4bb49",
+  "crafted.json": "b16dadad7871664c0822dc3f9e1abb47dc06238bd37b75ebd877659db3da5689",
+  "fights/coiledaltar.json": "c06f11d0e3e0ff478448824e5081c5d8937135c4dd5c7b46649e36b3dfbc5087",
+  "fights/explorers.json": "b53d0b1f409e8ea72c4120ace4e6ef8e892748223661beb4bb943dd9d8ad2e28",
+  "fights/kithix.json": "4881591a4401443d0fc3af15dda46a1bc77a0815da439e7ea4f90ced95e6f454",
+  "fights/nekzali.json": "9101ec1f305dec9156ef6703c37e5f85e57ad3e0cdd36b001814dca6ab958bf4",
+  "fights/nymrissa.json": "04fd1ba7f8f480b2fb8fcdc80535327210019e8c0c5dd1adaddb956b3abba213",
+  "fights/sentinels.json": "980702f9be5c5daa0d01825616591f07ed081c8f8a21d78d60f3161e8f07140c",
+  "fights/sszorak.json": "a809b8c13aa8b4d13a99bc3c1dab0ff6bbf82fe8e8cf3b47bc42b72e4f7d722e",
+  "fights/twinfangs.json": "30395a5654cfff5275d0abcedf44efc7fda27b22bda8e98007afabc3d69b252a",
+  "fights/ulatek.json": "590ff13e5b3d2a58ffe506aca5b400af2b5139eff8eeec559c77585c9a84b5be",
+  "fights/vashnik.json": "d3b7227279110b3f507d0e74503dbeafd679edaa500d932fd85771d388c7b7fd"
+ }
+}

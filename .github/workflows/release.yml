@@ -1,10 +1,12 @@
 # Release = push to main with a new "version" in package.json. If release v<version> does not exist yet, the tests run (Linux), then the
 # Windows installer is built and published as GitHub release v<version> (electron-builder also uploads latest.yml for the in-app updater).
 # The installer is NOT code signed: Windows SmartScreen warns until a certificate is added (CSC_LINK / CSC_KEY_PASSWORD secrets).
+# Beta versions (x.y.z-beta.N, usually from a season* branch) are published as GitHub pre-releases: only users who ticked "Offer beta
+# versions" get them. A season* branch never publishes a full release (its version must contain "-").
 name: release
 on:
   push:
-    branches: [main]
+    branches: [main, 'season*']
   workflow_dispatch:
 permissions:
   contents: write
@@ -22,6 +24,7 @@ jobs:
         run: |
           v=$(node -p "require('./package.json').version")
           echo "version=$v" >> "$GITHUB_OUTPUT"
+          if [ "${GITHUB_REF_NAME}" != "main" ] && [[ "$v" != *-* ]]; then echo "exists=true" >> "$GITHUB_OUTPUT"; echo "::notice::branch ${GITHUB_REF_NAME}: full versions are released from main only"; exit 0; fi
           if gh release view "v$v" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
   test:
     needs: check
@@ -47,6 +50,9 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: npm install
+      - name: Pre-release for beta versions
+        shell: bash
+        run: node -e "const fs=require('fs'),p=JSON.parse(fs.readFileSync('package.json'));if(p.version.includes('-')){p.build.publish[0].releaseType='prerelease';fs.writeFileSync('package.json',JSON.stringify(p,null,2));console.log('pre-release',p.version)}"
       - run: npx electron-builder --win --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

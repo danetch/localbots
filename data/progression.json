@@ -1,8 +1,7 @@
 {
   "season": "Midnight Season 2",
-  "tier": "MID2",
+  "seasonId": "MID2",
   "notes": "Edit freely. A source is either {track, rank} (item level read from the track table) or {ilvl}. 'bossOverrides' (lowercase boss names) replace a source's value for specific bosses.",
-  "upgradeTracks": { "616": "champion", "617": "hero", "618": "myth" },
   "tracks": {
     "champion": { "name": "Champion", "ilvl": [292, 295, 298, 302, 305, 308] },
     "hero":     { "name": "Hero",     "ilvl": [305, 308, 311, 315, 318, 321] },

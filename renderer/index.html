@@ -60,6 +60,7 @@ a.wh.blk{display:flex;align-items:flex-start;gap:6px;border:0;min-width:0}a.wh.b
 /* ---- layout: header (mode + run) / progress strip / setup accordion | results with tabs ---- */
 header{display:flex;align-items:center;gap:12px;padding:10px 12px 8px}
 .brand{font-weight:700;font-size:16px;letter-spacing:.02em;margin-right:4px}
+.badge{display:inline-block;margin-left:7px;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.04em;background:#c2410c;color:#fff;vertical-align:2px}
 header .seg{width:330px}header button.go{flex:none;min-width:150px}
 .grow{flex:1}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--neg);margin-left:6px}
@@ -80,7 +81,7 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
 @media(max-width:1000px){body{height:auto;overflow:auto}main{grid-template-columns:1fr}#setup{overflow:visible}#resbox{min-height:70vh}header{flex-wrap:wrap}}
 </style></head><body>
 <header>
- <span class="brand"><img src="icon.png" alt="" width="24" height="24" style="vertical-align:-6px;margin-right:7px">Polygnome</span>
+ <span class="brand"><img src="icon.png" alt="" width="24" height="24" style="vertical-align:-6px;margin-right:7px">Polygnome<span id="ptrbadge" class="badge" hidden title="Season preview: PTR / beta game data (Settings)">PTR</span></span>
  <div class="seg" role="radiogroup" aria-label="Mode">
   <label><input type="radio" name="mode" value="top" checked>Top Gear</label>
   <label><input type="radio" name="mode" value="drop">Droptimizer</label>
@@ -203,11 +204,15 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
  <div id="eng" class="it" style="margin-top:4px"></div>
  <div class="row"><button id="eget" class="small" hidden>Download / update simc</button></div>
  <div id="engnew" class="it" hidden><span id="engnewtxt"></span> <button id="eforce" class="small"></button></div>
+ <h2>Season preview</h2>
+ <label class="in" style="margin-top:0"><input type="checkbox" id="ptron">Use PTR / beta game data (next season)</label>
+ <div class="it">simc runs with its PTR data, “Update loot data” reads the PTR build, and boss fights prepared for the next season appear (marked PTR). Your live data is kept and comes back when you untick this.</div>
  <h2>Appearance</h2>
  <div class="row" style="margin-top:0"><label>Theme<select id="theme"><option value="auto">Follow the system</option><option value="light">Light</option><option value="dark">Dark</option></select></label></div>
  <label class="in" style="margin-top:8px"><input type="checkbox" id="whon">Wowhead icons and item tooltips (needs internet; restart to turn off)</label>
  <h2>Application</h2>
  <div class="row" style="margin-top:0"><button id="uchk" class="small">Check for app updates</button><span id="ust" class="it"></span></div>
+ <label class="in" style="margin-top:8px"><input type="checkbox" id="betaon">Offer beta versions of Polygnome (early builds for the next season)</label>
 </dialog>
 
 <script>
@@ -309,7 +314,21 @@ function seasNote(){const t=(lootInfo?.tiers||[]).find(t=>t.id===$('tier').value
  el.textContent=t.left==null?'Run “Update loot data” to leave last season’s raids out of this list.':t.left.length?`Left out (last season’s upgrade tracks): ${t.left.join(', ')}.`:''}
 $('inst').onchange=e=>{if(e.target.classList.contains('isrc'))instSrc[e.target.dataset.i]=e.target.value};
 $('tier').onchange=()=>{renderInst();seasNote()};$('ifilt').oninput=renderInst;$('isel').onclick=()=>document.querySelectorAll('.ins').forEach(c=>c.checked=true);$('inone').onclick=()=>document.querySelectorAll('.ins').forEach(c=>c.checked=false);
-$('upd').onclick=async()=>{$('upd').disabled=true;try{await api.lootUpdate();await loadLoot()}catch(e){$('lootst').textContent=msg(e)}$('upd').disabled=false};
+async function updateLoot(why){$('upd').disabled=true;if(why)$('lootst').textContent=`Updating game data (${why})… see the Activity log`;
+ try{await api.lootUpdate();await loadLoot()}catch(e){$('lootst').textContent=why?`Automatic game data update failed (${msg(e)}): offline? Click “Update loot data” to retry.`:msg(e)}$('upd').disabled=false}
+$('upd').onclick=()=>updateLoot('');
+// At startup: newer boss/season data from GitHub (small), then the game data if a patch came out, it is missing or old (big download).
+async function updateAtStart(){
+ try{const r=await api.dataRefresh();if(r&&r.updated&&r.updated.length){api.bossList().then(B=>{bosses=B;const v=$('boss').value;$('boss').innerHTML='<option value="">None (use the style below)</option>'+B.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');$('boss').value=v;bossPreview()});api.prog().then(p=>{prog=p;$('seas').textContent=p.season;renderInst()})}}catch{}
+ try{const s=await api.lootStatus();if(s&&!$('go').disabled)await updateLoot(`${s.reason}, started automatically`)}catch{}}
+setTimeout(updateAtStart,2500);
+// Season preview (PTR) and beta updates (Settings)
+api.settings().then(s=>{$('ptron').checked=!!s.ptr;$('ptrbadge').hidden=!s.ptr;$('betaon').checked=!!s.beta});
+$('ptron').onchange=async()=>{const on=$('ptron').checked;await api.setOption({ptr:on});$('ptrbadge').hidden=!on;lootInfo=null;await loadLoot();
+ api.bossList().then(B=>{bosses=B;$('boss').innerHTML='<option value="">None (use the style below)</option>'+B.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');bossPreview()});
+ api.prog().then(p=>{prog=p;$('seas').textContent=p.season;renderInst()});
+ try{const st=await api.lootStatus();if(st&&!$('go').disabled)updateLoot(`${on?'PTR':'live'} game data: ${st.reason}`)}catch{}};
+$('betaon').onchange=()=>api.setOption({beta:$('betaon').checked});
 
 api.onLog(l=>{const e=$('log');e.textContent+=l+'\n';e.scrollTop=e.scrollHeight;if(e.textContent.length>200000)e.textContent=e.textContent.slice(-150000)});
 $('stop').onclick=()=>api.cancel();

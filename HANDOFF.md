@@ -506,3 +506,30 @@ embellishment").
   as for average raids. Health-driven phases stay at the top-50 % positions (atPct) and stretch with the length.
 - User's export (Lofo, Demonology): equipped item level 328. Tests: 46 pass.
 - Normal difficulty: no Warcraft Logs data collected (fixed lengths). Refresh the snapshot each season (same endpoint, new zone id).
+
+=== 24 OCT: SEASON 3 PREPARATION (part 1: plumbing) ===
+- data/season.json = the only place with season / expansion constants: expansion { name, qualityRanks (crafted enchant/gem quality ranks:
+  Midnight 2, TWW/DF 3; lib/enhance.js build(.., ranks)) }, season { id MID2, name, tierSet, upgradeTracks (616-618), craftedIlvl 331,
+  journalTier "Current Season", raids, sources { warcraftLogsZone 53, lorrgsZones, bigwigs folders } }. progression.json / crafted.json
+  carry "seasonId"; the user's editable copies are used only while seasonId matches (else ignored; "Edit…" sets the old copy aside as
+  *-old-<time>.json and starts from the new season's file). Legacy copies without seasonId count as MID2.
+- Data updates without a release (lib/datafiles.js): data/manifest.json lists season/progression/crafted/fights with sha256, `generated`,
+  minApp (= package.json dataMinApp, raise it when data needs new code). At startup the app downloads the manifest from
+  raw.githubusercontent.com/danetch/localbots/main/data/ and, if newer than the copy in use and minApp <= app version, the changed files
+  (validated, then swapped in) into userData/data-cache. A newer app's bundled data wins over an older download.
+  => PUSHING data/ TO MAIN UPDATES EVERY INSTALLED APP (>= 0.5.0) AT ITS NEXT START. Run `node tools/make-data.js` after editing data/
+  (npm test fails otherwise). .gitattributes keeps data/ LF (hashes).
+- User fight copies: data/shipped-hashes.json = sha256 of every fight file version in git history (LF + CRLF). A user file identical to
+  one of them is an untouched "Edit…" copy and is ignored, so corrected timings reach everyone; real edits still win.
+- Startup (renderer updateAtStart, 2.5 s): data refresh, then loot:status -> automatic "Update loot data" when there is no data, the
+  game patch changed (wago /api/builds/latest; loot.json gameBuild) or the data is > 14 days old, and no simulation is running. Header
+  says "Updating game data (new game patch 12.1.7, started automatically)… see the Activity log"; failures say so and keep the button.
+- Season preview (Settings, `ptr` setting, header badge PTR): simc gets ptr=1 BEFORE the profile (verified: "12.1.7.70424 PTR"),
+  "Update loot data" reads wago ?build=<latest wowt> and simc *_ptr.inc tables (all 7 exist on master and midnight), separate files
+  loot-ptr.json / items-ptr.json / enhance-ptr.json; season-ptr.json / progression-ptr.json / crafted-ptr.json used when present; fights
+  with "ptr": true listed only in PTR mode, named "(PTR)".
+- Beta versions (Settings "Offer beta versions", `beta` setting): electron-updater allowPrerelease + channel beta.
+  generateUpdatesFilesForAllChannels so stable builds also publish beta.yml. Workflow: pushes to main or season* branches; a version
+  with "-" (0.5.0-beta.1) is published as a GitHub pre-release; season* branches never publish full releases.
+- Smoke test (real Electron under Xvfb, fresh profile): startup refresh 404 (manifest not pushed yet) handled silently, automatic loot
+  update starts and reports the network failure, PTR toggle saves and shows the badge. Tests: 50 pass.
