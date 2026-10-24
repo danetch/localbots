@@ -583,3 +583,7 @@ embellishment").
   (deluge 9/70 + 155, emergence 36/97 + 155, submerge 136/291), median 332 s. worldData.zones (44 zones): live raids 53 The Venomous
   Abyss, frozen 46 "VS / DR / MQD" and 50 Sporefall (S1), 55 Mythic+ Season 2; no raid-testing zone yet (12.1.7 PTR has no new raid):
   it will appear in the same list when testing starts.
+
+=== 24 OCT: FLEETING CONSUMABLES HIDDEN ===
+- "Fleeting" flasks / potions (cauldron versions of the regular ones, same effect) join lib/loot.js NOT_COMBAT, applied when building
+  loot.json and in loot:info (older loot.json too). User's data: flasks 16 -> 8, potions 47 -> 34.

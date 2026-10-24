@@ -112,6 +112,6 @@ test('bis: DR pairs and DR-aware winner picking', () => {
 });
 
 test('consumables: profession phials, honor flask and cauldrons are hidden', () => {
-  for (const n of ['Haranir Phial of Perception', 'Haranir Phial of Ingenuity', 'Haranir Phial of Finesse', 'Vicious Thalassian Flask of Honor', 'Cauldron of Sin\'dorei Flasks']) assert.ok(loot.NOT_COMBAT.test(n), n);
-  for (const n of ['Flask of the Magisters', 'Flask of the Shattered Sun', 'Flask of Thalassian Resistance', 'Flask of the Blood Knights', 'Twilight Angler\'s Medley']) assert.ok(!loot.NOT_COMBAT.test(n), n);
+  for (const n of ['Haranir Phial of Perception', 'Haranir Phial of Ingenuity', 'Haranir Phial of Finesse', 'Vicious Thalassian Flask of Honor', 'Cauldron of Sin\'dorei Flasks', 'Fleeting Flask of the Magisters (rank 2)', 'Fleeting Potion of Recklessness']) assert.ok(loot.NOT_COMBAT.test(n), n);
+  for (const n of ['Flask of the Magisters', 'Flask of the Shattered Sun', 'Flask of Thalassian Resistance', 'Flask of the Blood Knights', 'Twilight Angler\'s Medley', 'Potion of Recklessness (rank 2)']) assert.ok(!loot.NOT_COMBAT.test(n), n);
 });
