@@ -529,7 +529,8 @@ embellishment").
   loot-ptr.json / items-ptr.json / enhance-ptr.json; season-ptr.json / progression-ptr.json / crafted-ptr.json used when present; fights
   with "ptr": true listed only in PTR mode, named "(PTR)".
 - Beta versions (Settings "Offer beta versions", `beta` setting): electron-updater allowPrerelease + channel beta.
-  generateUpdatesFilesForAllChannels so stable builds also publish beta.yml. Workflow: pushes to main or season* branches; a version
+  Full releases publish only latest.yml (checked on v0.5.0, despite generateUpdatesFilesForAllChannels): lib/updater.js falls back to
+  the latest channel when a beta check finds no beta.yml (0.5.1). Workflow: pushes to main or season* branches; a version
   with "-" (0.5.0-beta.1) is published as a GitHub pre-release; season* branches never publish full releases.
 - Smoke test (real Electron under Xvfb, fresh profile): startup refresh 404 (manifest not pushed yet) handled silently, automatic loot
   update starts and reports the network failure, PTR toggle saves and shows the badge. Tests: 50 pass.
@@ -572,3 +573,8 @@ embellishment").
    Warcraft Logs testing reports -> tools/wcl-timeline.js --zones, then --zone <ptr zone> --encounter <id> -> times + repeat.
 6. Season start: season.json <- season-ptr.json (drop "ptr" from the fights, keep the old season's files or retire them), release.
    First days: Lorrgs (api2.lorrgs.io) real timings; after ~2 weeks: Warcraft Logs median kills per item level (difficulties[d].kills).
+
+=== 24 OCT: v0.5.0 / v0.5.1 RELEASED ===
+- 0.5.0: season config, data updates from GitHub, automatic loot refresh, season preview, beta channel, Season 3 tools.
+- 0.5.1: beta-channel fallback (above). Warcraft Logs API: V2 (GraphQL, client credentials); waiting for the user's API client to run
+  tools/wcl-timeline.js once for real.
