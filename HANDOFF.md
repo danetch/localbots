@@ -1,7 +1,41 @@
-POLYGNOME (formerly LOCALBOTS) - PROJECT HANDOFF (as of 22 Oct 2026, after enchants/gems/DR consumables)
+POLYGNOME (formerly LOCALBOTS) - PROJECT HANDOFF
 ================================================
-Paste this file at the start of a new conversation and upload localbots.zip (the latest build).
-Ask the assistant to read the zip before changing anything.
+
+=== START HERE (state on 25 Oct 2026, app v0.6.0) ===
+New conversation: attach the GitHub repo danetch/localbots, read this file and README.md, then wait for the user's request.
+The sections below are a chronological log (oldest first, 22 Oct -> 25 Oct); when two notes disagree, the later one wins.
+The older "FILE MAP" just below predates the current layout: trust the code and the dated sections.
+
+Working with the user
+- Electron app wrapping the SimulationCraft CLI (simc) for WoW Midnight: Top Gear, Droptimizer, Best in Slot, local and unlimited.
+- UI in English; the user often writes in French (answer in their language). Lean, working increments; flag unverified assumptions.
+- When the user says "si tu me proposes des choses, ne fais pas tout de suite": investigate, propose, wait for the go.
+- Release = bump package.json "version", push to main: .github/workflows/release.yml tests, builds the Windows installer, publishes
+  GitHub release v<version> (the app updates itself). Beta = x.y.z-beta.N from a season* branch (pre-release).
+- Data-only changes (data/season.json, progression.json, crafted.json, fights/*.json): run `node tools/make-data.js`, push to main:
+  installed apps (>= dataMinApp) download them without a release.
+- Use the GitHub REST API (gh api ...), not GraphQL (blocked in Claude sessions). wago.tools is blocked from the Claude sandbox:
+  game-data checks run in the user's browser / PC, or in GitHub Actions.
+- Warcraft Logs API credentials are never written in the repo (user's git-ignored wcl-credentials.json; repo secrets for Actions).
+- Real simc can be built in the sandbox (git clone simulationcraft/simc, branch midnight, cmake) to verify behaviour; npm test uses a
+  fake simc (test/fakesimc.js). UI screenshots: test/ui/mock.js with Playwright (global install).
+
+Code map (current)
+- main.js (IPC, simc runs, loot update, checkFoods), preload.js, renderer/index.html (single-file UI, cards).
+- lib/: topgear, bis, loot (wago DB2 -> loot.json), crafted, foods, items (simc item_data -> items.json), enhance, dr, tier, upgrade,
+  progression, boss (fight lengths), fight, journal (Adventure Guide drafts), bigwigs, wcl, datafiles (remote data), updater, specs,
+  talents, engine, gear, progress, wowhead.
+- tools/: make-data, journal-draft, bw-update, bw-extract, wcl-timeline, build-enhance, watch (season watch).
+- data/: season.json, progression.json, crafted.json, items.json, enhance.json, fights/*.json, manifest.json, shipped-hashes.json.
+
+Open items (25 Oct)
+- v0.6.0 not yet tested by the user. After the automatic "Update loot data", check the log: "Food: 12 kept" and "Crafted base items
+  found: N" should list Midnight items (CraftingData tables, never run against real wago data from the sandbox). If not: ask for the
+  log (CraftingData column names, OverallQualityID).
+- Repo secrets WCL_CLIENT_ID / WCL_CLIENT_SECRET not added yet: the season watch skips Warcraft Logs until they are.
+- Season watch: daily workflow (.github/workflows/watch.yml -> issues labelled "watch"), plus a weekly Claude scheduled task
+  "Polygnome season watch" (Mondays 08:39 Paris) that reports the open watch issues in French.
+- Season 3 preparation: SEASON 3 RUNBOOK below, started when the watch reports a new raid on the PTR.
 
 GOAL
 ----
