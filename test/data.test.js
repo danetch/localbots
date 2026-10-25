@@ -49,3 +49,11 @@ test('an untouched "Edit…" copy (LF or CRLF) is recognised, a real edit is not
   assert.ok(D.shippedCopy(text, hashes)); assert.ok(D.shippedCopy(text.replace(/\n/g, '\r\n'), hashes));
   assert.ok(!D.shippedCopy(text.replace('"a"', '"b"'), hashes));
 });
+
+test('data: the published fights (data/fights, drafts aside) build valid raid events', () => {
+  const B = require('../lib/boss'), defs = B.list([path.join(__dirname, '..', 'data', 'fights')]).filter(d => !d.draft);
+  for (const d of defs) for (const df of Object.keys(d.difficulties)) {
+    const r = B.build(d, { difficulty: df, duration: d.defaultDuration });
+    for (const e of r.events) assert.match(e, /^raid_events\+=\/(adds|movement|vulnerable|invulnerable|damage_done_buff),[\w=.:,\-]+$/, `${d.id}/${df}: ${e}`);
+  }
+});

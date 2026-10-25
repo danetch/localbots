@@ -1,7 +1,8 @@
 // End-to-end: loads main.js with a stubbed `electron`, a fake simc (test/fakesimc.js).
 const test = require('node:test'), assert = require('node:assert'), fs = require('fs'), os = require('os'), path = require('path'), Module = require('module');
 const ud = fs.mkdtempSync(path.join(os.tmpdir(), 'lb-')), H = {}, logs = [];
-process.env.FAKESIMC_LOG = path.join(ud, 'inputs.log');   // own fake-simc log: test files run in parallel
+process.env.FAKESIMC_LOG = path.join(ud, 'inputs.log');
+process.env.POLYGNOME_DATA = path.join(__dirname, 'fixtures', 'data');   // frozen season data (not the live data/, which changes every season)   // own fake-simc log: test files run in parallel
 const electron = { app: { getPath: () => ud, getVersion: () => '0.2.0', isPackaged: false, whenReady: () => ({ then: f => f() }), on() {}, quit() {} },
   BrowserWindow: function () { this.webContents = { send: (ch, l) => { if (ch === 'sim:log') logs.push(l); }, setWindowOpenHandler() {}, on() {} }; this.setTitle = this.setMenuBarVisibility = this.loadFile = () => {}; },
   ipcMain: { handle: (n, f) => (H[n] = f) }, dialog: {}, shell: {} };

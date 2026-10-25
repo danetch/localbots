@@ -117,7 +117,7 @@ async function withRun(fn) {
 // Season / boss data: bundled with the app or downloaded from GitHub at startup (lib/datafiles.js), whichever is newer.
 const dataLib = require('./lib/datafiles');
 let dataFiles = null;
-const DF = () => dataFiles || (dataFiles = dataLib.create({ bundled: path.join(__dirname, 'data'), cache: path.join(app.getPath('userData'), 'data-cache'), appVersion: app.getVersion() }));
+const DF = () => dataFiles || (dataFiles = dataLib.create({ bundled: process.env.POLYGNOME_DATA || path.join(__dirname, 'data'), cache: path.join(app.getPath('userData'), 'data-cache'), appVersion: app.getVersion() }));
 const DATA_URL = 'https://raw.githubusercontent.com/danetch/localbots/main/data/';
 // a -ptr file only counts in the data set in use (bundled or downloaded), so a preview file removed from the repo is not found in an older bundle
 const ptrFile = name => { const p = DF().dir(name.replace(/\.json$/, '-ptr.json')); return ptrMode() && fs.existsSync(p) ? p : DF().file(name); };

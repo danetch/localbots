@@ -1,0 +1,262 @@
+{
+ "id": "kithix",
+ "name": "Kith'ix — The Unbinding of Kith'ix",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheUnbindingOfKithix/Kithix.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing. Kill lengths: the median guild kill on Warcraft Logs (difficulty `kills`); with an export, the median kill of raids at your equipped item level (`byIlvl` brackets, Warcraft Logs), extended at 1 % per item level outside them. Phase positions come from the top-50 logs (Lorrgs) and are stored as % of the kill where health-driven.",
+ "defaultDuration": 300,
+ "stages": [
+  {
+   "id": 1,
+   "at": 0
+  },
+  {
+   "id": 2,
+   "atPct": 75
+  }
+ ],
+ "mechanics": {
+  "voidswarm": {
+   "label": "Voidswarm (adds)",
+   "type": "adds",
+   "count": 3,
+   "health": 1500000,
+   "duration": 30,
+   "timesFrom": "logs",
+   "assumed": [
+    "count",
+    "health",
+    "duration"
+   ]
+  },
+  "appendage": {
+   "label": "Twisted Appendage (dodge slam)",
+   "type": "movement",
+   "duration": 2,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration"
+   ]
+  },
+  "extinguish": {
+   "label": "Extinguish (move to Light's Embrace orb)",
+   "type": "movement",
+   "duration": 3,
+   "timesFrom": "logs",
+   "assumed": [
+    "duration"
+   ]
+  },
+  "intermission": {
+   "label": "Suffocating Darkness (move into the Bulwark)",
+   "type": "movement",
+   "duration": 4,
+   "timesFrom": "logs",
+   "assumed": [
+    "duration"
+   ]
+  },
+  "nullGate": {
+   "label": "Null Gate (only some players carry one)",
+   "type": "movement",
+   "stage": 2,
+   "duration": 5,
+   "chance": 0.15,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance"
+   ]
+  },
+  "grace": {
+   "label": "Luminous Grace (+50% damage in stage 2)",
+   "type": "damage_done_buff",
+   "stage": 2,
+   "multiplier": 1.5,
+   "timesFrom": "guide",
+   "assumed": [
+    "multiplier"
+   ]
+  }
+ },
+ "difficulties": {
+  "mythic": {
+   "label": "Mythic",
+   "times": {
+    "voidswarm": [
+     5
+    ],
+    "appendage": [
+     12,
+     15,
+     16,
+     18,
+     29
+    ],
+    "extinguish": [
+     36,
+     78
+    ],
+    "intermission": [
+     57
+    ],
+    "nullGate": [
+     1,
+     10
+    ],
+    "grace": [
+     0
+    ]
+   },
+   "repeat": {
+    "voidswarm": 109,
+    "appendage": 109,
+    "extinguish": 109,
+    "intermission": 109
+   },
+   "duration": 310,
+   "checked": "Lorrgs only 2 kills, 310 s: Voidswarm 5/114/223, Suffocating Darkness 57/166, Extinguish 36/78/145/187 (109 s cycle).",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 310,
+    "kills": 454,
+    "p25": 318,
+    "p75": 298,
+    "p99": 280,
+    "byIlvl": []
+   },
+   "topDuration": 310
+  },
+  "heroic": {
+   "label": "Heroic",
+   "times": {
+    "voidswarm": [
+     5
+    ],
+    "appendage": [
+     12,
+     15,
+     18,
+     29,
+     32
+    ],
+    "extinguish": [
+     37,
+     94
+    ],
+    "intermission": [
+     57
+    ],
+    "nullGate": [
+     3,
+     10
+    ],
+    "grace": [
+     0
+    ]
+   },
+   "repeat": {
+    "voidswarm": 109,
+    "appendage": 109,
+    "extinguish": 109,
+    "intermission": 109
+   },
+   "duration": 268,
+   "checked": "Lorrgs 50 kills, median 232 s: Voidswarm 5/114/223, Suffocating Darkness 57/166, Extinguish 37/94/146/203 (109 s cycle). Stage 2 not visible in the logs (kept at 75 %).",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 268,
+    "kills": 102702,
+    "p25": 289,
+    "p75": 251,
+    "p99": 196,
+    "byIlvl": [
+     [
+      303,
+      280,
+      376
+     ],
+     [
+      306,
+      276,
+      496
+     ],
+     [
+      309,
+      278,
+      559
+     ],
+     [
+      312,
+      273,
+      929
+     ],
+     [
+      315,
+      269,
+      1440
+     ],
+     [
+      318,
+      276,
+      1695
+     ],
+     [
+      321,
+      292,
+      6753
+     ],
+     [
+      324,
+      279,
+      34949
+     ],
+     [
+      327,
+      261,
+      48743
+     ],
+     [
+      330,
+      221,
+      6013
+     ]
+    ]
+   },
+   "topDuration": 232
+  },
+  "normal": {
+   "label": "Normal / LFR",
+   "times": {
+    "voidswarm": [
+     5
+    ],
+    "appendage": [
+     15,
+     21,
+     34
+    ],
+    "extinguish": [
+     31,
+     57,
+     62
+    ],
+    "intermission": [
+     57
+    ],
+    "nullGate": [
+     3,
+     10
+    ],
+    "grace": [
+     0
+    ]
+   },
+   "repeat": {
+    "voidswarm": 109,
+    "appendage": 109,
+    "extinguish": 109,
+    "intermission": 109
+   }
+  }
+ }
+}

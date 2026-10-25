@@ -1,0 +1,206 @@
+{
+ "id": "vashnik",
+ "name": "Vashnik the Malignant",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Vashnik.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing. Kill lengths: the median guild kill on Warcraft Logs (difficulty `kills`); with an export, the median kill of raids at your equipped item level (`byIlvl` brackets, Warcraft Logs), extended at 1 % per item level outside them. Phase positions come from the top-50 logs (Lorrgs) and are stored as % of the kill where health-driven.",
+ "defaultDuration": 300,
+ "mechanics": {
+  "imbibe": {
+   "label": "Imbibe: fountain adds (2 fire, 1 blood, 5 shadow)",
+   "type": "adds",
+   "count": 8,
+   "health": 1000000,
+   "duration": 40,
+   "timesFrom": "logs",
+   "assumed": [
+    "health",
+    "duration"
+   ]
+  },
+  "froth": {
+   "label": "Plague Froth (taken away from the group)",
+   "type": "movement",
+   "duration": 3,
+   "chance": 0.2,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance",
+    "repeat"
+   ]
+  },
+  "infection": {
+   "label": "Adaptive Infection (run away / keep moving)",
+   "type": "movement",
+   "duration": 4,
+   "chance": 0.15,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance",
+    "repeat"
+   ]
+  }
+ },
+ "difficulties": {
+  "mythic": {
+   "label": "Mythic",
+   "times": {
+    "imbibe": [
+     24
+    ],
+    "froth": [
+     13,
+     30,
+     33
+    ],
+    "infection": [
+     18,
+     52
+    ]
+   },
+   "repeat": {
+    "imbibe": 84,
+    "froth": 40,
+    "infection": 60
+   },
+   "duration": 368,
+   "checked": "Lorrgs: Imbibe 24/108/192/276/360 on Heroic (median 250 s) and Mythic (median 394 s). Plague Froth / Adaptive Infection are not shown by Lorrgs (unchanged).",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 368,
+    "kills": 9722,
+    "p25": 390,
+    "p75": 343,
+    "p99": 293,
+    "byIlvl": [
+     [
+      324,
+      378,
+      270
+     ],
+     [
+      327,
+      382,
+      4437
+     ],
+     [
+      330,
+      353,
+      4438
+     ],
+     [
+      333,
+      311,
+      328
+     ]
+    ]
+   },
+   "topDuration": 394
+  },
+  "heroic": {
+   "label": "Heroic",
+   "times": {
+    "imbibe": [
+     24
+    ],
+    "froth": [
+     13,
+     30,
+     33
+    ],
+    "infection": [
+     18,
+     52
+    ]
+   },
+   "repeat": {
+    "imbibe": 84,
+    "froth": 40,
+    "infection": 60
+   },
+   "duration": 262,
+   "checked": "Lorrgs: Imbibe 24/108/192/276/360 on Heroic (median 250 s) and Mythic (median 394 s). Plague Froth / Adaptive Infection are not shown by Lorrgs (unchanged).",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 262,
+    "kills": 59952,
+    "p25": 294,
+    "p75": 233,
+    "p99": 181,
+    "byIlvl": [
+     [
+      306,
+      271,
+      276
+     ],
+     [
+      309,
+      263,
+      294
+     ],
+     [
+      312,
+      262,
+      454
+     ],
+     [
+      315,
+      309,
+      909
+     ],
+     [
+      318,
+      331,
+      3367
+     ],
+     [
+      321,
+      302,
+      11149
+     ],
+     [
+      324,
+      270,
+      20083
+     ],
+     [
+      327,
+      235,
+      17328
+     ],
+     [
+      330,
+      201,
+      5184
+     ]
+    ]
+   },
+   "topDuration": 250
+  },
+  "normal": {
+   "label": "Normal / LFR",
+   "times": {
+    "imbibe": [
+     24
+    ],
+    "froth": [
+     10,
+     13,
+     17,
+     26,
+     36
+    ],
+    "infection": [
+     8,
+     32
+    ]
+   },
+   "repeat": {
+    "imbibe": 84,
+    "froth": 40,
+    "infection": 60
+   }
+  }
+ }
+}

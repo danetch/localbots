@@ -1,0 +1,22 @@
+{
+ "notes": "Season and expansion settings. Shipped with the app and refreshed from the GitHub repo at startup; not meant to be edited by hand (your editable copies of progression.json / crafted.json are only used while they belong to this season).",
+ "expansion": {
+  "name": "Midnight",
+  "qualityRanks": 2,
+  "qualityRanksNote": "Crafted enchants and gems of the current expansion have exactly this many quality ranks (Midnight 2; The War Within and Dragonflight 3). Used to tell this expansion's enchants and gems from older ones in simc's data."
+ },
+ "season": {
+  "id": "MID2",
+  "name": "Midnight Season 2",
+  "tierSet": "MID2",
+  "upgradeTracks": { "616": "champion", "617": "hero", "618": "myth" },
+  "craftedIlvl": 331,
+  "journalTier": "Current Season",
+  "raids": ["The Venomous Abyss", "The Unbinding of Kith'ix", "The Tidebound Grotto"],
+  "sources": {
+   "warcraftLogsZone": 53,
+   "lorrgsZones": [53.1, 53.2, 53.3],
+   "bigwigs": ["TheVenomousAbyss", "TheUnbindingOfKithix", "MidnightLairs"]
+  }
+ }
+}

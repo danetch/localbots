@@ -79,7 +79,7 @@ test('loot.select drops items of another primary stat', () => {
 });
 
 test('boss: kithix heroic builds well-formed, ordered raid events', () => {
-  const B = L('boss'), def = B.list([require('path').join(__dirname, '..', 'data', 'fights')]).find(b => b.id === 'kithix');
+  const B = L('boss'), def = B.list([require('path').join(__dirname, 'fixtures', 'data', 'fights')]).find(b => b.id === 'kithix');
   assert.ok(def);
   const r = B.build(def, { difficulty: 'heroic', duration: 300 });
   assert.deepStrictEqual(r.stages, [{ id: 1, at: 0 }, { id: 2, at: 225 }]);
@@ -104,7 +104,7 @@ test('fight: boss fights must not pass fight_style (simc clears raid_events for 
 });
 
 test('boss: every bundled fight builds valid, increasing, in-range timestamps', () => {
-  const B = L('boss'), defs = B.list([require('path').join(__dirname, '..', 'data', 'fights')]);
+  const B = L('boss'), defs = B.list([require('path').join(__dirname, 'fixtures', 'data', 'fights')]);
   assert.ok(defs.length >= 9);
   for (const d of defs) for (const df of Object.keys(d.difficulties)) {
     const r = B.build(d, { difficulty: df, duration: d.defaultDuration });
@@ -196,7 +196,7 @@ test('loot: older copy of a remade item and Azerite-style items are left out', (
 });
 
 test('upgrade: bag items raised to their track maximum (Hero / Myth 6/6), nothing above it, unknown tracks untouched', () => {
-  const U = require('../lib/upgrade'), tg = require('../lib/topgear'), db = require('../data/enhance.json'), P = { ...require('../data/progression.json'), upgradeTracks: require('../data/season.json').season.upgradeTracks };
+  const U = require('../lib/upgrade'), tg = require('../lib/topgear'), db = require('../data/enhance.json'), P = { ...require('./fixtures/data/progression.json'), upgradeTracks: require('./fixtures/data/season.json').season.upgradeTracks };
   assert.deepStrictEqual(U.upgradeItem(',id=1,bonus_id=6652/12843', 'Cloak (311)', db.upgrade, P), { item: ',id=1,bonus_id=6652/12843,ilevel=321', from: 311, to: 321, label: 'Hero 6/6' });
   assert.strictEqual(U.upgradeItem(',id=1,bonus_id=12849,ilevel=318', '', db.upgrade, P).item, ',id=1,bonus_id=12849,ilevel=334');
   assert.strictEqual(U.upgradeItem(',id=1,bonus_id=13848,ilevel=344', '', db.upgrade, P), null, 'Myth 9/6 (344) stays');
@@ -260,7 +260,7 @@ test('specs: armor type from the class line of the export', () => {
 });
 
 test('boss: council fights add cleaved bosses (desired targets), absent stages and shared submerges become invulnerable windows', () => {
-  const b = L('boss'), defs = b.list([require('path').join(__dirname, '..', 'data', 'fights')]), get = id => defs.find(d => d.id === id);
+  const b = L('boss'), defs = b.list([require('path').join(__dirname, 'fixtures', 'data', 'fights')]), get = id => defs.find(d => d.id === id);
   const tf = b.build(get('twinfangs'), { difficulty: 'mythic', duration: 300 });
   assert.strictEqual(tf.targets, 2); assert.deepStrictEqual(tf.extraArgs, ['ignore_invulnerable_targets=1']);
   assert.ok(tf.events.includes('raid_events+=/invulnerable,name=ithraz_away_1,target=Dummy_Enemy_1,timestamps=136,duration=28'));
@@ -279,7 +279,7 @@ test('boss: council fights add cleaved bosses (desired targets), absent stages a
 });
 
 test('boss: kill length from Warcraft Logs median kills at the export item level', () => {
-  const b = L('boss'), defs = b.list([require('path').join(__dirname, '..', 'data', 'fights')]), get = id => defs.find(d => d.id === id);
+  const b = L('boss'), defs = b.list([require('path').join(__dirname, 'fixtures', 'data', 'fights')]), get = id => defs.find(d => d.id === id);
   const items = ['head', 'neck', 'shoulder', 'back', 'chest', 'wrist', 'hands', 'waist', 'legs', 'feet', 'finger1', 'finger2', 'trinket1', 'trinket2'];
   const exp = n => items.map(s => `# Item (${n})\n${s}=,id=1`).join('\n') + `\n# Staff (${n})\nmain_hand=,id=2`;   // two-hander counts twice
   assert.strictEqual(b.equippedIlvl(exp(328)), 328);
@@ -469,6 +469,22 @@ test('watch: collect reads every source (mocked network)', async () => {
     : [{ type: 'dir', name: 'Core' }, { type: 'dir', name: 'TheVenomousAbyss' }, { type: 'file', name: 'README.md' }];
   const r = await W.collect({ f, gh, env: {} });
   assert.deepStrictEqual(r.errors, []);
-  assert.deepStrictEqual(r.values, { ptrBuild: { live: '12.1.5.1', ptr: '12.2.0.5', beta: null }, ptrRaids: { build: '12.2.0.5', extra: { 2: 'B' } },
+  assert.deepStrictEqual(r.values, { ptrBuild: { live: '12.1.5.1', ptr: '12.2.0.5', beta: null }, ptrRaids: { build: '12.2.0.5', extra: { 2: 'B' } }, betaRaids: null, liveRaids: {},
     bigwigs: ['TheVenomousAbyss'], simc: { branch: 'midnight', live: '12.1.5.1', ptr: '12.2.0.5', profiles: ['MID2'] } });
+  // instance 3 was on the PTR last time and is live now
+  const f2 = async u => /JournalInstance\/csv\?build/.test(u) ? res('ID,Name_lang\n1,A\n2,B\n3,C\n') : /JournalInstance/.test(u) ? res('ID,Name_lang\n1,A\n3,C\n') : f(u);
+  const r2 = await W.collect({ f: f2, gh, env: {}, old: { ptrRaids: { extra: { 3: 'C', 2: 'B' } } } });
+  assert.deepStrictEqual(r2.values.liveRaids, { 3: 'C' });
+});
+
+test('watch: beta instances and instances going live', () => {
+  const W = require('../tools/watch');
+  const old = { ptrRaids: { build: 'p', extra: { 1310: 'Next Raid' } }, betaRaids: null, liveRaids: {} };
+  const now = { ptrRaids: { build: 'p', extra: {} }, betaRaids: { build: 'b', extra: { 2000: 'New Expansion Raid' } }, liveRaids: { 1310: 'Next Raid' } };
+  const ch = W.changes(old, now);
+  assert.deepStrictEqual(ch.map(c => c.key), ['betaRaids', 'liveRaids']);
+  assert.deepStrictEqual(ch[0].newBetaInstances, ['2000']); assert.deepStrictEqual(ch[1].wentLive, ['1310']);
+  assert.deepStrictEqual(W.changes(now, now), []);
+  // first run of the new checks (old state without them): baseline, no issue
+  assert.deepStrictEqual(W.changes({ ptrRaids: old.ptrRaids }, now), []);
 });

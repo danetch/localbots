@@ -1,0 +1,251 @@
+{
+ "id": "nekzali",
+ "name": "Nek'zali the Soulcoiler",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Nekzali.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing. Kill lengths: the median guild kill on Warcraft Logs (difficulty `kills`); with an export, the median kill of raids at your equipped item level (`byIlvl` brackets, Warcraft Logs), extended at 1 % per item level outside them. Phase positions come from the top-50 logs (Lorrgs) and are stored as % of the kill where health-driven.",
+ "defaultDuration": 300,
+ "mechanics": {
+  "amani": {
+   "label": "Restless Amani (shielded adds)",
+   "type": "adds",
+   "count": 3,
+   "health": 600000,
+   "duration": 30,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "count",
+    "health",
+    "duration"
+   ]
+  },
+  "rend": {
+   "label": "Essence Rend (move to the edge)",
+   "type": "movement",
+   "duration": 4,
+   "chance": 0.2,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance"
+   ]
+  },
+  "echoes": {
+   "label": "Echoes of Jawae (intermission adds)",
+   "type": "adds",
+   "stage": 2,
+   "count": 2,
+   "health": 2000000,
+   "duration": 30,
+   "timesFrom": "guide",
+   "assumed": [
+    "health",
+    "count"
+   ]
+  },
+  "untargetable": {
+   "label": "Intermission: boss not attackable (unconfirmed)",
+   "type": "invulnerable",
+   "stage": 2,
+   "duration": 30,
+   "timesFrom": "assumed",
+   "assumed": [
+    "whether the boss is targetable"
+   ]
+  }
+ },
+ "difficulties": {
+  "heroic": {
+   "label": "Normal / Heroic",
+   "times": {
+    "amani": {
+     "1": [
+      15,
+      40
+     ],
+     "3": [
+      15,
+      40
+     ]
+    },
+    "rend": {
+     "1": [
+      15,
+      40,
+      50
+     ],
+     "3": [
+      15,
+      40,
+      50
+     ]
+    },
+    "echoes": [
+     0
+    ],
+    "untargetable": [
+     0
+    ]
+   },
+   "repeat": {
+    "amani": 45,
+    "rend": 50
+   },
+   "duration": 283,
+   "stages": [
+    {
+     "id": 1,
+     "at": 0
+    },
+    {
+     "id": 2,
+     "atPct": 41
+    },
+    {
+     "id": 3,
+     "atPct": 64
+    }
+   ],
+   "checked": "Lorrgs 50 kills, median 231 s: Ritual of Awakening (intermission) 94, phase 3 147 (41 % / 64 % of the kill).",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 283,
+    "kills": 89020,
+    "p25": 318,
+    "p75": 247,
+    "p99": 197,
+    "byIlvl": [
+     [
+      306,
+      287,
+      278
+     ],
+     [
+      309,
+      290,
+      356
+     ],
+     [
+      312,
+      296,
+      663
+     ],
+     [
+      315,
+      374,
+      1463
+     ],
+     [
+      318,
+      371,
+      4854
+     ],
+     [
+      321,
+      329,
+      14389
+     ],
+     [
+      324,
+      290,
+      32812
+     ],
+     [
+      327,
+      252,
+      27867
+     ],
+     [
+      330,
+      214,
+      5513
+     ]
+    ]
+   },
+   "topDuration": 231
+  },
+  "mythic": {
+   "label": "Mythic",
+   "times": {
+    "amani": {
+     "1": [
+      15,
+      40
+     ],
+     "3": [
+      15,
+      40
+     ]
+    },
+    "rend": {
+     "1": [
+      15,
+      40,
+      50
+     ],
+     "3": [
+      15,
+      40,
+      50
+     ]
+    },
+    "echoes": [
+     0
+    ],
+    "untargetable": [
+     0
+    ]
+   },
+   "repeat": {
+    "amani": 45,
+    "rend": 50
+   },
+   "duration": 388,
+   "stages": [
+    {
+     "id": 1,
+     "at": 0
+    },
+    {
+     "id": 2,
+     "atPct": 34
+    },
+    {
+     "id": 3,
+     "atPct": 66
+    }
+   ],
+   "checked": "Lorrgs 50 kills, median 366 s: Ritual of Awakening (intermission) 123, phase 2 151, phase 3 240 (34 % / 66 % of the kill).",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 388,
+    "kills": 16704,
+    "p25": 420,
+    "p75": 353,
+    "p99": 284,
+    "byIlvl": [
+     [
+      324,
+      421,
+      842
+     ],
+     [
+      327,
+      403,
+      10166
+     ],
+     [
+      330,
+      351,
+      4995
+     ],
+     [
+      333,
+      296,
+      370
+     ]
+    ]
+   },
+   "topDuration": 366
+  }
+ }
+}

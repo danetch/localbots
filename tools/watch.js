@@ -5,10 +5,13 @@
 // Signals:
 //   ptrBuild    wago.tools /api/builds/latest -> wowt (PTR) and wow_beta (beta) versions
 //   ptrRaids    JournalInstance on the PTR build vs live: new Adventure Guide instances (a new raid = next season in testing)
+//   betaRaids   the same on the beta build (a new expansion)
+//   liveRaids   instances seen on the PTR / beta that are now in the LIVE Adventure Guide (the patch is out: season start ahead)
 //   bigwigs     top-level folders of BigWigsMods/BigWigs (one per raid / zone: boss timers for a new raid)
 //   simc        simc's PTR client data version (client_data_version_ptr.inc) and season profile folders (profiles/MID3...)
 //   wcl         Warcraft Logs zones (a raid-testing zone appears there), only with the API client in the repo secrets
-// Outputs (GITHUB_OUTPUT): changed=true|false, new_instances=<ids for tools/journal-draft.js --ptr>.
+// Outputs (GITHUB_OUTPUT): changed=true|false, new_instances / new_beta_instances = <ids for tools/journal-draft.js and season-draft.js>,
+// went_live = <ids now live> (season-promote pull request).
 const fs = require('fs'), path = require('path');
 const STATE = path.join(__dirname, '..', '.github', 'watch-state.json');
 const BW_SKIP = new Set(['.github', 'Core', 'Libs', 'Locales', 'Media', 'Options', 'Plugins', 'Tools']);
@@ -19,16 +22,23 @@ function csvIds(text) {              // JournalInstance CSV -> { id: name }
 }
 
 // Each check -> value stored in the state (plain JSON). f = fetch, gh = GitHub API GET (json), env.
-async function collect({ f = fetch, gh, env = process.env, log = () => {} } = {}) {
+async function collect({ f = fetch, gh, env = process.env, log = () => {}, old = null } = {}) {
   const out = {}, errors = [];
   const tryDo = async (k, fn) => { try { out[k] = await fn(); } catch (e) { errors.push(`${k}: ${e.message}`); log(`!! ${k}: ${e.message}`); } };
   const json = async u => { const r = await f(u); if (!r.ok) throw new Error(`${u} -> ${r.status}`); return r.json(); };
   const text = async u => { const r = await f(u); if (!r.ok) throw new Error(`${u} -> ${r.status}`); return r.text(); };
   await tryDo('ptrBuild', async () => { const b = await json('https://wago.tools/api/builds/latest'); return { live: b.wow?.version || null, ptr: b.wowt?.version || null, beta: b.wow_beta?.version || null }; });
-  await tryDo('ptrRaids', async () => {
-    const ptr = out.ptrBuild?.ptr; if (!ptr) return null;
-    const live = csvIds(await text('https://wago.tools/db2/JournalInstance/csv')), p = csvIds(await text(`https://wago.tools/db2/JournalInstance/csv?build=${ptr}`));
-    return { build: ptr, extra: Object.fromEntries(Object.entries(p).filter(([id]) => !live[id])) };
+  let live = null;
+  const liveIds = async () => live || (live = csvIds(await text('https://wago.tools/db2/JournalInstance/csv')));
+  for (const [k, prod] of [['ptrRaids', 'ptr'], ['betaRaids', 'beta']]) await tryDo(k, async () => {
+    const b = out.ptrBuild?.[prod]; if (!b) return null;
+    const L = await liveIds(), p = csvIds(await text(`https://wago.tools/db2/JournalInstance/csv?build=${b}`));
+    return { build: b, extra: Object.fromEntries(Object.entries(p).filter(([id]) => !L[id])) };
+  });
+  // previewed instances (seen in an earlier run) that the live Adventure Guide has now; once there, they stay in the list
+  await tryDo('liveRaids', async () => {
+    const was = { ...(old?.ptrRaids?.extra || {}), ...(old?.betaRaids?.extra || {}) }, L = await liveIds();
+    return Object.fromEntries([...Object.entries(old?.liveRaids || {}), ...Object.entries(was).filter(([id]) => L[id])]);
   });
   await tryDo('bigwigs', async () => (await gh('/repos/BigWigsMods/BigWigs/contents')).filter(x => x.type === 'dir' && !BW_SKIP.has(x.name)).map(x => x.name).sort());
   await tryDo('simc', async () => {
@@ -52,10 +62,16 @@ function changes(old, now) {
     if (n.ptr && n.ptr !== o.ptr) ch.push({ key: 'ptrBuild', title: `New PTR build ${n.ptr}`, body: `PTR (wowt) ${o.ptr || 'none'} → **${n.ptr}** (live ${n.live}).\n\nPolygnome: the "Season preview" setting reads this build; nothing to do unless a new raid shows up.` });
     if (n.beta && n.beta !== o.beta) ch.push({ key: 'betaBuild', title: `New beta build ${n.beta}`, body: `Beta (wow_beta) ${o.beta || 'none'} → **${n.beta}**: a new expansion is in testing (expansion.qualityRanks, crafted rules...).` });
   }
-  if (had('ptrRaids') && now.ptrRaids) {
-    const seen = new Set(Object.keys(old.ptrRaids?.extra || {})), fresh = Object.entries(now.ptrRaids.extra || {}).filter(([id]) => !seen.has(id));
-    if (fresh.length) ch.push({ key: 'ptrRaids', newInstances: fresh.map(([id]) => id), title: `New Adventure Guide instance(s) on the PTR: ${fresh.map(([, n]) => n).join(', ')}`,
-      body: `PTR build ${now.ptrRaids.build}: ${fresh.map(([id, n]) => `**${n}** (JournalInstance ${id})`).join(', ')} not on live.\n\nIf it is a raid, the next season is in testing: HANDOFF.md, SEASON 3 RUNBOOK steps 1-3. Draft fight files are pushed to the \`season-next\` branch by the workflow (tools/journal-draft.js --ptr).` });
+  for (const [k, label, field] of [['ptrRaids', 'PTR', 'newInstances'], ['betaRaids', 'beta', 'newBetaInstances']]) {
+    if (!now[k] || !(old && k in old)) continue;    // first run of this check: baseline
+    const seen = new Set(Object.keys(old[k]?.extra || {})), fresh = Object.entries(now[k].extra || {}).filter(([id]) => !seen.has(id));
+    if (fresh.length) ch.push({ key: k, [field]: fresh.map(([id]) => id), title: `New Adventure Guide instance(s) on the ${label}: ${fresh.map(([, n]) => n).join(', ')}`,
+      body: `${label} build ${now[k].build}: ${fresh.map(([id, n]) => `**${n}** (JournalInstance ${id})`).join(', ')} not on live.\n\nIf it is a raid, the next season is in testing: the workflow opens / updates the pull request "Next season in testing" (branch \`season-next\`: season-ptr.json drafted by tools/season-draft.js, fight drafts by tools/journal-draft.js). Review its to-do list, then merge: the Live / PTR switch becomes available in the app. HANDOFF.md, SEASON 3 RUNBOOK.` });
+  }
+  if (had('liveRaids')) {
+    const fresh = Object.entries(now.liveRaids || {}).filter(([id]) => !(old.liveRaids || {})[id]);
+    if (fresh.length) ch.push({ key: 'liveRaids', wentLive: fresh.map(([id]) => id), title: `Now in the live Adventure Guide: ${fresh.map(([, n]) => n).join(', ')}`,
+      body: `${fresh.map(([id, n]) => `**${n}** (JournalInstance ${id})`).join(', ')}: previewed on the PTR / beta, now live (the patch is out).\n\nIf the next season is prepared (data/season-ptr.json), the workflow opens the pull request "Season start" (branch \`season-start\`, tools/season-promote.js). Merge it on the day the season starts, not before: upgrade tracks change at the season start. HANDOFF.md, SEASON 3 RUNBOOK step 6.` });
   }
   if (had('bigwigs')) {
     const fresh = now.bigwigs.filter(x => !old.bigwigs.includes(x));
@@ -80,7 +96,7 @@ async function main() {
     if (!r.ok) throw new Error(`GitHub ${p} -> ${r.status}`); return r.json();
   };
   const old = fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, 'utf8')) : null;
-  const { values, errors } = await collect({ gh, log: console.log });
+  const { values, errors } = await collect({ gh, log: console.log, old: old?.values });
   // a failed check keeps its previous value (no false "new" next time)
   const merged = { ...(old?.values || {}), ...values };
   const ch = old ? changes(old.values, values) : [];
@@ -93,8 +109,8 @@ async function main() {
   if (errors.length) console.log(`Checks that failed (kept their previous value): ${errors.join(' · ')}`);
   // written only when a value changed (the workflow commits it): no daily commit when nothing moves
   if (!dry && (!old || JSON.stringify(old.values) !== JSON.stringify(merged))) fs.writeFileSync(STATE, JSON.stringify({ values: merged }, null, 1) + '\n');
-  const newInst = ch.flatMap(c => c.newInstances || []);
-  if (env.GITHUB_OUTPUT) fs.appendFileSync(env.GITHUB_OUTPUT, `changed=${ch.length > 0}\nnew_instances=${newInst.join(',')}\n`);
+  const ids = f => ch.flatMap(c => c[f] || []).join(',');
+  if (env.GITHUB_OUTPUT) fs.appendFileSync(env.GITHUB_OUTPUT, `changed=${ch.length > 0}\nnew_instances=${ids('newInstances')}\nnew_beta_instances=${ids('newBetaInstances')}\nwent_live=${ids('wentLive')}\n`);
   if (env.GITHUB_STEP_SUMMARY) fs.appendFileSync(env.GITHUB_STEP_SUMMARY, `## Season watch\n\n${old ? ch.map(c => `- ${c.title}`).join('\n') || 'No change.' : 'Baseline recorded.'}\n\n` +
     '```json\n' + JSON.stringify(merged, null, 1) + '\n```\n' + (errors.length ? `\nFailed checks: ${errors.join(' · ')}\n` : ''));
 }

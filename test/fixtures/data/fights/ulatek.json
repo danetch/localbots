@@ -1,0 +1,344 @@
+{
+ "id": "ulatek",
+ "name": "Ula'tek",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Ulatek.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing. Kill lengths: the median guild kill on Warcraft Logs (difficulty `kills`); with an export, the median kill of raids at your equipped item level (`byIlvl` brackets, Warcraft Logs), extended at 1 % per item level outside them. Phase positions come from the top-50 logs (Lorrgs) and are stored as % of the kill where health-driven.",
+ "defaultDuration": 580,
+ "mechanics": {
+  "caustic": {
+   "label": "Caustic Waves (move through the gaps)",
+   "type": "movement",
+   "duration": 3,
+   "timesFrom": "logs",
+   "assumed": [
+    "duration"
+   ]
+  },
+  "coils": {
+   "label": "Spectral Coils (split soaks)",
+   "type": "movement",
+   "duration": 4,
+   "chance": 0.5,
+   "timesFrom": "logs",
+   "assumed": [
+    "duration",
+    "chance"
+   ]
+  },
+  "heart": {
+   "label": "Rage of the Shackled: Venomous Heart exposed (+100% damage, 20s)",
+   "type": "vulnerable",
+   "multiplier": 2.0,
+   "duration": 20,
+   "timesFrom": "logs",
+   "assumed": []
+  },
+  "viper": {
+   "label": "Blightscale Viper / Rawlings (adds)",
+   "type": "adds",
+   "count": 2,
+   "health": 800000,
+   "duration": 25,
+   "timesFrom": "guide",
+   "assumed": [
+    "count",
+    "health",
+    "duration",
+    "times"
+   ]
+  },
+  "submerged": {
+   "label": "Phase 2 + intermission: boss submerged (only adds can be hit)",
+   "type": "invulnerable",
+   "stage": 2,
+   "duration": 125,
+   "timesFrom": "guide",
+   "assumed": [
+    "duration"
+   ]
+  },
+  "warden": {
+   "label": "Doomscale Warden and egg adds",
+   "type": "adds",
+   "stage": 2,
+   "count": 3,
+   "health": 2500000,
+   "duration": 45,
+   "timesFrom": "guide",
+   "assumed": [
+    "count",
+    "health",
+    "duration",
+    "times"
+   ]
+  },
+  "clutch": {
+   "label": "Blightscale Clutch / Shrieker adds",
+   "type": "adds",
+   "stage": 3,
+   "count": 2,
+   "health": 1200000,
+   "duration": 30,
+   "timesFrom": "guide",
+   "assumed": [
+    "count",
+    "health",
+    "duration",
+    "times"
+   ]
+  },
+  "prey": {
+   "label": "Circling Prey / Serpent's Bite",
+   "type": "movement",
+   "stage": 3,
+   "duration": 5,
+   "chance": 0.4,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance"
+   ]
+  },
+  "finalheart": {
+   "label": "Final heart phase (+100% damage, 20s)",
+   "type": "vulnerable",
+   "stage": 3,
+   "multiplier": 2.0,
+   "duration": 20,
+   "timesFrom": "logs",
+   "assumed": []
+  }
+ },
+ "difficulties": {
+  "heroic": {
+   "label": "Normal / Heroic",
+   "times": {
+    "caustic": {
+     "1": [
+      48,
+      100
+     ],
+     "3": [
+      44,
+      50,
+      55
+     ]
+    },
+    "coils": {
+     "1": [
+      20,
+      115
+     ]
+    },
+    "heart": {
+     "1": [
+      135
+     ],
+     "3": [
+      11
+     ]
+    },
+    "viper": {
+     "1": [
+      72
+     ]
+    },
+    "submerged": [
+     0
+    ],
+    "warden": [
+     10,
+     50
+    ],
+    "clutch": [
+     10,
+     60,
+     110
+    ],
+    "prey": [
+     51,
+     61,
+     110
+    ],
+    "finalheart": [
+     301
+    ]
+   },
+   "repeat": {
+    "clutch": 0
+   },
+   "duration": 569,
+   "stages": [
+    {
+     "id": 1,
+     "at": 0
+    },
+    {
+     "id": 2,
+     "at": 138
+    },
+    {
+     "id": 3,
+     "at": 273
+    }
+   ],
+   "checked": "Lorrgs 50 kills, median 581 s: Rage of the Shackled + Venomous Heart 135/284/574, Defect: Weakened 273, Caustic Waves 48/100, Spectral Coils 20/115.",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 569,
+    "kills": 89433,
+    "p25": 584,
+    "p75": 521,
+    "p99": 437,
+    "byIlvl": [
+     [
+      303,
+      583,
+      591
+     ],
+     [
+      306,
+      581,
+      811
+     ],
+     [
+      309,
+      582,
+      984
+     ],
+     [
+      312,
+      579,
+      1958
+     ],
+     [
+      315,
+      578,
+      2579
+     ],
+     [
+      318,
+      579,
+      2884
+     ],
+     [
+      321,
+      580,
+      5711
+     ],
+     [
+      324,
+      578,
+      34414
+     ],
+     [
+      327,
+      543,
+      34977
+     ],
+     [
+      330,
+      455,
+      3521
+     ]
+    ]
+   },
+   "topDuration": 581
+  },
+  "mythic": {
+   "label": "Mythic",
+   "times": {
+    "caustic": {
+     "1": [
+      56,
+      113
+     ],
+     "3": [
+      44,
+      50,
+      55
+     ]
+    },
+    "coils": {
+     "1": [
+      33,
+      127
+     ]
+    },
+    "heart": {
+     "1": [
+      145
+     ],
+     "3": [
+      5
+     ]
+    },
+    "viper": {
+     "1": [
+      72
+     ]
+    },
+    "submerged": [
+     0
+    ],
+    "warden": [
+     10,
+     50
+    ],
+    "clutch": [
+     10,
+     60,
+     110
+    ],
+    "prey": [
+     51,
+     61,
+     110
+    ],
+    "finalheart": [
+     294
+    ]
+   },
+   "repeat": {
+    "clutch": 0
+   },
+   "duration": 599,
+   "stages": [
+    {
+     "id": 1,
+     "at": 0
+    },
+    {
+     "id": 2,
+     "at": 148
+    },
+    {
+     "id": 3,
+     "at": 290
+    }
+   ],
+   "checked": "Lorrgs only 2 kills, ~602 s: Rage of the Shackled + Venomous Heart 145/295/584, Caustic Waves 56/113, Spectral Coils 33/127.",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 599,
+    "kills": 837,
+    "p25": 602,
+    "p75": 597,
+    "p99": 584,
+    "byIlvl": [
+     [
+      330,
+      601,
+      419
+     ],
+     [
+      333,
+      598,
+      318
+     ]
+    ]
+   },
+   "topDuration": 602
+  }
+ }
+}

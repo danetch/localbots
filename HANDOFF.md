@@ -29,12 +29,17 @@ Code map (current)
 - data/: season.json, progression.json, crafted.json, items.json, enhance.json, fights/*.json, manifest.json, shipped-hashes.json.
 
 Open items (25 Oct)
-- v0.7.0: Live / PTR switch in the header (section "25 OCT: v0.7.0" at the end). Greyed out for everyone until data/season-ptr.json is
-  pushed (runbook step 3).
+- v0.7.0: Live / PTR switch in the header (section "25 OCT: v0.7.0"). Greyed out for everyone until data/season-ptr.json is
+  on main (runbook step 3).
+- Next season is now prepared by the watch as PULL REQUESTS (section "25 OCT: SEASON PULL REQUESTS"): "Next season in testing"
+  (branch season-next) and "Season start" (branch season-start). Never merge "Season start" before the season start day.
+  The live-data glue of tools/season-draft.js (wago downloads) has NOT run for real yet (wago blocked in the sandbox): check the first
+  PR it opens.
 - v0.6.0 not yet tested by the user. After the automatic "Update loot data", check the log: "Food: 12 kept" and "Crafted base items
   found: N" should list Midnight items (CraftingData tables, never run against real wago data from the sandbox). If not: ask for the
   log (CraftingData column names, OverallQualityID).
-- Repo secrets WCL_CLIENT_ID / WCL_CLIENT_SECRET not added yet: the season watch skips Warcraft Logs until they are.
+- Repo secrets WCL_CLIENT_ID / WCL_CLIENT_SECRET added 25 Oct and working (watch run 40239189404 recorded the zone list).
+  The secrets API is closed to the Claude proxy: check a watch run instead. "Allow GitHub Actions to create pull requests" is on.
 - Season watch: daily workflow (.github/workflows/watch.yml -> issues labelled "watch"), plus a weekly Claude scheduled task
   "Polygnome season watch" (Mondays 08:39 Paris) that reports the open watch issues in French.
 - Season 3 preparation: SEASON 3 RUNBOOK below, started when the watch reports a new raid on the PTR.
@@ -597,10 +602,13 @@ embellishment").
 - Tests: 54 pass.
 
 === SEASON 3 RUNBOOK (when the PTR has the new raid) ===
+Since 25 Oct steps 1-3 run automatically in the watch workflow and arrive as the pull request "Next season in testing" (branch
+season-next), and step 6 as the pull request "Season start" (branch season-start). The steps below say what those PRs did and what to
+check; they also work by hand (tools/season-draft.js, tools/season-promote.js).
 1. wago /api/builds/latest -> wowt build; JournalInstance on that build vs live -> new raid instance id(s).
 2. node tools/journal-draft.js --instance <id> --ptr   (or the same code in the user's browser on wago) -> data/fights/<boss>.json drafts.
    Review every mechanic type; councils (cleaved or split?); stage starts are placeholders.
-3. data/season-ptr.json (copy season.json: id MID3/…, "game": "wowt" (PTR) or "wow_beta" (beta of a new expansion), name, tierSet, upgradeTracks = item_bonus type-34 groups of the new raid's drops
+3. data/season-ptr.json (tools/season-draft.js; by hand: copy season.json: id MID3/…, "game": "wowt" (PTR) or "wow_beta" (beta of a new expansion), name, tierSet, upgradeTracks = item_bonus type-34 groups of the new raid's drops
    (lib/loot.js trackGroups on the PTR build), craftedIlvl, raids, sources {warcraftLogsZone, lorrgsZones, bigwigs}); progression-ptr.json
    (tracks / sources / boss overrides); crafted-ptr.json if crafting changes. New expansion: expansion.qualityRanks.
 4. node tools/make-data.js; push to main -> every 0.5.0+ app gets the PTR files; on 0.7.0+ the header's Live / PTR switch becomes
@@ -608,8 +616,9 @@ embellishment").
    Optionally a beta app version (x.y.z-beta.N on a season3 branch) for code changes.
 5. During raid testing: BigWigs adds the new raid folder -> sparse clone, node tools/bw-update.js <fight> <module> (--write after review);
    Warcraft Logs testing reports -> tools/wcl-timeline.js --zones, then --zone <ptr zone> --encounter <id> -> times + repeat.
-6. Season start: season.json <- season-ptr.json (drop "game", drop "ptr" from the fights, keep the old season's files or retire them),
-   DELETE data/season-ptr.json / progression-ptr.json / crafted-ptr.json, make-data, push. Apps with the switch on go back to Live at the
+6. Season start (tools/season-promote.js): season.json <- season-ptr.json (drop "game" / "todo", drop "ptr" from the fights, old season's
+   fights moved to data/fights-archive/<old id>/: out of the app, kept in the repo), DELETE data/season-ptr.json / progression-ptr.json /
+   crafted-ptr.json, make-data, push (= merge the "Season start" PR on the season start day). Apps with the switch on go back to Live at the
    next start ("Midnight Season 3 is live now") and delete their loot-ptr / items-ptr / enhance-ptr files. (A season-ptr.json left with the
    live id is treated the same way.) Release if code changed.
    First days: Lorrgs (api2.lorrgs.io) real timings; after ~2 weeks: Warcraft Logs median kills per item level (difficulties[d].kills).
@@ -683,3 +692,29 @@ embellishment").
 - Verified: unit tests (test/preview.test.js), header screenshots in real Electron (none / off / on / beta dark), real app smoke test:
   settings { ptr: true } + no season-ptr.json -> ptr false and *-ptr.json deleted; with a temporary season-ptr.json -> kept.
   Tests: 66 pass.
+
+=== 25 OCT: SEASON PULL REQUESTS (next season prepared by the watch) ===
+- User decisions: next-season data comes as pull requests (merge stays manual: data on main reaches every installed app); at season start
+  the old season's fights leave the app but stay in the repo (data/fights-archive/<season id>/).
+- lib/season.js (pure, test/season.test.js): draft(live files, existing preview, new raids with bosses, upgrade groups of their drops, game,
+  tierSet) -> season-ptr / progression-ptr / crafted-ptr + `todo` list (kept in season-ptr.json until someone removes it). Generated: id
+  and name (MID2 -> MID3; new expansion = placeholder + todo), game, raids, upgradeTracks (top N groups of the new raid's drops mapped to the
+  live track names, tracksFrom), tierSet (newest simc profiles/MIDn folder from the watch state, else guessed), bossOverrides for the new
+  bosses at the source's default rank (also feeds the "This season" filter). Copied + todo: track item levels, source ranks, crafted rules,
+  craftedIlvl, sources (WCL zone, Lorrgs, BigWigs). A second new raid is ADDED to an existing preview. promote() -> live files, fights to
+  keep (ptr flag dropped) and to archive; null when nothing to promote.
+- tools/season-draft.js --instances a,b --game wowt|wow_beta (wago: JournalInstance, Map (raids only, InstanceType 2), JournalEncounter,
+  JournalEncounterItem, ItemXBonusTree, ItemBonusTreeNode, ItemBonus). Not a raid -> nothing written. tools/season-promote.js.
+  tools/journal-draft.js: --beta, --instance accepts a comma list.
+- tools/watch.js: betaRaids (same as ptrRaids on the beta build), liveRaids (instances seen on PTR/beta that are now in the live Journal;
+  collect() gets the old state). Outputs new_instances / new_beta_instances / went_live. A check's first run is a baseline (no issue).
+- watch.yml: checkout with full history (make-data); "Next season in testing" step: season-next kept merged with main (generated
+  manifest/hash conflicts take main's side, others fail the step), fight drafts + season draft, make-data, npm test, push, PR with the to-do
+  list (created once; later pushes update it). "Season start" step: only when a went-live instance is a raid of data/season-ptr.json on
+  main; season-promote, make-data, npm test, force-push season-start, PR (body says: merge on the season start day; remaining to-do).
+  Pushes to season-* branches also trigger release.yml, which does nothing (full versions are released from main only).
+- Tests no longer depend on the live season: test/fixtures/data = frozen MID2 season/progression/crafted/fights; e2e sets POLYGNOME_DATA
+  (main.js DF bundled dir) to it; units/season tests read it. test/data.test.js checks the REAL data/fights (non-draft) build valid events.
+  Before this, promoting a season broke 9 tests (found by simulating the Season start step with a local origin and a stub gh).
+- Verified: unit tests (71 pass); Season start step run locally end to end (promotion, archive, make-data, tests, PR body). NOT run for
+  real: the wago downloads of tools/season-draft.js and the season-next merge path (no new raid on the PTR today).

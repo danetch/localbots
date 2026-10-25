@@ -1,7 +1,12 @@
-# Season watch: every day, tools/watch.js looks for a new PTR / beta build, new Adventure Guide instances on the PTR, new BigWigs raid
-# folders, new simc PTR data / season profiles and new Warcraft Logs zones, and opens an issue (label "watch") for each change.
-# Warcraft Logs is checked only if the repo has the secrets WCL_CLIENT_ID / WCL_CLIENT_SECRET (Settings > Secrets > Actions).
-# New PTR instances: draft fight files (tools/journal-draft.js --ptr) are committed to the "season-next" branch for review.
+# Season watch: every day, tools/watch.js looks for a new PTR / beta build, new Adventure Guide instances on the PTR or beta, previewed
+# instances that reached the live game, new BigWigs raid folders, new simc PTR data / season profiles and new Warcraft Logs zones, and opens
+# an issue (label "watch") for each change. Warcraft Logs is checked only with the secrets WCL_CLIENT_ID / WCL_CLIENT_SECRET.
+# Next season data is prepared as PULL REQUESTS (never pushed to main: data on main reaches every installed app):
+#  - new PTR / beta instance -> branch "season-next": fight drafts (tools/journal-draft.js) + data/season-ptr.json, progression-ptr.json,
+#    crafted-ptr.json for a new RAID (tools/season-draft.js), PR "Next season in testing" with the to-do list. Merging it turns on the
+#    Live / PTR switch in the app.
+#  - a previewed instance is in the live Adventure Guide -> branch "season-start": tools/season-promote.js, PR "Season start". Merge it on
+#    the day the season starts (upgrade tracks change then, not at the patch).
 name: watch
 on:
   schedule:
@@ -10,12 +15,16 @@ on:
 permissions:
   contents: write
   issues: write
+  pull-requests: write
 concurrency: watch
 jobs:
   watch:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }      # tools/make-data.js reads the fight files' git history
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - id: w
@@ -30,12 +39,84 @@ jobs:
           if [ -n "$(git status --porcelain .github/watch-state.json)" ]; then
             git add .github/watch-state.json && git commit -m "watch: state update" && git push origin HEAD:main
           fi
-      - name: Draft fight files for new PTR instances
-        if: steps.w.outputs.new_instances != ''
+
+      - name: Next season in testing (branch season-next, pull request)
+        if: steps.w.outputs.new_instances != '' || steps.w.outputs.new_beta_instances != ''
         env:
-          IDS: ${{ steps.w.outputs.new_instances }}
+          PTR_IDS: ${{ steps.w.outputs.new_instances }}
+          BETA_IDS: ${{ steps.w.outputs.new_beta_instances }}
         run: |
-          git fetch origin season-next && git checkout -B season-next origin/season-next || git checkout -B season-next
-          for id in ${IDS//,/ }; do node tools/journal-draft.js --instance "$id" --ptr || echo "::warning::no draft for instance $id"; done
-          git add data/fights
-          if ! git diff --cached --quiet; then git commit -m "watch: draft fight files for PTR instance(s) $IDS" && git push origin season-next; fi
+          set -e
+          # branch kept up to date with main; manifest / hash files are regenerated below, so their conflicts take main's side
+          if git fetch origin season-next 2>/dev/null; then
+            git checkout -B season-next origin/season-next
+            if ! git merge --no-edit origin/main; then
+              git checkout --theirs data/manifest.json data/shipped-hashes.json 2>/dev/null || true
+              git add data/manifest.json data/shipped-hashes.json
+              if git diff --name-only --diff-filter=U | grep -q .; then echo "::error::season-next conflicts with main outside generated files: merge it by hand"; exit 1; fi
+              git commit --no-edit
+            fi
+          else git checkout -B season-next origin/main; fi
+          : > todo.md
+          for pair in "wowt:$PTR_IDS" "wow_beta:$BETA_IDS"; do
+            game=${pair%%:*}; ids=${pair#*:}; [ -n "$ids" ] || continue
+            flag=$([ "$game" = wow_beta ] && echo --beta || echo --ptr)
+            node tools/journal-draft.js --instance "$ids" $flag || echo "::warning::no fight drafts for $game instance(s) $ids"
+            node tools/season-draft.js --instances "$ids" --game "$game" | tee -a todo.md || echo "::warning::season draft failed for $game instance(s) $ids"
+          done
+          node tools/make-data.js
+          npm install --no-audit --no-fund
+          npm test
+          git add data
+          if git diff --cached --quiet; then echo "nothing new for season-next"; exit 0; fi
+          git commit -m "watch: next season data (instances ${PTR_IDS}${BETA_IDS:+ beta $BETA_IDS})"
+          git push origin season-next
+          if [ -f data/season-ptr.json ] && [ -z "$(gh pr list --head season-next --state open --json number -q '.[].number')" ]; then
+            G=$(node -p "require('./data/season-ptr.json').game==='wow_beta'?'beta':'PTR'")
+            S=$(node -p "const s=require('./data/season-ptr.json');s.season.name+' ('+s.season.id+', $G)'")
+            { echo "The season watch found a new raid on the $G: draft data for **${S}**."
+              echo
+              echo "Merging this pull request publishes the preview to every installed Polygnome (0.7.0+): the **Live / PTR** switch becomes available."
+              echo
+              echo "### To do before merging"
+              node -p "require('./data/season-ptr.json').todo.map(t=>'- [ ] '+t).join('\n')"
+              echo "- [ ] fight drafts in data/fights (\"draft\": true): mechanic types, councils, stage starts (HANDOFF runbook step 2)"
+              echo "- [ ] remove the \"todo\" list from data/season-ptr.json, run node tools/make-data.js"
+              echo
+              echo "Later pushes to season-next (new raid, new instances) update this pull request."
+            } > body.md
+            gh pr create --base main --head season-next --title "Next season in testing: $S" --body-file body.md
+          fi
+
+      - name: Season start (branch season-start, pull request)
+        if: steps.w.outputs.went_live != ''
+        env:
+          IDS: ${{ steps.w.outputs.went_live }}
+        run: |
+          set -eo pipefail
+          git checkout -B season-start origin/main
+          if [ ! -f data/season-ptr.json ]; then echo "::notice::instances $IDS are live but no next season is prepared on main (data/season-ptr.json): nothing to promote"; exit 0; fi
+          # only a raid of the prepared season starts it (a dungeon or delve reaching live does not)
+          RAIDS=$(node -p "const w=require('./.github/watch-state.json').values.liveRaids||{},r=require('./data/season-ptr.json').season.raids;'$IDS'.split(',').map(i=>w[i]).filter(n=>r.includes(n)).join(', ')")
+          if [ -z "$RAIDS" ]; then echo "::notice::instances $IDS are live but none is a raid of data/season-ptr.json: nothing to promote"; exit 0; fi
+          TODO=$(node -p "(require('./data/season-ptr.json').todo||[]).map(t=>'- [ ] '+t).join('\n')")
+          node tools/season-promote.js | tee promote.txt
+          node tools/make-data.js
+          npm install --no-audit --no-fund
+          npm test
+          git add -A data
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Season start: promote the previewed season ($RAIDS live)"
+          git push -f origin season-start
+          if [ -z "$(gh pr list --head season-start --state open --json number -q '.[].number')" ]; then
+            { echo "$RAIDS (previewed on the PTR / beta) is in the live Adventure Guide: the patch is out."
+              echo
+              echo "**Merge on the day the season starts, not before**: upgrade tracks and item levels change at the season start."
+              echo "Apps with the Live / PTR switch on go back to Live at their next start; the old season's fights leave the boss list"
+              echo "(kept in data/fights-archive/)."
+              echo
+              cat promote.txt
+              [ -n "$TODO" ] && { echo; echo "### Still open in the preview's to-do list"; echo "$TODO"; }
+            } > body.md
+            gh pr create --base main --head season-start --title "Season start: $(node -p "require('./data/season.json').season.name")" --body-file body.md
+          fi

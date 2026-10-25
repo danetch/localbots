@@ -1,0 +1,36 @@
+{
+  "season": "Midnight Season 2",
+  "seasonId": "MID2",
+  "notes": "Edit freely. A source is either {track, rank} (item level read from the track table) or {ilvl}. 'bossOverrides' (lowercase boss names) replace a source's value for specific bosses.",
+  "tracks": {
+    "champion": { "name": "Champion", "ilvl": [292, 295, 298, 302, 305, 308] },
+    "hero":     { "name": "Hero",     "ilvl": [305, 308, 311, 315, 318, 321] },
+    "myth":     { "name": "Myth",     "ilvl": [318, 321, 324, 328, 331, 334] }
+  },
+  "sources": {
+    "raid_normal":  { "label": "Raid · Normal (Champion)", "track": "champion", "rank": 1 },
+    "raid_heroic":  { "label": "Raid · Heroic (Hero)", "track": "hero", "rank": 1 },
+    "raid_mythic":  { "label": "Raid · Mythic (Myth, per boss)", "track": "myth", "rank": 1, "bossOverrides": {
+      "nymrissa wavecaller": { "track": "myth", "rank": 1 }, "nek'zali the soulcoiler": { "track": "myth", "rank": 1 },
+      "entombed sentinels": { "track": "myth", "rank": 2 }, "the lost explorers": { "track": "myth", "rank": 2 },
+      "vashnik the malignant": { "track": "myth", "rank": 3 }, "sszorak": { "track": "myth", "rank": 3 }, "the twin fangs": { "track": "myth", "rank": 3 },
+      "the coiled altar": { "ilvl": 344 }, "ula'tek": { "ilvl": 344 } } },
+    "mplus_0":  { "label": "M+ chest · Mythic 0", "track": "champion", "rank": 1 },
+    "mplus_2":  { "label": "M+ chest · +2/+3", "track": "champion", "rank": 2 },
+    "mplus_4":  { "label": "M+ chest · +4", "track": "champion", "rank": 3 },
+    "mplus_5":  { "label": "M+ chest · +5", "track": "champion", "rank": 4 },
+    "mplus_6":  { "label": "M+ chest · +6/+7", "track": "hero", "rank": 1 },
+    "mplus_8":  { "label": "M+ chest · +8/+9", "track": "hero", "rank": 2 },
+    "mplus_10": { "label": "M+ chest · +10 or higher", "track": "hero", "rank": 3 },
+    "voidcore_10": { "label": "M+ +10 bonus roll (Nebulous Voidcore, Myth)", "track": "myth", "rank": 1 },
+    "vault_raid_normal": { "label": "Vault · Raid Normal (Hero)", "track": "hero", "rank": 1 },
+    "vault_raid_heroic": { "label": "Vault · Raid Heroic (Myth)", "track": "myth", "rank": 1 },
+    "vault_raid_mythic": { "label": "Vault · Raid Mythic (Myth 6/6)", "track": "myth", "rank": 6 },
+    "vault_raid_mythic_last": { "label": "Vault · Raid Mythic, last 2 bosses (344)", "ilvl": 344 },
+    "vault_mplus_2":  { "label": "Vault · M+ +2/+3", "track": "hero", "rank": 1 },
+    "vault_mplus_4":  { "label": "Vault · M+ +4/+5", "track": "hero", "rank": 2 },
+    "vault_mplus_6":  { "label": "Vault · M+ +6", "track": "hero", "rank": 3 },
+    "vault_mplus_7":  { "label": "Vault · M+ +7 to +9", "track": "hero", "rank": 4 },
+    "vault_mplus_10": { "label": "Vault · M+ +10 or higher (Myth)", "track": "myth", "rank": 1 }
+  }
+}

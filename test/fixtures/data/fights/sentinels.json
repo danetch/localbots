@@ -1,0 +1,180 @@
+{
+ "id": "sentinels",
+ "name": "Entombed Sentinels",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/Sentinels.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing. Kill lengths: the median guild kill on Warcraft Logs (difficulty `kills`); with an export, the median kill of raids at your equipped item level (`byIlvl` brackets, Warcraft Logs), extended at 1 % per item level outside them. Phase positions come from the top-50 logs (Lorrgs) and are stored as % of the kill where health-driven.",
+ "defaultDuration": 300,
+ "mechanics": {
+  "droplets": {
+   "label": "Toxic Droplets (step on them)",
+   "type": "movement",
+   "duration": 2,
+   "timesFrom": "logs",
+   "assumed": [
+    "duration"
+   ]
+  },
+  "miasma": {
+   "label": "Unstable Miasma (soak, carry Clinging Murk)",
+   "type": "movement",
+   "duration": 5,
+   "chance": 0.25,
+   "timesFrom": "logs",
+   "assumed": [
+    "duration",
+    "chance"
+   ]
+  },
+  "coagulation": {
+   "label": "Venom Coagulation (big add, priority)",
+   "type": "adds",
+   "count": 1,
+   "health": 3000000,
+   "duration": 45,
+   "timesFrom": "logs",
+   "assumed": [
+    "health",
+    "duration"
+   ]
+  },
+  "intermission": {
+   "label": "Helical Toxins intermission (DPS stop attacking)",
+   "type": "invulnerable",
+   "duration": 15,
+   "timesFrom": "logs",
+   "assumed": [
+    "duration (the gap in boss casts is ~30 s, the raid may keep hitting adds)"
+   ]
+  }
+ },
+ "difficulties": {
+  "heroic": {
+   "label": "Normal / Heroic",
+   "times": {
+    "droplets": [
+     15
+    ],
+    "miasma": [
+     18
+    ],
+    "coagulation": [
+     12
+    ],
+    "intermission": [
+     45
+    ]
+   },
+   "repeat": {
+    "intermission": 102,
+    "droplets": 33,
+    "miasma": 52,
+    "coagulation": 53
+   },
+   "duration": 305,
+   "checked": "Lorrgs 50 kills (Heroic median 249 s, Mythic 347 s): phase changes 57/159-162/260-265 (same on both), boss casts stop ~30-65 s and ~138-168 s; Venom Coagulation 12/70/122/174/226/279, Toxic Droplets 15/72/105/138/177/209/242/282, Unstable Miasma 18/75/117/179/221/285.",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 305,
+    "kills": 61337,
+    "p25": 341,
+    "p75": 268,
+    "p99": 198,
+    "byIlvl": [
+     [
+      312,
+      319,
+      371
+     ],
+     [
+      315,
+      389,
+      914
+     ],
+     [
+      318,
+      383,
+      3573
+     ],
+     [
+      321,
+      341,
+      11578
+     ],
+     [
+      324,
+      313,
+      20564
+     ],
+     [
+      327,
+      272,
+      17865
+     ],
+     [
+      330,
+      221,
+      5467
+     ]
+    ]
+   },
+   "topDuration": 300
+  },
+  "mythic": {
+   "label": "Mythic",
+   "times": {
+    "droplets": [
+     15
+    ],
+    "miasma": [
+     18
+    ],
+    "coagulation": [
+     12
+    ],
+    "intermission": [
+     45
+    ]
+   },
+   "repeat": {
+    "intermission": 102,
+    "droplets": 33,
+    "miasma": 52,
+    "coagulation": 53
+   },
+   "duration": 375,
+   "checked": "Lorrgs 50 kills (Heroic median 249 s, Mythic 347 s): phase changes 57/159-162/260-265 (same on both), boss casts stop ~30-65 s and ~138-168 s; Venom Coagulation 12/70/122/174/226/279, Toxic Droplets 15/72/105/138/177/209/242/282, Unstable Miasma 18/75/117/179/221/285.",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 375,
+    "kills": 11326,
+    "p25": 402,
+    "p75": 340,
+    "p99": 293,
+    "byIlvl": [
+     [
+      324,
+      377,
+      339
+     ],
+     [
+      327,
+      393,
+      5806
+     ],
+     [
+      330,
+      346,
+      4600
+     ],
+     [
+      333,
+      311,
+      316
+     ]
+    ]
+   },
+   "topDuration": 300
+  }
+ },
+ "council": "Two bosses, but the raid splits into one group per boss (Method: council / split raid), so a DPS player only hits one of them: simulated as a single target."
+}

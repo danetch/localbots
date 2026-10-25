@@ -1,0 +1,360 @@
+{
+ "id": "coiledaltar",
+ "name": "The Coiled Altar",
+ "source": "BigWigs (BigWigsMods/BigWigs) TheVenomousAbyss/CoiledAltar.lua + Icy Veins boss guide (mechanics). Timings checked 24 Oct 2026 against Lorrgs.io (boss cast timelines of the top 50 Outlaw Rogue kills per difficulty, api2.lorrgs.io): see `checked` per difficulty.",
+ "notes": "Edit freely (Fight settings > Edit…). Times are seconds after the start of the mechanic's stage. Stage starts come from the guide/BigWigs where noted, otherwise from a percentage of the fight length. timesFrom: bigwigs = timeline durations read from BigWigs (only ~the first minute or two of each stage is visible there), guide = from the Icy Veins guide, assumed = my guess. 'assumed' lists effect sizes that are guesses. Not modelled: tank/healer mechanics, raid damage, Bloodlust timing. Kill lengths: the median guild kill on Warcraft Logs (difficulty `kills`); with an export, the median kill of raids at your equipped item level (`byIlvl` brackets, Warcraft Logs), extended at 1 % per item level outside them. Phase positions come from the top-50 logs (Lorrgs) and are stored as % of the kill where health-driven.",
+ "defaultDuration": 360,
+ "mechanics": {
+  "toxic": {
+   "label": "Toxic Deluge (collect orbs)",
+   "type": "movement",
+   "duration": 3,
+   "timesFrom": "logs",
+   "assumed": [
+    "duration"
+   ]
+  },
+  "axe": {
+   "label": "Axegrinder (avoid the axes)",
+   "type": "movement",
+   "duration": 3,
+   "timesFrom": "logs",
+   "assumed": [
+    "duration"
+   ]
+  },
+  "guillotine": {
+   "label": "Guillotine (group soak, step out of Widow's Kiss)",
+   "type": "movement",
+   "duration": 3,
+   "chance": 0.4,
+   "timesFrom": "logs",
+   "assumed": [
+    "duration",
+    "chance"
+   ]
+  },
+  "gloombomb": {
+   "label": "Gloombomb (ranged run away)",
+   "type": "movement",
+   "duration": 5,
+   "chance": 0.3,
+   "timesFrom": "bigwigs",
+   "assumed": [
+    "duration",
+    "chance"
+   ]
+  },
+  "dreadmarch": {
+   "label": "Dreadmarch (guide the ghosts)",
+   "type": "movement",
+   "duration": 4,
+   "chance": 0.3,
+   "timesFrom": "logs",
+   "assumed": [
+    "duration",
+    "chance"
+   ]
+  },
+  "spiritcackle": {
+   "label": "Spiritcackle (interrupt add)",
+   "type": "adds",
+   "stage": 2,
+   "count": 1,
+   "health": 800000,
+   "duration": 20,
+   "timesFrom": "logs",
+   "assumed": [
+    "health",
+    "duration"
+   ]
+  },
+  "soulbinding": {
+   "label": "Soulbinding intermission: Zul'jan takes +100% damage",
+   "type": "vulnerable",
+   "stage": 4,
+   "multiplier": 2.0,
+   "duration": 16,
+   "timesFrom": "logs",
+   "assumed": []
+  }
+ },
+ "difficulties": {
+  "mythic": {
+   "label": "Mythic",
+   "times": {
+    "toxic": {
+     "1": [
+      2,
+      45,
+      87,
+      130
+     ],
+     "3": [
+      12,
+      53,
+      113,
+      154
+     ]
+    },
+    "axe": {
+     "1": [
+      14,
+      99
+     ]
+    },
+    "guillotine": {
+     "1": [
+      47,
+      132
+     ],
+     "3": [
+      30,
+      94,
+      194
+     ]
+    },
+    "gloombomb": {
+     "2": [
+      18,
+      37
+     ],
+     "3": [
+      24,
+      38,
+      44,
+      63
+     ]
+    },
+    "dreadmarch": {
+     "2": [
+      16,
+      53,
+      101,
+      138,
+      186
+     ],
+     "3": [
+      66,
+      163
+     ]
+    },
+    "spiritcackle": {
+     "2": [
+      22,
+      55,
+      107,
+      140,
+      192
+     ],
+     "3": [
+      72,
+      168
+     ]
+    },
+    "soulbinding": {
+     "4": [
+      13
+     ]
+    }
+   },
+   "duration": 615,
+   "stages": [
+    {
+     "id": 1,
+     "at": 0
+    },
+    {
+     "id": 2,
+     "atPct": 27
+    },
+    {
+     "id": 4,
+     "atPct": 61
+    },
+    {
+     "id": 3,
+     "atPct": 68
+    }
+   ],
+   "checked": "Lorrgs 19 kills, median 623 s: phase 2 169, intermission 379, Soulbinding 392, phase 3 421 (27/61/68 %); Toxic Deluge 2/45/87/130 + P3 433/474/534/575, Axegrinder 14/99, Guillotine 47/132, Dreadmarch 185/222/270/307/355 + 487/584, Spiritcackle 191/224/276/309/361 + 493/589, Grim Guillotine 451/515/615.",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 615,
+    "kills": 1494,
+    "p25": 626,
+    "p75": 598,
+    "p99": 500,
+    "byIlvl": [
+     [
+      330,
+      618,
+      907
+     ],
+     [
+      333,
+      593,
+      416
+     ]
+    ]
+   },
+   "topDuration": 623
+  },
+  "heroic": {
+   "label": "Heroic / Normal",
+   "times": {
+    "toxic": {
+     "1": [
+      2,
+      45,
+      87
+     ],
+     "3": [
+      26,
+      84,
+      143
+     ]
+    },
+    "axe": {
+     "1": [
+      14
+     ]
+    },
+    "guillotine": {
+     "1": [
+      46
+     ],
+     "3": [
+      43
+     ]
+    },
+    "gloombomb": {
+     "2": [
+      20,
+      22,
+      38,
+      40
+     ],
+     "3": [
+      26,
+      33,
+      51,
+      67,
+      86
+     ]
+    },
+    "dreadmarch": {
+     "2": [
+      18,
+      55
+     ],
+     "3": [
+      85
+     ]
+    },
+    "spiritcackle": {
+     "2": [
+      24,
+      57
+     ]
+    },
+    "soulbinding": {
+     "4": [
+      25
+     ]
+    }
+   },
+   "duration": 391,
+   "stages": [
+    {
+     "id": 1,
+     "at": 0
+    },
+    {
+     "id": 2,
+     "atPct": 28
+    },
+    {
+     "id": 4,
+     "atPct": 51
+    },
+    {
+     "id": 3,
+     "atPct": 64
+    }
+   ],
+   "checked": "Lorrgs 50 kills, median 329 s: phase 2 93, intermission 168, Soulbinding 193, phase 3 209 (28/51/64 %); Toxic Deluge 2/45/87 + P3 235/293/352, Axegrinder 14, Guillotine 46, Dreadmarch 111/148 + 294, Spiritcackle 117/150, Grim Guillotine 252.",
+   "kills": {
+    "source": "Warcraft Logs guild speed statistics (kills, median guild), Oct 9-23 2026",
+    "median": 391,
+    "kills": 84332,
+    "p25": 430,
+    "p75": 357,
+    "p99": 285,
+    "byIlvl": [
+     [
+      303,
+      462,
+      516
+     ],
+     [
+      306,
+      454,
+      694
+     ],
+     [
+      309,
+      454,
+      909
+     ],
+     [
+      312,
+      445,
+      1562
+     ],
+     [
+      315,
+      440,
+      2189
+     ],
+     [
+      318,
+      434,
+      2484
+     ],
+     [
+      321,
+      431,
+      7108
+     ],
+     [
+      324,
+      405,
+      33049
+     ],
+     [
+      327,
+      367,
+      30484
+     ],
+     [
+      330,
+      315,
+      4360
+     ]
+    ]
+   },
+   "topDuration": 329
+  }
+ },
+ "mainBoss": "Zul'jan",
+ "bosses": [
+  {
+   "name": "Malacrass",
+   "present": {
+    "3": 0
+   }
+  }
+ ],
+ "council": "P1 Zul'jan alone, P2 Malacrass with adds, intermission (Malacrass links to Zul'jan, who takes +100 % damage), P3 both bosses stacked and cleaved, separate health (Icy Veins). Simulated as one target until phase 3, then 2 targets."
+}
