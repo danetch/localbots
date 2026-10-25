@@ -252,6 +252,11 @@
     "name": "Mythic+ Season 2",
     "frozen": false
    }
-  ]
+  ],
+  "betaRaids": {
+   "build": "12.0.1.66220",
+   "extra": {}
+  },
+  "liveRaids": {}
  }
 }
