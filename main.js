@@ -39,10 +39,18 @@ const { resolve: resolveIlvl } = require('./lib/progression');
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
 const loadSettings = () => { try { return JSON.parse(fs.readFileSync(settingsFile(), 'utf8')); } catch { return {}; } };
 const saveSettings = s => fs.writeFileSync(settingsFile(), JSON.stringify(s, null, 2));
-// Season preview (PTR / beta) mode: simc runs with ptr=1, game data comes from the PTR build (wago "wowt" product, simc *_ptr.inc tables)
-// into separate files (loot-ptr.json, items-ptr.json, enhance-ptr.json), season-ptr.json / progression-ptr.json / crafted-ptr.json are
-// used when the repo has them, and fights marked "ptr": true are listed (hidden otherwise).
-const ptrMode = () => !!loadSettings().ptr;
+// Season preview (PTR / beta) mode, the Live/PTR switch in the header: simc runs with ptr=1, game data comes from the preview build
+// (wago "wowt" PTR or "wow_beta", season-ptr.json "game"; simc *_ptr.inc tables) into separate files (loot-ptr.json, items-ptr.json,
+// enhance-ptr.json), season-ptr.json / progression-ptr.json / crafted-ptr.json are used, and fights marked "ptr": true are listed.
+// Only possible while the repo publishes season-ptr.json for a season that is not live yet (lib/preview.js).
+const previewLib = require('./lib/preview');
+let previewCache = null;
+function previewState() {
+  if (previewCache) return previewCache;
+  const read = rel => { try { const f = DF().dir(rel); return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null; } catch { return null; } };
+  return (previewCache = previewLib.status(read('season.json'), read('season-ptr.json'), loadSettings()));
+}
+const ptrMode = () => previewState().on;
 const ud = name => path.join(app.getPath('userData'), ptrMode() ? name.replace(/\.json$/, '-ptr.json') : name);
 const ptrUrl = u => ptrMode() ? u.replace(/\.inc$/, '_ptr.inc') : u;
 
@@ -111,7 +119,8 @@ const dataLib = require('./lib/datafiles');
 let dataFiles = null;
 const DF = () => dataFiles || (dataFiles = dataLib.create({ bundled: path.join(__dirname, 'data'), cache: path.join(app.getPath('userData'), 'data-cache'), appVersion: app.getVersion() }));
 const DATA_URL = 'https://raw.githubusercontent.com/danetch/localbots/main/data/';
-const ptrFile = name => { const p = name.replace(/\.json$/, '-ptr.json'); return ptrMode() && fs.existsSync(DF().file(p)) ? DF().file(p) : DF().file(name); };
+// a -ptr file only counts in the data set in use (bundled or downloaded), so a preview file removed from the repo is not found in an older bundle
+const ptrFile = name => { const p = DF().dir(name.replace(/\.json$/, '-ptr.json')); return ptrMode() && fs.existsSync(p) ? p : DF().file(name); };
 const loadSeason = () => JSON.parse(fs.readFileSync(ptrFile('season.json'), 'utf8'));
 const userFightsDir = () => path.join(app.getPath('userData'), 'fights');
 let shipped = null;
@@ -247,7 +256,23 @@ async function pass(simcPath, text, list, err, threads, tmp, log, fight, range, 
 
 ipcMain.handle('settings:get', () => loadSettings());
 // Options toggled from Settings (season preview / beta updates); only known keys are stored.
-ipcMain.handle('settings:set', (_e, o) => { const s = loadSettings(); for (const k of ['ptr', 'beta']) if (k in (o || {})) s[k] = !!o[k]; saveSettings(s); lootCache = { key: '', data: null }; return s; });
+ipcMain.handle('settings:set', (_e, o) => {
+  if ('ptr' in (o || {}) && (busy || lootBusy)) throw new Error('A simulation or a game data update is running: switch Live / PTR when it is done.');
+  const s = loadSettings(); for (const k of ['ptr', 'beta']) if (k in (o || {})) s[k] = !!o[k];
+  if ('ptr' in (o || {})) { const st = previewState(); if (s.ptr && !st.available) throw new Error(st.note); s.ptrSeason = s.ptr ? st.next.id : undefined; }
+  saveSettings(s); lootCache = { key: '', data: null }; previewCache = null; return s;
+});
+// Live/PTR switch state. When the previewed season is gone (removed from the repo or live now) a switch left on goes back to Live
+// and the PTR copies of the game data are deleted: -> { available, on, game, label, live, next, note, reset, wentLive }
+ipcMain.handle('preview:get', () => {
+  previewCache = null; const st = previewState(), s = loadSettings(), after = previewLib.settingsAfter(st, s);
+  if (after) {
+    saveSettings(after); previewCache = null; lootCache = { key: '', data: null };
+    for (const f of previewLib.PTR_FILES) try { fs.rmSync(path.join(app.getPath('userData'), f), { force: true }); } catch {}
+    emitLog(`>> Season preview: ${st.note}`);
+  }
+  return st;
+});
 
 // ---------- simc engine (download / version) ----------
 const engineDir = () => path.join(app.getPath('userData'), 'engine');
@@ -874,12 +899,14 @@ ipcMain.handle('loot:info', () => {
 });
 // Current live game build (wago.tools), e.g. "12.1.5.70575". Used to refresh the loot data automatically after a patch.
 const liveBuild = async () => JSON.parse(await download('https://wago.tools/api/builds/latest', 'game build', 15000)).wow.version;
+// Season preview: latest build of the preview game (PTR "wowt" or beta "wow_beta", from season-ptr.json)
+const previewBuild = async () => previewLib.buildOf(JSON.parse(await download('https://wago.tools/api/builds/latest', 'game builds', 15000)), previewState().game);
 // Does the loot data need a refresh? -> { reason } | null. No data, data made for an older patch, or older than 14 days.
 ipcMain.handle('loot:status', async () => {
   const l = loadLoot(); if (!l) return { reason: 'no game data yet' };
   if (!l.craftVer) return { reason: 'new crafted item tables' };
   if (!l.foodVer && loadSettings().simcPath) return { reason: 'food list to check with simc' };
-  let b = null; try { b = ptrMode() ? JSON.parse(await download('https://wago.tools/api/builds/latest', 'game builds', 15000)).wowt?.version : await liveBuild(); } catch { /* offline: only the age rule applies */ }
+  let b = null; try { b = ptrMode() ? await previewBuild() : await liveBuild(); } catch { /* offline: only the age rule applies */ }
   const short = v => String(v).split('.').slice(0, 3).join('.');
   if (b && l.gameBuild && short(b) !== short(l.gameBuild)) return { reason: `new game patch ${short(b)}` };
   if (b && !l.gameBuild && Date.now() - Date.parse(l.builtAt) > 2 * 864e5) return { reason: `game build ${b}` };
@@ -890,6 +917,7 @@ ipcMain.handle('loot:status', async () => {
 ipcMain.handle('data:refresh', async () => {
   const r = await DF().refresh(DATA_URL, url => download(url, 'boss and season data', 20000));
   shipped = null;
+  previewCache = null;
   if (r.updated.length) emitLog(`>> Boss and season data updated from GitHub (${r.updated.join(', ')}).`);
   return { ...r, ...DF().info() };
 });
@@ -909,12 +937,18 @@ async function checkFoods(built, log) {
   } catch (e) { log(`>> Food check failed (${e.message}): full food list kept.`); }
   finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch {} }
 }
-ipcMain.handle('loot:update', async () => {
+let lootBusy = false;   // the Live/PTR switch is refused while game data is written (files follow the mode)
+ipcMain.handle('loot:update', async () => { lootBusy = true; try { return await lootUpdate(); } finally { lootBusy = false; } });
+async function lootUpdate() {
   const log = emitLog;
   const names = { instance: 'JournalInstance', encounter: 'JournalEncounter', encItem: 'JournalEncounterItem', item: 'Item', sparse: 'ItemSparse', tier: 'JournalTier', tierX: 'JournalTierXInstance' };
-  // PTR mode: the latest PTR build of the game (wago product "wowt") and simc's *_ptr.inc tables
-  const ptrBuild = ptrMode() ? JSON.parse(await download('https://wago.tools/api/builds/latest', 'game builds', 15000)).wowt?.version : null;
-  if (ptrMode()) { if (!ptrBuild) throw new Error('No PTR build found on wago.tools.'); log(`>> Season preview: game data from PTR build ${ptrBuild}`); }
+  // Season preview: the latest PTR or beta build of the game (season-ptr.json "game") and simc's *_ptr.inc tables
+  const pv = previewState(), ptrBuild = ptrMode() ? await previewBuild() : null;
+  if (ptrMode()) {
+    if (!ptrBuild) throw new Error(`No ${pv.label} build found on wago.tools.`);
+    log(`>> Season preview (${pv.next.name}): game data from ${pv.label} build ${ptrBuild}`);
+    if (pv.game === 'wow_beta') log('>> Beta: simc keeps a new expansion\'s beta data in a separate branch; the simc you use may only have PTR data. Check item stats in the results.');
+  }
   const wago = n => `https://wago.tools/db2/${n}/csv${ptrBuild ? '?build=' + ptrBuild : ''}`, t = {};
   for (const [k, n] of Object.entries(names)) { log(`>> Downloading ${n}…`); t[k] = await download(wago(n), n); }
   // Données annexes : un échec désactive seulement la fonction concernée (Catalyst, objets artisanaux, règles d'équipement).
@@ -960,7 +994,7 @@ ipcMain.handle('loot:update', async () => {
   log(`>> Crafted base items found: ${built.crafted.length} · embellishments in simc table: ${built.embellishments.length}`);
   log('>> Loot database ready.');
   return true;
-});
+}
 ipcMain.handle('sim:drop', run(async (o, tmp) => {
   const { text, threads, instanceIds, ilvl, armor, includeWeapons, weapons, fight, instanceSources, upgrade, catalyst, crafted } = o, fine = fineOf(o);
   saveSettings({ ...loadSettings(), fight, threads, precision: o.precision });

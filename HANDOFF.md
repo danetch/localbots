@@ -1,7 +1,7 @@
 POLYGNOME (formerly LOCALBOTS) - PROJECT HANDOFF
 ================================================
 
-=== START HERE (state on 25 Oct 2026, app v0.6.0) ===
+=== START HERE (state on 25 Oct 2026, app v0.7.0) ===
 New conversation: attach the GitHub repo danetch/localbots, read this file and README.md, then wait for the user's request.
 The sections below are a chronological log (oldest first, 22 Oct -> 25 Oct); when two notes disagree, the later one wins.
 The older "FILE MAP" just below predates the current layout: trust the code and the dated sections.
@@ -29,6 +29,8 @@ Code map (current)
 - data/: season.json, progression.json, crafted.json, items.json, enhance.json, fights/*.json, manifest.json, shipped-hashes.json.
 
 Open items (25 Oct)
+- v0.7.0: Live / PTR switch in the header (section "25 OCT: v0.7.0" at the end). Greyed out for everyone until data/season-ptr.json is
+  pushed (runbook step 3).
 - v0.6.0 not yet tested by the user. After the automatic "Update loot data", check the log: "Food: 12 kept" and "Crafted base items
   found: N" should list Midnight items (CraftingData tables, never run against real wago data from the sandbox). If not: ask for the
   log (CraftingData column names, OverallQualityID).
@@ -598,14 +600,18 @@ embellishment").
 1. wago /api/builds/latest -> wowt build; JournalInstance on that build vs live -> new raid instance id(s).
 2. node tools/journal-draft.js --instance <id> --ptr   (or the same code in the user's browser on wago) -> data/fights/<boss>.json drafts.
    Review every mechanic type; councils (cleaved or split?); stage starts are placeholders.
-3. data/season-ptr.json (copy season.json: id MID3/…, name, tierSet, upgradeTracks = item_bonus type-34 groups of the new raid's drops
+3. data/season-ptr.json (copy season.json: id MID3/…, "game": "wowt" (PTR) or "wow_beta" (beta of a new expansion), name, tierSet, upgradeTracks = item_bonus type-34 groups of the new raid's drops
    (lib/loot.js trackGroups on the PTR build), craftedIlvl, raids, sources {warcraftLogsZone, lorrgsZones, bigwigs}); progression-ptr.json
    (tracks / sources / boss overrides); crafted-ptr.json if crafting changes. New expansion: expansion.qualityRanks.
-4. node tools/make-data.js; push to main -> every 0.5.0+ app gets the PTR files; users who tick "Season preview" see the PTR bosses.
+4. node tools/make-data.js; push to main -> every 0.5.0+ app gets the PTR files; on 0.7.0+ the header's Live / PTR switch becomes
+   available (it stays greyed out while no season-ptr.json with a non-live season id is published); in PTR mode users see the PTR bosses.
    Optionally a beta app version (x.y.z-beta.N on a season3 branch) for code changes.
 5. During raid testing: BigWigs adds the new raid folder -> sparse clone, node tools/bw-update.js <fight> <module> (--write after review);
    Warcraft Logs testing reports -> tools/wcl-timeline.js --zones, then --zone <ptr zone> --encounter <id> -> times + repeat.
-6. Season start: season.json <- season-ptr.json (drop "ptr" from the fights, keep the old season's files or retire them), release.
+6. Season start: season.json <- season-ptr.json (drop "game", drop "ptr" from the fights, keep the old season's files or retire them),
+   DELETE data/season-ptr.json / progression-ptr.json / crafted-ptr.json, make-data, push. Apps with the switch on go back to Live at the
+   next start ("Midnight Season 3 is live now") and delete their loot-ptr / items-ptr / enhance-ptr files. (A season-ptr.json left with the
+   live id is treated the same way.) Release if code changed.
    First days: Lorrgs (api2.lorrgs.io) real timings; after ~2 weeks: Warcraft Logs median kills per item level (difficulties[d].kills).
 
 === 24 OCT: v0.5.0 / v0.5.1 RELEASED ===
@@ -657,3 +663,23 @@ embellishment").
   WCL_CLIENT_SECRET). New PTR instances -> tools/journal-draft.js --ptr drafts committed to the "season-next" branch.
   A failed check keeps its old value (never reported as new). Tests: 61 pass.
 - A weekly Claude scheduled task (Monday) reads the open "watch" issues and reports what to do next (runbook steps).
+
+=== 25 OCT: v0.7.0 — LIVE / PTR SWITCH ===
+- User request: a slider to run the app on live data or on PTR / beta data, disabled while no next season or expansion is planned, and
+  safe when the PTR data becomes live.
+- lib/preview.js status(live season.json, season-ptr.json, settings): available = season-ptr.json exists IN THE DATA SET IN USE (bundled
+  or downloaded cache, DF().dir: a file removed from the repo is not picked up from an older bundle) with a season id != live. "game":
+  "wowt" (PTR, default) | "wow_beta" (beta) -> wago product for "Update loot data" / loot:status (main.js previewBuild). ptrMode() =
+  settings.ptr AND available (memoized previewState(), reset on settings:set / data:refresh / preview:get).
+- Back to Live: IPC preview:get (renderer at start and after the startup data refresh): switch on but preview gone -> settings ptr false,
+  userData loot-ptr / items-ptr / enhance-ptr deleted, note "<season> is live now: back to live data." (settings.ptrSeason = previewed id,
+  stored when the switch is turned on) or "No upcoming season in testing any more".
+- UI: header switch "Live [o] PTR|Beta" (#pvsw, #ptron, orange when on) replaces the Settings checkbox and the PTR badge; Settings keeps an
+  explanation + #pvinfo. Disabled while no preview, during a simulation and during "Update loot data" (main.js also refuses: busy /
+  lootBusy). Turning it on or off reloads loot info, bosses, season tracks and starts a loot update when the mode's data is missing/old.
+- Beta caveat (logged at "Update loot data" in beta mode): simc keeps a new expansion's beta data in a separate branch; the simc binary may
+  only carry the live branch's PTR data (ptr=1). Not handled beyond the log line (no second simc download).
+- Older apps (0.5.x-0.6.x) still show their Settings checkbox and ignore "game"; dataMinApp unchanged so they keep getting data.
+- Verified: unit tests (test/preview.test.js), header screenshots in real Electron (none / off / on / beta dark), real app smoke test:
+  settings { ptr: true } + no season-ptr.json -> ptr false and *-ptr.json deleted; with a temporary season-ptr.json -> kept.
+  Tests: 66 pass.

@@ -9,7 +9,7 @@ contextBridge.exposeInMainWorld('api', {
   editProg: () => ipcRenderer.invoke('prog:edit'),
   bossList: () => ipcRenderer.invoke('boss:list'), bossPreview: f => ipcRenderer.invoke('boss:preview', f), bossLength: f => ipcRenderer.invoke('boss:length', f), bossEdit: () => ipcRenderer.invoke('boss:edit'),
   engineInfo: () => ipcRenderer.invoke('engine:info'), engineCheck: () => ipcRenderer.invoke('engine:check'), engineInstall: opt => ipcRenderer.invoke('engine:install', opt),
-  updateGet: () => ipcRenderer.invoke('update:get'), updateCheck: () => ipcRenderer.invoke('update:check'), updateInstall: () => ipcRenderer.invoke('update:install'), setOption: o => ipcRenderer.invoke('settings:set', o),
+  updateGet: () => ipcRenderer.invoke('update:get'), updateCheck: () => ipcRenderer.invoke('update:check'), updateInstall: () => ipcRenderer.invoke('update:install'), setOption: o => ipcRenderer.invoke('settings:set', o), previewGet: () => ipcRenderer.invoke('preview:get'),
   editCrafted: () => ipcRenderer.invoke('craft:edit'),
   bis: o => ipcRenderer.invoke('sim:bis', o),
   talents: text => ipcRenderer.invoke('talents:parse', text),

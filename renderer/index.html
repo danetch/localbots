@@ -61,6 +61,15 @@ a.wh.blk{display:flex;align-items:flex-start;gap:6px;border:0;min-width:0}a.wh.b
 header{display:flex;align-items:center;gap:12px;padding:10px 12px 8px}
 .brand{font-weight:700;font-size:16px;letter-spacing:.02em;margin-right:4px}
 .badge{display:inline-block;margin-left:7px;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.04em;background:#c2410c;color:#fff;vertical-align:2px}
+/* Live / PTR switch (season preview) */
+.pvsw{display:inline-flex;flex-direction:row;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--mute);cursor:pointer;user-select:none;white-space:nowrap}
+.pvsw input{position:absolute;opacity:0;width:1px;height:1px}
+.pvsw i{position:relative;width:32px;height:18px;border-radius:9px;background:var(--line);transition:background .15s}
+.pvsw i::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:left .15s}
+.pvsw input:checked+i{background:#c2410c}.pvsw input:checked+i::after{left:16px}
+.pvsw input:focus-visible+i{outline:2px solid var(--acc);outline-offset:2px}
+.pvsw .lv{color:var(--ink)}.pvsw:has(input:checked) .lv{color:var(--mute)}.pvsw:has(input:checked) .pv{color:#c2410c}
+.pvsw:has(input:disabled){cursor:not-allowed;opacity:.5}
 header .seg{width:330px}header button.go{flex:none;min-width:150px}
 .grow{flex:1}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--neg);margin-left:6px}
@@ -81,7 +90,8 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
 @media(max-width:1000px){body{height:auto;overflow:auto}main{grid-template-columns:1fr}#setup{overflow:visible}#resbox{min-height:70vh}header{flex-wrap:wrap}}
 </style></head><body>
 <header>
- <span class="brand"><img src="icon.png" alt="" width="24" height="24" style="vertical-align:-6px;margin-right:7px">Polygnome<span id="ptrbadge" class="badge" hidden title="Season preview: PTR / beta game data (Settings)">PTR</span></span>
+ <span class="brand"><img src="icon.png" alt="" width="24" height="24" style="vertical-align:-6px;margin-right:7px">Polygnome</span>
+ <label class="pvsw" id="pvsw" title="No upcoming season in testing yet."><span class="lv">Live</span><input type="checkbox" role="switch" id="ptron" disabled aria-label="Season preview: PTR / beta game data"><i></i><span class="pv" id="pvlbl">PTR</span></label>
  <div class="seg" role="radiogroup" aria-label="Mode">
   <label><input type="radio" name="mode" value="top" checked>Top Gear</label>
   <label><input type="radio" name="mode" value="drop">Droptimizer</label>
@@ -205,8 +215,8 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
  <div class="row"><button id="eget" class="small" hidden>Download / update simc</button></div>
  <div id="engnew" class="it" hidden><span id="engnewtxt"></span> <button id="eforce" class="small"></button></div>
  <h2>Season preview</h2>
- <label class="in" style="margin-top:0"><input type="checkbox" id="ptron">Use PTR / beta game data (next season)</label>
- <div class="it">simc runs with its PTR data, “Update loot data” reads the PTR build, and boss fights prepared for the next season appear (marked PTR). Your live data is kept and comes back when you untick this.</div>
+ <div id="pvinfo" class="it" style="margin-top:0"></div>
+ <div class="it">The <b>Live / PTR</b> switch in the header turns it on. simc runs with its PTR data, “Update loot data” reads the PTR or beta build, and boss fights prepared for the next season appear (marked PTR). Your live data is kept and comes back when you switch back to Live. The switch is available only while an upcoming season is in testing; when that season goes live, Polygnome switches back to Live by itself.</div>
  <h2>Appearance</h2>
  <div class="row" style="margin-top:0"><label>Theme<select id="theme"><option value="auto">Follow the system</option><option value="light">Light</option><option value="dark">Dark</option></select></label></div>
  <label class="in" style="margin-top:8px"><input type="checkbox" id="whon">Wowhead icons and item tooltips (needs internet; restart to turn off)</label>
@@ -314,20 +324,31 @@ function seasNote(){const t=(lootInfo?.tiers||[]).find(t=>t.id===$('tier').value
  el.textContent=t.left==null?'Run “Update loot data” to leave last season’s raids out of this list.':t.left.length?`Left out (last season’s upgrade tracks): ${t.left.join(', ')}.`:''}
 $('inst').onchange=e=>{if(e.target.classList.contains('isrc'))instSrc[e.target.dataset.i]=e.target.value};
 $('tier').onchange=()=>{renderInst();seasNote()};$('ifilt').oninput=renderInst;$('isel').onclick=()=>document.querySelectorAll('.ins').forEach(c=>c.checked=true);$('inone').onclick=()=>document.querySelectorAll('.ins').forEach(c=>c.checked=false);
-async function updateLoot(why){$('upd').disabled=true;if(why)$('lootst').textContent=`Updating game data (${why})… see the Activity log`;
- try{await api.lootUpdate();await loadLoot()}catch(e){$('lootst').textContent=why?`Automatic game data update failed (${msg(e)}): offline? Click “Update loot data” to retry.`:msg(e)}$('upd').disabled=false}
+async function updateLoot(why){$('upd').disabled=true;$('ptron').disabled=true;if(why)$('lootst').textContent=`Updating game data (${why})… see the Activity log`;
+ try{await api.lootUpdate();await loadLoot()}catch(e){$('lootst').textContent=why?`Automatic game data update failed (${msg(e)}): offline? Click “Update loot data” to retry.`:msg(e)}$('upd').disabled=false;showPreview(preview)}
 $('upd').onclick=()=>updateLoot('');
 // At startup: newer boss/season data from GitHub (small), then the game data if a patch came out, it is missing or old (big download).
 async function updateAtStart(){
- try{const r=await api.dataRefresh();if(r&&r.updated&&r.updated.length){api.bossList().then(B=>{bosses=B;const v=$('boss').value;$('boss').innerHTML='<option value="">None (use the style below)</option>'+B.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');$('boss').value=v;bossPreview()});api.prog().then(p=>{prog=p;$('seas').textContent=p.season;renderInst()})}}catch{}
+ try{const r=await api.dataRefresh();await refreshPreview();if(r&&r.updated&&r.updated.length){api.bossList().then(B=>{bosses=B;const v=$('boss').value;$('boss').innerHTML='<option value="">None (use the style below)</option>'+B.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');$('boss').value=v;bossPreview()});api.prog().then(p=>{prog=p;$('seas').textContent=p.season;renderInst()})}}catch{}
  try{const s=await api.lootStatus();if(s&&!$('go').disabled)await updateLoot(`${s.reason}, started automatically`)}catch{}}
 setTimeout(updateAtStart,2500);
-// Season preview (PTR) and beta updates (Settings)
-api.settings().then(s=>{$('ptron').checked=!!s.ptr;$('ptrbadge').hidden=!s.ptr;$('betaon').checked=!!s.beta});
-$('ptron').onchange=async()=>{const on=$('ptron').checked;await api.setOption({ptr:on});$('ptrbadge').hidden=!on;lootInfo=null;await loadLoot();
+// Season preview: Live / PTR switch in the header (available only while the repo publishes an upcoming season), beta updates (Settings)
+let preview={available:false};
+const running=()=>$('go').disabled||$('upd').disabled;
+function showPreview(st){preview=st||{available:false};const sw=$('ptron');
+ sw.checked=!!preview.on;sw.disabled=!preview.available||running();$('pvlbl').textContent=preview.label||'PTR';
+ const tip=preview.available?`${preview.on?'Showing':'Switch to'} ${preview.next.name} (${preview.label} game data). Live: ${preview.live?.name||'current season'}.`:preview.note;
+ $('pvsw').title=tip;$('pvinfo').textContent=preview.available?`Upcoming season in testing: ${preview.next.name} (${preview.label}). ${preview.on?'You are on preview data.':'You are on live data.'}`:preview.note}
+// game data, bosses and season tracks follow the mode
+async function previewChanged(on){lootInfo=null;await loadLoot();
  api.bossList().then(B=>{bosses=B;$('boss').innerHTML='<option value="">None (use the style below)</option>'+B.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');bossPreview()});
  api.prog().then(p=>{prog=p;$('seas').textContent=p.season;renderInst()});
- try{const st=await api.lootStatus();if(st&&!$('go').disabled)updateLoot(`${on?'PTR':'live'} game data: ${st.reason}`)}catch{}};
+ try{const st=await api.lootStatus();if(st&&!running())updateLoot(`${on?preview.label||'PTR':'live'} game data: ${st.reason}`)}catch{}}
+async function refreshPreview(){try{const st=await api.previewGet();showPreview(st);if(st.reset){$('lootst').textContent=st.note;await previewChanged(false)}}catch{}}
+api.settings().then(s=>{$('betaon').checked=!!s.beta});refreshPreview();
+$('ptron').onchange=async()=>{const on=$('ptron').checked;
+ try{await api.setOption({ptr:on})}catch(e){$('ptron').checked=!on;$('lootst').textContent=msg(e);return}
+ await refreshPreview();await previewChanged(on)};
 $('betaon').onchange=()=>api.setOption({beta:$('betaon').checked});
 
 api.onLog(l=>{const e=$('log');e.textContent+=l+'\n';e.scrollTop=e.scrollHeight;if(e.textContent.length>200000)e.textContent=e.textContent.slice(-150000)});
@@ -499,7 +520,7 @@ function updSum(){const set=(k,t)=>{const e=$('sm_'+k);if(e)e.textContent=t};
 $('txt').addEventListener('paste',()=>setTimeout(()=>{if(/^\s*\w+\s*=\s*"/m.test($('txt').value)&&/^#?\s*\w+=,?id=/m.test($('txt').value))$('s_char').open=false},600));
 $('go').onclick=async()=>{
  collapseSections();showTab('res');setCopy('');setRep(null);const _f=getFight(),_b=bosses.find(b=>b.id===_f.boss);fightLabel=_b?` · ${_b.name.split(' — ')[0]} (${$('bdiff').selectedOptions[0]?.textContent.split(' ')[0]||''})`:` · ${$('fs').selectedOptions[0].textContent.split(' (')[0]}`;
- $('go').disabled=true;$('stop').disabled=false;$('log').textContent='';$('sum').textContent='';$('res').innerHTML='<div class="empty">Simulation running…</div>';startProg();let ok=false;
+ $('go').disabled=true;$('ptron').disabled=true;$('stop').disabled=false;$('log').textContent='';$('sum').textContent='';$('res').innerHTML='<div class="empty">Simulation running…</div>';startProg();let ok=false;
  const base={text:$('txt').value,threads:thrCount(),reserve:thrRes(),report:$('rep_on').checked,fight:getFight(),precision:$('prec').value,catalyst:{on:$('cat').checked,max:$('catmax').value===''?null:+$('catmax').value},crafted:getCrafted(),builds:talArgs()};
  try{
   if(mode==='top'){const r=await api.run({...base,topN:+$('top').value,upgradeBags:$('tgup').value,enhance:getEnh(),consumables:Object.fromEntries(Object.entries(consSel).map(([k,s])=>[k,[...s]]))});showAny('top',r);pushHist('Top Gear',r.builds?r.builds.length+' talent builds':r.rows[0]?`${fmt(r.rows[0].mean)} (${sgn(r.rows[0].delta)})`:'no result',r)}
@@ -507,7 +528,7 @@ $('go').onclick=async()=>{
   else{const r=await api.bis({...base,...lootArgs(),consumables:Object.fromEntries(Object.entries(consSel).map(([k,s])=>[k,[...s]])),maxRounds:+$('rounds').value||5,consFrom:+$('consfrom').value||2,enhance:getEnh()});showAny('bis',r);pushHist('Best in Slot',r.builds?r.builds.length+' talent builds':`${fmt(r.final)} (${sgn(r.final-r.start)})`,r)}
   ok=true;
  }catch(e){const m=msg(e);$('res').innerHTML=/^Cancelled/i.test(m)?'<div class="empty">Cancelled.</div>':`<div class="empty neg" style="white-space:pre-wrap">${esc(m)}</div>`}
- endProg(ok);$('go').disabled=false;$('stop').disabled=true};
+ endProg(ok);$('go').disabled=false;$('stop').disabled=true;showPreview(preview)};
 const HK='lb_hist';
 const loadHist=()=>{try{return JSON.parse(localStorage.getItem(HK)||'[]')}catch{return[]}};
 function renderHist(){const H=loadHist();$('tabh').textContent='History'+(H.length?` (${H.length})`:'');
