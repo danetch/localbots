@@ -809,3 +809,7 @@ for minor-patch PTRs like 12.1.7).
 - classify(): kills split into "lust at the pull" (<= 10 s) and "later"; the larger group is modelled (pull on a tie), then stage-anchored
   or share of the kill as before. Ula'tek had half/half: the median of both (28 % H, 12 % M) matched neither strategy.
 - Tests: 83 pass.
+- Result with the new detection (forced refresh, PR #4, 26 Oct): "second lust" down from 5-12 kills per boss to 0-2. Pull lust (1-2 s) on
+  8 bosses; Coiled Altar = 4-5 s after stage 3 starts (both difficulties); Ula'tek = 29 % of the kill on Heroic (IQR 28-31 %, ~121 s, before
+  the first heart) and 49 % on Mythic (IQR 49-50 %, ~285 s, second heart). The earlier "pull" for those two was Mages' own extra Time Warp.
+  tools/wcl-lust.js --force (workflow input `force`) rewrites every entry.
