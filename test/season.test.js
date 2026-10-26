@@ -55,3 +55,29 @@ test('season: upgrade-track item levels from simc item_bonus + item_scaling (rea
   assert.ok(!d.todo.some(t => /item levels not found/.test(t)));
   assert.deepStrictEqual(d.season.season.raidBosses, { R: ['B'] });
 });
+
+test('season-promote tool: files swapped, -ptr removed, old fights archived, WCL zone written (temp copy)', () => {
+  const fs = require('fs'), os = require('os'), { execFileSync } = require('child_process');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pg-promote-')), src = path.join(__dirname, '..');
+  try {
+    for (const d of ['tools', 'lib', 'data/fights']) fs.mkdirSync(path.join(root, d), { recursive: true });
+    fs.copyFileSync(path.join(src, 'tools', 'season-promote.js'), path.join(root, 'tools', 'season-promote.js'));
+    fs.copyFileSync(path.join(src, 'lib', 'season.js'), path.join(root, 'lib', 'season.js'));
+    const L = live(), d = S.draft({ live: L, prev: null, raids: [{ id: '1', name: 'Next Raid', bosses: ['Boss One'] }], groups: [], game: 'wowt' });
+    const w = (f, j) => fs.writeFileSync(path.join(root, 'data', f), JSON.stringify(j));
+    w('season.json', L.season); w('progression.json', L.progression); w('crafted.json', L.crafted);
+    w('season-ptr.json', d.season); w('progression-ptr.json', d.progression); w('crafted-ptr.json', d.crafted);
+    w('fights/kithix.json', { id: 'kithix' }); w('fights/bossone.json', { id: 'bossone', ptr: true, draft: true });
+    const out = execFileSync(process.execPath, [path.join(root, 'tools', 'season-promote.js'), '--wcl-zone', '58'], { encoding: 'utf8' });
+    assert.match(out, /Promoted MID2 -> MID3: 1 fight\(s\) now live \(bossone.json\), 1 archived to data\/fights-archive\/MID2\//);
+    const rj = f => JSON.parse(fs.readFileSync(path.join(root, 'data', f), 'utf8'));
+    assert.strictEqual(rj('season.json').season.id, 'MID3'); assert.strictEqual(rj('season.json').season.sources.warcraftLogsZone, 58);
+    assert.ok(!('game' in rj('season.json')) && !('todo' in rj('season.json')));
+    assert.strictEqual(rj('progression.json').seasonId, 'MID3');
+    for (const f of ['season-ptr.json', 'progression-ptr.json', 'crafted-ptr.json', 'fights/kithix.json']) assert.ok(!fs.existsSync(path.join(root, 'data', f)), f);
+    assert.deepStrictEqual(rj('fights/bossone.json'), { id: 'bossone', draft: true });
+    assert.ok(fs.existsSync(path.join(root, 'data', 'fights-archive', 'MID2', 'kithix.json')));
+    // second run: nothing left to promote
+    assert.match(execFileSync(process.execPath, [path.join(root, 'tools', 'season-promote.js')], { encoding: 'utf8' }), /Nothing to promote/);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});

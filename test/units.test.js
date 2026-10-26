@@ -529,3 +529,30 @@ test('watch: season start = previewed raid live + Warcraft Logs kills since then
     assert.ok(ch && ch.seasonStarted);
   } finally { fs.rmSync(path.dirname(f0), { recursive: true, force: true }); }
 });
+
+test('wcl: lustFight maps target classes and times from the pull', async () => {
+  const W = require('../lib/wcl');
+  const res = b => ({ ok: true, json: async () => b });
+  const f = async (u, o) => {
+    if (/oauth/.test(u)) return res({ access_token: 't' });
+    const q = JSON.parse(o.body).query;
+    if (/masterData/.test(q)) return res({ data: { reportData: { report: { fights: [{ id: 3, startTime: 10000, endTime: 310000, kill: true, phaseTransitions: [{ id: 2, startTime: 160000 }] }],
+      masterData: { actors: [{ id: 7, name: 'A', subType: 'Warrior' }, { id: 8, name: 'B', subType: 'Mage' }] } } } } });
+    return res({ data: { reportData: { report: { events: { data: [{ timestamp: 11000, type: 'applybuff', abilityGameID: 2825, targetID: 7, sourceID: 9 },
+      { timestamp: 9000, type: 'applydebuff', abilityGameID: 80354, targetID: 8, sourceID: 8 }] } } } } });
+  };
+  const F = await W.client({ id: 'i', secret: 's', fetch: f }).lustFight('abc', 3);
+  assert.deepStrictEqual([F.duration, F.kill, F.phases], [300, true, [{ id: 2, t: 150 }]]);
+  assert.deepStrictEqual(F.events.map(e => [e.t, e.targetClass]), [[1, 'Warrior'], [0, 'Mage']]);   // pre-pull clamped to 0
+  assert.deepStrictEqual(require('../lib/lust').detect(F.events), { times: [1], how: 'lust buff on a non-lust class' });
+});
+
+test('wowhead params and simc progress parser', () => {
+  const { whOf } = require('../lib/wowhead'), { makeParser } = require('../lib/progress');
+  assert.strictEqual(whOf(',id=123,bonus_id=1/2/3,ilevel=700'), 'item=123&bonus=1:2:3&ilvl=700');
+  assert.strictEqual(whOf(',id=5'), 'item=5'); assert.strictEqual(whOf('nothing'), '');
+  const sent = [], p = makeParser([0, 100], 'x', s => sent.push(s.pct));
+  assert.strictEqual(p('Generating Baseline: 50/100'), true); assert.strictEqual(p('random line'), false);
+  p('Profilesets (1/2): 10/20'); assert.ok(Math.abs(sent.at(-1) - (0.04 * 0.5 + 0.96 * 0.5) * 100) < 1e-9);
+  p('Generating Baseline: 100/100'); assert.ok(sent.at(-1) >= sent.at(-2), 'never goes back');
+});

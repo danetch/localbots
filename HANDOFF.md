@@ -1,54 +1,90 @@
 POLYGNOME (formerly LOCALBOTS) - PROJECT HANDOFF
 ================================================
 
-=== START HERE (state on 26 Oct 2026, app v0.9.1) ===
-New conversation: attach the GitHub repo danetch/localbots, read this file and README.md, then wait for the user's request.
-The sections below are a chronological log (oldest first, 22 Oct -> 25 Oct); when two notes disagree, the later one wins.
-The older "FILE MAP" just below predates the current layout: trust the code and the dated sections.
+=== START HERE (state on 26 Oct 2026 evening, app v0.9.1, 89 tests) ===
+New conversation: attach the GitHub repo danetch/localbots, read this START HERE and README.md, then wait for the user's request.
+Everything below START HERE is a chronological log (oldest first, 21 Oct -> 26 Oct); when two notes disagree, the later one wins.
+The old "FILE MAP", "FEATURES IMPLEMENTED", "KNOWN LIMITATIONS" and "ENVIRONMENT NOTES" sections (21 Oct) are outdated (zips, wago-only,
+etc.): this section and the dated sections replace them.
 
-Working with the user
-- Electron app wrapping the SimulationCraft CLI (simc) for WoW Midnight: Top Gear, Droptimizer, Best in Slot, local and unlimited.
-- UI in English; the user often writes in French (answer in their language). Lean, working increments; flag unverified assumptions.
-- When the user says "si tu me proposes des choses, ne fais pas tout de suite": investigate, propose, wait for the go.
-- Release = bump package.json "version", push to main: .github/workflows/release.yml tests, builds the Windows installer, publishes
-  GitHub release v<version> (the app updates itself). Beta = x.y.z-beta.N from a season* branch (pre-release).
-- Data-only changes (data/season.json, progression.json, crafted.json, fights/*.json): run `node tools/make-data.js`, push to main:
-  installed apps (>= dataMinApp) download them without a release.
-- Use the GitHub REST API (gh api ...), not GraphQL (blocked in Claude sessions). wago.tools is blocked from the Claude sandbox:
-  game-data checks run in the user's browser / PC, or in GitHub Actions.
-- Warcraft Logs API credentials are never written in the repo (user's git-ignored wcl-credentials.json; repo secrets for Actions).
-- Real simc can be built in the sandbox (git clone simulationcraft/simc, branch midnight, cmake) to verify behaviour; npm test uses a
-  fake simc (test/fakesimc.js). UI screenshots: test/ui/mock.js with Playwright (global install).
+WORKING WITH THE USER
+- Product: Polygnome (formerly LocalBots), an Electron app wrapping the SimulationCraft CLI (simc) for WoW Midnight: Top Gear,
+  Droptimizer, Best in Slot, local and unlimited. Windows installer, auto-updates from GitHub releases. Repo danetch/localbots (public).
+- The user writes in French or English: answer in their language. UI text is English. Lean, working increments; always say plainly what
+  was verified and what was not.
+- "Si tu me proposes des choses, ne fais pas tout de suite": when you PROPOSE something, investigate, propose, wait for the go. Bug reports
+  and explicit requests: just do them.
+- The user prefers automation over manual steps (seasons, data refreshes are automatic on purpose, see AUTOMATION).
+- Linked PC (Windows, user "Matthias"): app data %APPDATA%\Polygnome (needs folder access granted from the desktop app; it was refused on
+  26 Oct), code C:\Users\Matthias\Code\localbots. The built-in browser on that PC works and was used for wago / Blizzard / Warcraft Logs pages.
 
-Code map (current)
-- main.js (IPC, simc runs, loot update, checkFoods), preload.js, renderer/index.html (single-file UI, cards).
-- lib/: topgear, bis, loot (wago DB2 -> loot.json), crafted, foods, items (simc item_data -> items.json), enhance, dr, tier, upgrade,
-  progression, boss (fight lengths), fight, journal (Adventure Guide drafts), bigwigs, wcl, datafiles (remote data), updater, specs,
-  talents, engine, gear, progress, wowhead.
-- tools/: make-data, journal-draft, bw-update, bw-extract, wcl-timeline, build-enhance, watch (season watch).
-- data/: season.json, progression.json, crafted.json, items.json, enhance.json, fights/*.json, manifest.json, shipped-hashes.json.
+HOW TO SHIP
+- Code: bump package.json "version", push to main -> .github/workflows/release.yml (tests on Linux, NSIS installer on Windows, GitHub
+  release v<version>; installed apps offer the update at start). Beta: x.y.z-beta.N from a season* branch (pre-release). Pushes by
+  GITHUB_TOKEN (workflow merges) do NOT trigger release.yml.
+- Data only (data/season*.json, progression*.json, crafted*.json, fights/*.json): run `node tools/make-data.js` (manifest +
+  shipped-hashes; npm test fails otherwise), push to main: apps >= dataMinApp (0.5.0) download it at their next start, no release.
+- Always: `npm test` before pushing (node:test, fake simc test/fakesimc.js, frozen MID2 data in test/fixtures/data so a season switch
+  never breaks the tests). Commit messages end with the Co-Authored-By / Claude-Session lines given in the session.
+- UI checks: real Electron under Xvfb (xvfb-run -a node_modules/electron/dist/electron . --no-sandbox --disable-gpu
+  --remote-debugging-port=9333 --user-data-dir=<tmp>) + Playwright connectOverCDP (playwright from the global @playwright/mcp package;
+  `playwright install` is blocked). test/ui/mock.js mocks window.api for renderer-only screenshots.
 
-Open items (25 Oct)
-- v0.7.0: Live / PTR switch in the header (section "25 OCT: v0.7.0"). Greyed out for everyone until data/season-ptr.json is
-  on main (runbook step 3).
-- Next season is FULLY AUTOMATIC since 26 Oct (user's choice; section "26 OCT: v0.8.0"): the watch opens AND merges "Next season in
-  testing" (season-next) as soon as its tests pass, and merges "Season start" (season-start) when Warcraft Logs shows kills of the new
-  raid since it went live. Without the WCL secrets the Season start PR waits for a manual merge.
-  The live-data glue of tools/season-draft.js (wago downloads) has NOT run for real yet (wago blocked in the sandbox): check the first
-  PR it opens.
-- v0.6.0 CONFIRMED by the user (26 Oct, manual "Update loot data"): "Food: 12 kept", "Crafted base items found: 98 · embellishments in
-  simc table: 54", Midnight pieces. Also confirmed: Wowhead icons + tooltips, simc HTML report, simc auto update (70391), item stats.
-  Open: the automatic loot update at startup did not run the food check on the user's PC (cause unknown; reproduced fine in Electron:
-  v0.7.1 writes logs/data-updates.log to find out next time).
-  CONFIRMED 26 Oct: the addon's loadout format is exactly "# Saved Loadout: <name>" + "# talents=<string>" (user's export: M+, Gouffres,
-  Raid; the active talents= line duplicates one of them); the "Talent builds" section shows them (user had not noticed it). "This season"
-  filter works: S1 raids absent, "Left out (last season's upgrade tracks): ..." shown; the Journal's "Current Season" no longer lists the S1
-  raids, hence the duplicate entry hidden in v0.7.1.
-- Repo secrets WCL_CLIENT_ID / WCL_CLIENT_SECRET added 25 Oct and working (watch run 40239189404 recorded the zone list).
-  The secrets API is closed to the Claude proxy: check a watch run instead. "Allow GitHub Actions to create pull requests" is on.
-- Season watch: daily workflow (.github/workflows/watch.yml -> issues labelled "watch"), plus a weekly Claude scheduled task
-  "Polygnome season watch" (Mondays 08:39 Paris) that reports the open watch issues in French.
-- Season 3 preparation: SEASON 3 RUNBOOK below, started when the watch reports a new raid on the PTR.
+ENVIRONMENT (Claude sandbox)
+- Reachable: github.com via git, raw.githubusercontent.com, GitHub REST API (gh api; NOT GraphQL; the Actions secrets API is refused).
+- Blocked: wago.tools, *.version.battle.net (Blizzard versions), warcraftlogs.com, lorrgs.io, Raidbots, Wowhead. Use GitHub Actions (has
+  the WCL secrets, reaches wago / Blizzard / WCL) or the user's built-in browser. Never store Warcraft Logs credentials in the repo
+  (repo secrets WCL_CLIENT_ID / WCL_CLIENT_SECRET, added 25 Oct, working; locally a git-ignored wcl-credentials.json).
+- A real simc can be built in the sandbox (clone simulationcraft/simc, branch midnight, sparse engine + source_files, OPTIMIZE=0; 25-50 min
+  on 2 cores) to verify simc behaviour; it cannot write HTML reports.
+
+CODE MAP
+- main.js: IPC, simc runs (runSimc / pass / statsPass / reportPass), modes (sim:topgear, sim:drop, sim:bis), loot:update / loot:status /
+  loot:info, data:refresh, preview:get, food check (cached), data log (logs/data-updates.log), run logs (logs/run-*.log).
+  preload.js: window.api. renderer/index.html: single-file UI (header: mode, Run, game data, Settings, Live/PTR switch; left accordion
+  cards; right tabs Results / History / Activity log).
+- lib/ (gear logic): topgear, bis, upgrade, tier (Catalyst), crafted, enhance (enchants / gems / sockets), dr (diminishing returns), gear,
+  specs, talents, items (simc item_data), loot (wago DB2 -> loot.json, season of a raid), foods, progression, wowhead, progress.
+  lib/ (fights): boss (fight files -> simc raid_events, kill length by item level), fight (simc fight args), lust (Bloodlust timing),
+  journal (Adventure Guide drafts), bigwigs, wcl (Warcraft Logs API).
+  lib/ (data / seasons): datafiles (data updates from GitHub), preview (Live/PTR switch state), season (next-season draft, promotion, track
+  item levels from simc), versions (Blizzard game versions per region), engine (simc download), updater (electron-updater).
+- tools/: make-data, watch (daily season watch), season-draft, season-promote, journal-draft, bw-update / bw-extract (BigWigs),
+  wcl-timeline (boss cast timings), wcl-lust (Bloodlust timing), build-enhance.
+- data/: season.json (the only season constants), progression.json, crafted.json, fights/*.json, items.json, enhance.json, manifest.json,
+  shipped-hashes.json; season-ptr.json / progression-ptr.json / crafted-ptr.json only while a next season is in testing;
+  fights-archive/<season>/ after a season switch.
+- .github/workflows/: release.yml, watch.yml (daily 06:17 UTC), fight-data.yml (Wednesdays 05:41 UTC). .github/watch-state.json = watch memory.
+
+AUTOMATION (no manual step needed; details in "25 OCT: SEASON PULL REQUESTS", "26 OCT: v0.8.0", "26 OCT: v0.9.0")
+- watch.yml: versions from Blizzard (lib/versions.js, wago fallback), new PTR / beta Adventure Guide instances, instances reaching live,
+  BigWigs folders, simc PTR data / profiles, Warcraft Logs zones -> one issue labelled "watch" per change.
+  New raid on PTR / beta -> PR "Next season in testing" (branch season-next: season-ptr.json with track item levels read from simc,
+  progression-ptr.json, crafted-ptr.json, fight drafts) MERGED by the workflow after npm test -> the Live/PTR switch appears in every app.
+  That raid in the live Journal -> PR "Season start" (branch season-start, tools/season-promote.js) created, MERGED when Warcraft Logs has
+  kills of the raid since it went live (seasonStart) -> every app switches season at its next start; old fights archived.
+- fight-data.yml: Bloodlust timing per boss and difficulty from the fastest Warcraft Logs kills (tools/wcl-lust.js), PR "Fight data"
+  merged after the tests; input `force` rewrites every entry, `only` limits to fight ids.
+- Apps: automatic "Update loot data" at start when there is no data, a new game patch in the player's region (region= of the export), the
+  food list was never checked, or data > 14 days old; data files refreshed from GitHub at start; app update offered at start.
+- Claude scheduled task "Polygnome season watch" (Mondays 08:39 Paris, trigger trig_015dzWajYiV1aK6mcJnM6X8p): reads issues, PRs, runs,
+  watch state; closes watch issues that need no action (with a comment); reports in French. It never pushes or merges.
+
+STATE / OPEN ITEMS (26 Oct)
+- Confirmed by the user on his PC: food check (12 kept), crafted Midnight items (98 found), Wowhead icons + tooltips, simc HTML report,
+  simc auto update, talent loadouts ("# Saved Loadout: <name>" + "# talents=" lines), "This season" raid filter.
+- Not explained: on the user's PC the automatic startup update did not run the food check once (reproduced fine in Electron). Since v0.7.1
+  logs/data-updates.log records every startup decision: ask for its "Check (app start, ...)" lines if it happens again.
+- Not yet run for real (no new raid on the PTR as of 26 Oct; live 12.1.5.70575, PTR 12.1.7.70493, beta 12.0.1.66220): the wago downloads
+  of tools/season-draft.js, the season-next merge path, the WCL zone match of a brand-new raid, the automatic merges with the real gh.
+  Simulated locally end to end. Check the first "Next season in testing" PR closely.
+- Live/PTR switch: only for a new SEASON (user: no switch for minor-patch PTRs like 12.1.7). Beta mode: simc may lack beta data (logged).
+- Bloodlust (v0.9.1, measured 26 Oct): pull on 8 bosses; Coiled Altar 4-5 s after stage 3; Ula'tek 29 % (Heroic) / 49 % (Mythic) of the
+  kill. Only the first lust is modelled.
+- Still estimates, by design: boss mechanic effect sizes (`assumed` in fight files; timings are from logs), per-boss loot ranks and crafted
+  rules of a generated season, rules listed in "ASSUMED GAME RULES". Normal difficulty has no Warcraft Logs kill lengths (not important).
+- Ideas mentioned, not started: measure boss effect sizes from Warcraft Logs (damage taken, debuff durations); a "hats as results chart"
+  picture for README / empty results; run history comparison.
 
 GOAL
 ----
@@ -61,7 +97,7 @@ HOW TO RUN (current, dev mode)
   npm install ; npm start     (Electron ^33, Node 18+ fetch is used in the main process)
 First launch: Engine card -> "Select simc..." (path to a simc binary). Paste a /simc addon export (bags included).
 
-FILE MAP
+FILE MAP (21 Oct, OUTDATED: see CODE MAP in START HERE)
 --------
 main.js            Electron main process. IPC handlers:
                    settings:get, simc:pick, sim:cancel, sim:parse, sim:topgear, sim:drop, sim:bis,
@@ -88,7 +124,7 @@ data/progression.json  Season tracks (Champion/Hero/Myth ilvl per rank) and drop
                    Great Vault, Voidcore). User-editable copy lives in the app userData folder ("Edit tracks & sources").
 User data (userData): settings.json, loot.json, progression.json (optional), last-bis-result.json.
 
-FEATURES IMPLEMENTED
+FEATURES IMPLEMENTED (21 Oct, OUTDATED: see START HERE and the dated sections)
 --------------------
 1. Top Gear: cartesian product of bag items (rings/trinkets in pairs) as profilesets; 2 passes (all at target_error 0.5,
    top N at 0.05). Rules: 2H clears off_hand ("off_hand="), same item can't be in both hands, max 2 embellished items,
@@ -153,7 +189,7 @@ THINGS ASSUMED BUT NOT VERIFIED (check first if something fails)
   Placeholders: Normal/Heroic raid drops default to rank 1 (per-boss ranks unknown); Voidcore (+10 bonus roll) assumed Myth 1/6.
   Delves and Prey are not modelled.
 
-KNOWN LIMITATIONS
+KNOWN LIMITATIONS (21 Oct, OUTDATED: see START HERE and the dated sections)
 -----------------
 - Tier set bonuses (2pc/4pc) are not modelled by us; Catalyst (all modes) assumes simc counts set bonuses for redirected
   items (item id = tier id) and that equipped items without ilevel= keep the right level (both unverified).
@@ -180,7 +216,7 @@ AUDIT (Oct 21) - what changed
 - Renderer: error prefix stripped, threads default = CPU count and saved, class -> armor type auto-select, ilvl shown in BiS rows.
 - Tests: `npm test` (node:test; test/units.test.js, test/e2e.test.js with test/fakesimc.js). Run before every zip.
 
-ENVIRONMENT NOTES FOR THE ASSISTANT
+ENVIRONMENT NOTES FOR THE ASSISTANT (21 Oct, OUTDATED: see ENVIRONMENT in START HERE; no more zips)
 -----------------------------------
 - Update (Oct 21): raw.githubusercontent.com (simc repo) IS reachable from the sandbox; wago.tools and Raidbots still not tested; all network-dependent code
   (loot update, future engine download) is untested against real servers. Be explicit about that.
@@ -608,9 +644,9 @@ embellishment").
 - Tests: 54 pass.
 
 === SEASON 3 RUNBOOK (when the PTR has the new raid) ===
-Since 25 Oct steps 1-3 run automatically in the watch workflow and arrive as the pull request "Next season in testing" (branch
-season-next), and step 6 as the pull request "Season start" (branch season-start). The steps below say what those PRs did and what to
-check; they also work by hand (tools/season-draft.js, tools/season-promote.js).
+Since 26 Oct steps 1-4 and 6 are AUTOMATIC: the watch workflow creates and merges the pull request "Next season in testing" (branch
+season-next) and later "Season start" (branch season-start, merged when Warcraft Logs shows kills of the new raid). The steps below say
+what those PRs do and what to check afterwards; they also work by hand (tools/season-draft.js, tools/season-promote.js).
 1. Blizzard version service (lib/versions.js; wago fallback) -> wowt build; JournalInstance on that build vs live -> new raid instance id(s).
 2. node tools/journal-draft.js --instance <id> --ptr   (or the same code in the user's browser on wago) -> data/fights/<boss>.json drafts.
    Review every mechanic type; councils (cleaved or split?); stage starts are placeholders.
@@ -624,10 +660,14 @@ check; they also work by hand (tools/season-draft.js, tools/season-promote.js).
    Warcraft Logs testing reports -> tools/wcl-timeline.js --zones, then --zone <ptr zone> --encounter <id> -> times + repeat.
 6. Season start (tools/season-promote.js): season.json <- season-ptr.json (drop "game" / "todo", drop "ptr" from the fights, old season's
    fights moved to data/fights-archive/<old id>/: out of the app, kept in the repo), DELETE data/season-ptr.json / progression-ptr.json /
-   crafted-ptr.json, make-data, push (= merge the "Season start" PR on the season start day). Apps with the switch on go back to Live at the
+   crafted-ptr.json, make-data, push (= the "Season start" PR, merged automatically at the season start; by hand only without WCL). Apps with the switch on go back to Live at the
    next start ("Midnight Season 3 is live now") and delete their loot-ptr / items-ptr / enhance-ptr files. (A season-ptr.json left with the
    live id is treated the same way.) Release if code changed.
    First days: Lorrgs (api2.lorrgs.io) real timings; after ~2 weeks: Warcraft Logs median kills per item level (difficulties[d].kills).
+7. Bloodlust timing of the new fights: automatic (fight-data.yml, weekly) once season.json has the raid's Warcraft Logs zone (written by
+   the promotion); before that, run the workflow with `only` after setting the zone by hand if needed.
+8. Still manual after a season switch: review fight drafts (mechanic types, councils, stage starts), BigWigs timers (step 5), Warcraft Logs
+   kill lengths per item level (difficulties[d].kills snapshot), per-boss loot ranks (progression.json bossOverrides).
 
 === 24 OCT: v0.5.0 / v0.5.1 RELEASED ===
 - 0.5.0: season config, data updates from GitHub, automatic loot refresh, season preview, beta channel, Season 3 tools.
@@ -813,3 +853,12 @@ for minor-patch PTRs like 12.1.7).
   8 bosses; Coiled Altar = 4-5 s after stage 3 starts (both difficulties); Ula'tek = 29 % of the kill on Heroic (IQR 28-31 %, ~121 s, before
   the first heart) and 49 % on Mythic (IQR 49-50 %, ~285 s, second heart). The earlier "pull" for those two was Mages' own extra Time Warp.
   tools/wcl-lust.js --force (workflow input `force`) rewrites every entry.
+
+=== 26 OCT (end of day): TESTS AUDIT + HANDOFF REWRITE ===
+- Coverage audit (lib modules, IPC handlers, tools vs test/*.js). Added: Droptimizer end to end (custom item level, class armor filter,
+  "select an instance" error), loot:info hides the Journal tier identical to "This season", preview:get back-to-Live (settings, PTR files
+  deleted, data log, switch refused), wcl.lustFight mapping (target classes, times from the pull, pre-pull clamped), whOf + progress parser,
+  tools/season-promote.js run on a temp copy (swap, -ptr removed, archive, WCL zone, idempotent). 89 tests.
+- Still without automated tests (network glue or UI only): tools/season-draft.js and tools/wcl-lust.js main loops (their pure parts are
+  tested: lib/season.js, lib/lust.js), lib/updater.js, renderer-only logic (bcmp build compare, Bloodlust card, region sent from the export).
+- START HERE rewritten as a self-contained briefing; outdated 21 Oct sections flagged; runbook updated for the automatic merges.

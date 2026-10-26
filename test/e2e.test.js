@@ -124,3 +124,43 @@ test('bloodlust choice reaches simc (time; health; off with raid buffs off)', as
   assert.match(await run({ boss: 'kithix', difficulty: 'mythic', raid: 'full', lust: { mode: 'pct', value: 30 } }), /bloodlust_percent=30/);
   assert.doesNotMatch(await run({ fightStyle: 'Patchwerk', raid: 'none', lust: { mode: 'time', value: 95 } }), /bloodlust_time/);
 });
+
+test('droptimizer: loot drops ranked end to end (custom item level, class armor filter)', async () => {
+  const text = 'warrior="Bob"\nspec=fury\nlevel=90\nhead=,id=10\nfinger1=,id=12\nfinger2=,id=13\n';
+  fs.writeFileSync(ud + '/loot.json', JSON.stringify({ builtAt: new Date().toISOString(), consVer: 2, craftVer: 2, crafted: [], embellishments: [], tierSets: [],
+    instances: { 900: { name: 'Test Raid', bosses: { 1: { name: 'Boss One', items: [30001, 30002, 30003] } } } },
+    items: { 30001: { name: 'Plate Helm', ilvl: 300, cls: 4, sub: 4, inv: 1 }, 30002: { name: 'Cloth Hood', ilvl: 300, cls: 4, sub: 1, inv: 1 }, 30003: { name: 'Band', ilvl: 300, cls: 4, sub: 0, inv: 11 } } }));
+  try {
+    const r = await H['sim:drop']({}, { text, threads: 1, instanceIds: ['900'], ilvl: 330, instanceSources: {}, fight: { fightStyle: 'Patchwerk' }, precision: 'fast', report: false });
+    const names = r.rows.map(x => x.name);
+    assert.ok(names.includes('Plate Helm (330)') && names.includes('Band (330)'), names.join(', '));   // custom item level applied
+    assert.ok(!names.some(n => /Cloth Hood/.test(n)), 'a warrior does not get cloth');
+    assert.ok(r.rows.some(x => x.slot === 'finger1' || x.slot === 'finger2'));
+    await assert.rejects(H['sim:drop']({}, { text, threads: 1, instanceIds: [], fight: { fightStyle: 'Patchwerk' }, precision: 'fast' }), /at least one instance/);
+  } finally { fs.rmSync(ud + '/loot.json', { force: true }); }
+});
+
+test('loot info: the Journal tier identical to "This season" is listed once', () => {
+  fs.writeFileSync(ud + '/loot.json', JSON.stringify({ builtAt: new Date().toISOString(), consVer: 2, craftVer: 2, crafted: [], embellishments: [], tierSets: [],
+    tiers: { 9: { name: 'Current Season', instances: ['900'] }, 8: { name: 'Midnight', instances: ['900', '901'] } },
+    instances: { 900: { name: 'Test Raid', bosses: { 1: { name: 'Boss One', items: [] } } }, 901: { name: 'Old Dungeon', bosses: { 2: { name: 'Old Boss', items: [] } } } }, items: {} }));
+  try {
+    const ids = H['loot:info']().tiers.map(t => t.id);
+    assert.ok(ids.includes('season') && !ids.includes('9') && ids.includes('8'), ids.join(','));
+  } finally { fs.rmSync(ud + '/loot.json', { force: true }); }
+});
+
+test('season preview: a switch left on with no upcoming season goes back to Live, PTR data deleted, logged', () => {
+  const sf = ud + '/settings.json', before = fs.readFileSync(sf, 'utf8');
+  fs.writeFileSync(sf, JSON.stringify({ ...JSON.parse(before), ptr: true, ptrSeason: 'MID3' }));
+  fs.writeFileSync(ud + '/loot-ptr.json', '{}'); fs.writeFileSync(ud + '/food-check-ptr.json', '{}');
+  try {
+    const st = H['preview:get']();
+    assert.deepStrictEqual([st.available, st.reset], [false, true]);
+    const s = JSON.parse(fs.readFileSync(sf, 'utf8'));
+    assert.strictEqual(s.ptr, false); assert.ok(!('ptrSeason' in s));
+    assert.ok(!fs.existsSync(ud + '/loot-ptr.json') && !fs.existsSync(ud + '/food-check-ptr.json'));
+    assert.match(fs.readFileSync(path.join(ud, 'logs', 'data-updates.log'), 'utf8'), /Season preview: No upcoming season in testing any more/);
+    assert.throws(() => H['settings:set']({}, { ptr: true }), /No upcoming season/);   // the switch cannot be turned on
+  } finally { fs.writeFileSync(sf, before); }
+});
