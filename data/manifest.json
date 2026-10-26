@@ -1,11 +1,11 @@
 {
- "generated": "2026-10-26T20:53:35.604Z",
+ "generated": "2026-10-26T21:12:50.511Z",
  "minApp": "0.5.0",
  "files": {
   "season.json": "b61af48f1de355b04ad8c7e7adf7999ea40eafce77ec53ea7d79cbf2ff28d3d3",
   "progression.json": "e08a8a28ac7277dc53be6f275fc3c0242a7d050051b3ed94204244f6d1f4bb49",
   "crafted.json": "b16dadad7871664c0822dc3f9e1abb47dc06238bd37b75ebd877659db3da5689",
-  "fights/coiledaltar.json": "78ce4f297111090f1e935003c27b8b26ef24713d3b1d62de64ba61b0be5deab8",
+  "fights/coiledaltar.json": "f98a2cd93c253482c4e539f293170c87f71bc9c816b018c2cb9c5fc63fff636c",
   "fights/explorers.json": "963ee88ebb4090cf7a201af40464d8f9abc7b94811aecce5f1028cd776447f31",
   "fights/kithix.json": "2a979e3e838c8204e438536b1cf8c69be026496a740dd9dc365a5e800ef858c3",
   "fights/nekzali.json": "8d2c42d466493a9f4c20643e0c04520311a725c69ab1e750d6d66eed356977b8",
@@ -13,7 +13,7 @@
   "fights/sentinels.json": "9327dcb335b0a70c7ca0bf290e911709e4a21622cdadcd17abc99ee187f479da",
   "fights/sszorak.json": "5c4aa070b2dcf63f8130ecbc86cad49ce90b3806d5630d6e8afad7f4340432e1",
   "fights/twinfangs.json": "f952f5fe3aabc7d66b0fbd8c342e6e31ff7f03eb4f03477d6b493707d547eca5",
-  "fights/ulatek.json": "d3a6e1af8d49ba2e3a3e0879c73bc5c8bde5bf299a76c0cde095403a10273478",
+  "fights/ulatek.json": "ca64108dc9a4afbdb26c1740707ef5743253d8c29315635e1e1b1273d71701e1",
   "fights/vashnik.json": "d7c034624c6af9dd292a668378692391e1a8305b1247644e98bc0637c7ee8f7f"
  }
 }
