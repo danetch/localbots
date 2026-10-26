@@ -73,7 +73,7 @@
    "label": "Soulbinding intermission: Zul'jan takes +100% damage",
    "type": "vulnerable",
    "stage": 4,
-   "multiplier": 2.0,
+   "multiplier": 2,
    "duration": 16,
    "timesFrom": "logs",
    "assumed": []
@@ -198,7 +198,13 @@
      ]
     ]
    },
-   "topDuration": 623
+   "topDuration": 623,
+   "bloodlust": {
+    "stage": 1,
+    "after": 5,
+    "from": "logs",
+    "checked": "first lust 5 s after the start of stage 1 in 13 kills (IQR 2-6 s) (15 of the fastest Warcraft Logs kills; 13 with a second lust, not modelled), 2026-10-26"
+   }
   },
   "heroic": {
    "label": "Heroic / Normal",
@@ -344,7 +350,13 @@
      ]
     ]
    },
-   "topDuration": 329
+   "topDuration": 329,
+   "bloodlust": {
+    "stage": 1,
+    "after": 5,
+    "from": "logs",
+    "checked": "first lust 5 s after the start of stage 1 in 10 kills (IQR 1-6 s) (14 of the fastest Warcraft Logs kills; 8 with a second lust, not modelled), 2026-10-26"
+   }
   }
  },
  "mainBoss": "Zul'jan",
