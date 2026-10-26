@@ -91,7 +91,6 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
 </style></head><body>
 <header>
  <span class="brand"><img src="icon.png" alt="" width="24" height="24" style="vertical-align:-6px;margin-right:7px">Polygnome</span>
- <label class="pvsw" id="pvsw" title="No upcoming season in testing yet."><span class="lv">Live</span><input type="checkbox" role="switch" id="ptron" disabled aria-label="Season preview: PTR / beta game data"><i></i><span class="pv" id="pvlbl">PTR</span></label>
  <div class="seg" role="radiogroup" aria-label="Mode">
   <label><input type="radio" name="mode" value="top" checked>Top Gear</label>
   <label><input type="radio" name="mode" value="drop">Droptimizer</label>
@@ -100,6 +99,7 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
  <span class="grow"></span>
  <span id="lootst" class="it"></span><button id="upd" class="small" title="Loot tables, crafted items, tier sets and consumables: needed for Catalyst, Crafted gear, Droptimizer and Best in Slot">Update loot data</button>
  <button id="setbtn" class="small">Settings<span id="setdot" class="dot" hidden title="No simc selected"></span></button>
+ <label class="pvsw" id="pvsw" title="No upcoming season in testing yet."><span class="lv">Live</span><input type="checkbox" role="switch" id="ptron" disabled aria-label="Season preview: PTR / beta game data"><i></i><span class="pv" id="pvlbl">PTR</span></label>
 </header>
 <div id="abanner" role="status" hidden style="display:flex;align-items:center;gap:10px;margin:0 12px 8px;padding:7px 12px;border:1px solid var(--pos);border-radius:8px;background:var(--panel);font-size:13px"><span id="abtxt"></span><span class="grow"></span><button id="ab_go" class="small go2">Update and restart</button><button id="ab_later" class="small">Later</button></div>
 <div id="ubanner" role="status" hidden><span id="ubtxt"></span><span class="grow"></span><button id="ub_go" class="small go2">Update</button><button id="ub_later" class="small">Later</button></div>
@@ -201,7 +201,7 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
  <div class="pane" id="p_res"><div id="sum" class="it"></div>
   <div id="res"><div class="empty">1. Paste your /simc export (bags included)<br>2. Pick a mode (top bar) and adjust the options<br>3. Run: results appear here.</div></div></div>
  <div class="pane" id="p_hist" hidden><div class="rhead"><span class="it">Last 10 runs · click one to reopen it</span><button id="hclear" class="small">Clear</button></div><div id="hist"></div></div>
- <div class="pane" id="p_log" hidden><div class="rhead" style="margin-bottom:6px"><span class="it">End of the current run. Every run is saved in full to a log file.</span><button id="logfile" class="small">Show full log file</button></div><div id="log" aria-live="polite" style="height:calc(100% - 34px)"></div></div>
+ <div class="pane" id="p_log" hidden><div class="rhead" style="margin-bottom:6px"><span class="it">End of the current run. Every run is saved in full to a log file.</span><button id="logfile" class="small">Show full log file</button><button id="datalog" class="small" title="Game data updates: startup checks, “Update loot data”, season data from GitHub">Game data log</button></div><div id="log" aria-live="polite" style="height:calc(100% - 34px)"></div></div>
 </section>
 </main>
 
@@ -274,8 +274,11 @@ $('boss').onchange=()=>{const b=bosses.find(x=>x.id===$('boss').value);$('bdiff'
 $('bdiff').addEventListener('change',autoLength);
 {let lt=0;$('txt').addEventListener('input',()=>{clearTimeout(lt);lt=setTimeout(autoLength,400)})}
 $('bdiff').onchange=bossPreview;$('dur').addEventListener('change',bossPreview);$('bedit').onclick=()=>api.bossEdit();
+// game builds compared part by part ("12.1.5.70391" < "12.1.5.70575" < "12.1.7.100"): item data newer than simc's own build is normal (the simc repository is ahead
+// of the nightly binary), only older data needs "Update loot data"
+const bcmp=(a,b)=>{const A=String(a||'').split('.').map(Number),B=String(b||'').split('.').map(Number);for(let i=0;i<4;i++)if((A[i]||0)!==(B[i]||0))return(A[i]||0)-(B[i]||0);return 0};
 async function refreshEngine(){try{const e=await api.engineInfo();$('simc').textContent=e.path||'No simc selected';$('eget').hidden=!e.canInstall;
-  $('eng').textContent=e.version?`SimulationCraft ${e.version.simc} · WoW ${e.version.wow}${e.version.hotfix?' · hotfix '+e.version.hotfix:''}`+(e.dataBuild&&e.dataBuild!==e.version.wow?` — bundled item data is for ${e.dataBuild}: click “Update loot data”`:''):(e.path?'Could not read the simc version (is it a valid simc?).':e.canInstall?'No simc yet: click “Download / update simc”.':'Select your simc build.')}catch(x){$('eng').textContent=msg(x)}}
+  $('eng').textContent=e.version?`SimulationCraft ${e.version.simc} · WoW ${e.version.wow}${e.version.hotfix?' · hotfix '+e.version.hotfix:''}`+(e.dataBuild&&bcmp(e.dataBuild,e.version.wow)<0?` — item data is for an older game build (${e.dataBuild}): click “Update loot data”`:''):(e.path?'Could not read the simc version (is it a valid simc?).':e.canInstall?'No simc yet: click “Download / update simc”.':'Select your simc build.')}catch(x){$('eng').textContent=msg(x)}}
 $('pick').onclick=async()=>{const p=await api.pickSimc();if(p){$('simc').textContent=p;refreshEngine()}};
 const fmtBuild=l=>`${l.version} · build ${l.hash}${l.date?' · '+l.date.slice(0,10):''}`;
 function showNewer(c){const f=(c&&c.newerFamilies)||[];$('engnew').hidden=!f.length;if(!f.length)return;
@@ -325,12 +328,12 @@ function seasNote(){const t=(lootInfo?.tiers||[]).find(t=>t.id===$('tier').value
 $('inst').onchange=e=>{if(e.target.classList.contains('isrc'))instSrc[e.target.dataset.i]=e.target.value};
 $('tier').onchange=()=>{renderInst();seasNote()};$('ifilt').oninput=renderInst;$('isel').onclick=()=>document.querySelectorAll('.ins').forEach(c=>c.checked=true);$('inone').onclick=()=>document.querySelectorAll('.ins').forEach(c=>c.checked=false);
 async function updateLoot(why){$('upd').disabled=true;$('ptron').disabled=true;if(why)$('lootst').textContent=`Updating game data (${why})… see the Activity log`;
- try{await api.lootUpdate();await loadLoot()}catch(e){$('lootst').textContent=why?`Automatic game data update failed (${msg(e)}): offline? Click “Update loot data” to retry.`:msg(e)}$('upd').disabled=false;showPreview(preview)}
+ try{await api.lootUpdate(why||'button');await loadLoot()}catch(e){$('lootst').textContent=why?`Automatic game data update failed (${msg(e)}): offline? Click “Update loot data” to retry.`:msg(e)}$('upd').disabled=false;showPreview(preview)}
 $('upd').onclick=()=>updateLoot('');
 // At startup: newer boss/season data from GitHub (small), then the game data if a patch came out, it is missing or old (big download).
 async function updateAtStart(){
  try{const r=await api.dataRefresh();await refreshPreview();if(r&&r.updated&&r.updated.length){api.bossList().then(B=>{bosses=B;const v=$('boss').value;$('boss').innerHTML='<option value="">None (use the style below)</option>'+B.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');$('boss').value=v;bossPreview()});api.prog().then(p=>{prog=p;$('seas').textContent=p.season;renderInst()})}}catch{}
- try{const s=await api.lootStatus();if(s&&!$('go').disabled)await updateLoot(`${s.reason}, started automatically`)}catch{}}
+ try{const s=await api.lootStatus('app start');if(s&&!running())await updateLoot(`${s.reason}, started automatically`)}catch{}}
 setTimeout(updateAtStart,2500);
 // Season preview: Live / PTR switch in the header (available only while the repo publishes an upcoming season), beta updates (Settings)
 let preview={available:false};
@@ -343,7 +346,7 @@ function showPreview(st){preview=st||{available:false};const sw=$('ptron');
 async function previewChanged(on){lootInfo=null;await loadLoot();
  api.bossList().then(B=>{bosses=B;$('boss').innerHTML='<option value="">None (use the style below)</option>'+B.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');bossPreview()});
  api.prog().then(p=>{prog=p;$('seas').textContent=p.season;renderInst()});
- try{const st=await api.lootStatus();if(st&&!running())updateLoot(`${on?preview.label||'PTR':'live'} game data: ${st.reason}`)}catch{}}
+ try{const st=await api.lootStatus('Live/PTR switch');if(st&&!running())updateLoot(`${on?preview.label||'PTR':'live'} game data: ${st.reason}`)}catch{}}
 async function refreshPreview(){try{const st=await api.previewGet();showPreview(st);if(st.reset){$('lootst').textContent=st.note;await previewChanged(false)}}catch{}}
 api.settings().then(s=>{$('betaon').checked=!!s.beta});refreshPreview();
 $('ptron').onchange=async()=>{const on=$('ptron').checked;
@@ -354,6 +357,7 @@ $('betaon').onchange=()=>api.setOption({beta:$('betaon').checked});
 api.onLog(l=>{const e=$('log');e.textContent+=l+'\n';e.scrollTop=e.scrollHeight;if(e.textContent.length>200000)e.textContent=e.textContent.slice(-150000)});
 $('stop').onclick=()=>api.cancel();
 $('logfile').onclick=async()=>{const ok=await api.openLog().catch(()=>false);if(!ok)$('logfile').textContent='No log file yet'};
+$('datalog').onclick=async()=>{const ok=await api.openLog('data').catch(()=>false);if(!ok)$('datalog').textContent='No game data log yet'};
 
 let pT0=0,pTimer=null,pPct=null,pLabel='Starting…';
 const mmss=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};

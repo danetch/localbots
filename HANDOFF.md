@@ -1,7 +1,7 @@
 POLYGNOME (formerly LOCALBOTS) - PROJECT HANDOFF
 ================================================
 
-=== START HERE (state on 25 Oct 2026, app v0.7.0) ===
+=== START HERE (state on 26 Oct 2026, app v0.7.1) ===
 New conversation: attach the GitHub repo danetch/localbots, read this file and README.md, then wait for the user's request.
 The sections below are a chronological log (oldest first, 22 Oct -> 25 Oct); when two notes disagree, the later one wins.
 The older "FILE MAP" just below predates the current layout: trust the code and the dated sections.
@@ -35,9 +35,12 @@ Open items (25 Oct)
   (branch season-next) and "Season start" (branch season-start). Never merge "Season start" before the season start day.
   The live-data glue of tools/season-draft.js (wago downloads) has NOT run for real yet (wago blocked in the sandbox): check the first
   PR it opens.
-- v0.6.0 not yet tested by the user. After the automatic "Update loot data", check the log: "Food: 12 kept" and "Crafted base items
-  found: N" should list Midnight items (CraftingData tables, never run against real wago data from the sandbox). If not: ask for the
-  log (CraftingData column names, OverallQualityID).
+- v0.6.0 CONFIRMED by the user (26 Oct, manual "Update loot data"): "Food: 12 kept", "Crafted base items found: 98 · embellishments in
+  simc table: 54", Midnight pieces. Also confirmed: Wowhead icons + tooltips, simc HTML report, simc auto update (70391), item stats.
+  Open: the automatic loot update at startup did not run the food check on the user's PC (cause unknown; reproduced fine in Electron:
+  v0.7.1 writes logs/data-updates.log to find out next time). "Saved Loadout" talent builds: the user sees none (export format of the
+  addon unknown: ask for the talent lines of an export). "This season" vs Journal "Current Season": same selection for the user (v0.7.1
+  hides the duplicate; still unknown whether S1 raids were in it).
 - Repo secrets WCL_CLIENT_ID / WCL_CLIENT_SECRET added 25 Oct and working (watch run 40239189404 recorded the zone list).
   The secrets API is closed to the Claude proxy: check a watch run instead. "Allow GitHub Actions to create pull requests" is on.
 - Season watch: daily workflow (.github/workflows/watch.yml -> issues labelled "watch"), plus a weekly Claude scheduled task
@@ -718,3 +721,26 @@ check; they also work by hand (tools/season-draft.js, tools/season-promote.js).
   Before this, promoting a season broke 9 tests (found by simulating the Season start step with a local origin and a stub gh).
 - Verified: unit tests (71 pass); Season start step run locally end to end (promotion, archive, make-data, tests, PR body). NOT run for
   real: the wago downloads of tools/season-draft.js and the season-next merge path (no new raid on the PTR today).
+
+=== 26 OCT: v0.7.1 — GAME DATA LOG, SIMC BUILD MESSAGE, SWITCH ON THE RIGHT ===
+- logs/data-updates.log (main.js dataLog; one file, oldest half dropped past 1 MB): every loot:status check with its caller ("app start",
+  "Live/PTR switch") and why (or "up to date", with data date / game build / food checked / simc set), data:refresh results and failures,
+  every "Update loot data" in full (header: reason, app version, live/PTR, simc path; dropped foods; "=== done" / "=== FAILED: ..."), Live/PTR
+  resets. Activity log tab: "Game data log" button (log:open 'data'). Test in e2e.
+- Settings engine line: "item data is for an older game build (x): click Update loot data" only when items.json's build is OLDER than
+  simc's (part-by-part compare). Before, any difference showed it: simc's repository item_data (70575) is ahead of the nightly binary
+  (70391), so "Update loot data" could never clear it (user report).
+- loot:info: a Journal tier with exactly the instances of "This season" is no longer listed (user saw two identical entries).
+- Live / PTR switch moved to the far right of the header (after Settings).
+
+=== ASSUMED GAME RULES (written from game knowledge or guides, not read from game data) ===
+Where each lives, so it can be checked if a result looks wrong:
+- Weapons per class / spec, shields: lib/specs.js WEAPONS_BY_CLASS, SPEC_WEAPONS, SHIELD_CLASSES. Primary stat per spec: lib/specs.js.
+- Raid buff names: lib/fight.js. Consumable "disabled" for augmentation runes: lib/fight.js.
+- Profession / Fleeting flask names hidden: lib/loot.js NOT_COMBAT.
+- One diamond max (Eversong): lib/enhance.js. Radiant Jewelbinder socket on head/wrist/waist: lib/enhance.js. Hunter scopes BM/MM only.
+- Embellishment slots ("unverified" list) and crafted item level: data/crafted.json. Crafted stat ids 32/36/40/49.
+- Item levels per track rank, per source and per boss: data/progression.json (Method guides). Voidcore = Myth 1/6.
+- Talent loadout comment format "# Saved Loadout: name" + "# talents=": lib/talents.js (not seen in a real export yet).
+- Boss mechanics effect sizes (add counts / health, damage buffs, vulnerable multipliers, durations): data/fights/*.json `assumed` lists.
+  Timings and kill lengths come from real logs (Lorrgs, Warcraft Logs); effect sizes do not.

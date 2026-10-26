@@ -96,3 +96,9 @@ test('top gear: enchants with gems, crafted stats probe and per-finalist stat pa
   assert.ok(r.rows[0].items.some(t => /Woven/.test(t.label)), 'two embellished crafted pieces in the best row (fake simc rewards embellishments)');
   fs.rmSync(ud + '/loot.json'); fs.rmSync(ud + '/crafted.json');
 });
+
+test('game data log: startup check written to logs/data-updates.log', async () => {
+  await H['loot:status']({}, 'app start');
+  const t = fs.readFileSync(path.join(ud, 'logs', 'data-updates.log'), 'utf8');
+  assert.match(t, /Check \(app start, live data\): (update needed: .+|up to date)/);
+});

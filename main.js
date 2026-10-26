@@ -61,6 +61,17 @@ const logsDir = () => path.join(app.getPath('userData'), 'logs');
 const toFile = l => { if (runLog) try { fs.appendFileSync(runLog, l + '\n'); } catch {} };
 const emitLog = l => { win?.webContents.send('sim:log', l); toFile(l); };
 const trace = toFile;
+// Game / season data log (userData/logs/data-updates.log, one file, oldest half dropped past 1 MB): startup decisions (is an update
+// needed, and why), every "Update loot data" in full, GitHub data refreshes and Live/PTR resets. Simulations have their own run logs.
+const dataLogFile = () => path.join(logsDir(), 'data-updates.log');
+function dataLog(l) {
+  try {
+    const f = dataLogFile(); fs.mkdirSync(logsDir(), { recursive: true });
+    if (fs.existsSync(f) && fs.statSync(f).size > 1 << 20) { const t = fs.readFileSync(f, 'utf8'); fs.writeFileSync(f, t.slice(t.indexOf('\n', t.length / 2) + 1)); }
+    const ts = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    fs.appendFileSync(f, String(l).split('\n').map(x => `${ts}  ${x}`).join('\n') + '\n');
+  } catch {}
+}
 
 // Lance simc et renvoie le JSON json2. Sortie périmée supprimée avant lancement ; annulation, erreurs et JSON illisible gérés.
 function runSimc(simcPath, inputFile, jsonFile, extra, onLine) {
@@ -208,9 +219,9 @@ async function reportPass(simcPath, text, diff, err, threads, tmp, log, fight, r
     return keepReport(out);
   } catch (e) { if (/Cancelled/.test(e.message)) throw e; log(`>> simc report unavailable: ${String(e.message).split('\n')[0]}`); return null; }
 }
-ipcMain.handle('log:open', async () => {
-  let f = lastLog && fs.existsSync(lastLog) ? lastLog : null;
-  if (!f) try { const d = logsDir(), l = fs.readdirSync(d).filter(x => /^run-.*\.log$/.test(x)).sort().pop(); if (l) f = path.join(d, l); } catch {}
+ipcMain.handle('log:open', async (_e, which) => {
+  let f = which === 'data' ? (fs.existsSync(dataLogFile()) ? dataLogFile() : null) : lastLog && fs.existsSync(lastLog) ? lastLog : null;
+  if (!f && which !== 'data') try { const d = logsDir(), l = fs.readdirSync(d).filter(x => /^run-.*\.log$/.test(x)).sort().pop(); if (l) f = path.join(d, l); } catch {}
   if (!f) return false; shell.showItemInFolder(f); return true;
 });
 ipcMain.handle('report:open', async (_e, file) => {
@@ -269,7 +280,7 @@ ipcMain.handle('preview:get', () => {
   if (after) {
     saveSettings(after); previewCache = null; lootCache = { key: '', data: null };
     for (const f of previewLib.PTR_FILES) try { fs.rmSync(path.join(app.getPath('userData'), f), { force: true }); } catch {}
-    emitLog(`>> Season preview: ${st.note}`);
+    emitLog(`>> Season preview: ${st.note}`); dataLog(`Season preview: ${st.note} (PTR copies of the game data deleted)`);
   }
   return st;
 });
@@ -886,6 +897,8 @@ ipcMain.handle('loot:info', () => {
   const known = new Set(Object.values(enhanceDb().upgrade || {}).map(v => v[0])), oldSeason = [];
   if (curGroups.size && known.size) for (const id of [...inSeason]) if (l.instances[id]?.type === 2 && loot.seasonOf(l.instances[id].groups, curGroups, known) === 'old') { inSeason.delete(id); oldSeason.push(l.instances[id].name); }
   if (inSeason.size) tiers.unshift({ id: 'season', name: `This season (${P.season})`, instances: [...inSeason], left: Object.values(l.instances).some(i => i.groups) ? oldSeason.sort() : null });
+  // a Journal tier with exactly the same instances as "This season" is a duplicate: only "This season" is listed
+  if (inSeason.size) for (let i = tiers.length - 1; i > 0; i--) if (tiers[i].instances.length === inSeason.size && tiers[i].instances.every(x => inSeason.has(x))) tiers.splice(i, 1);
   const R = loadCraftRules(), key = n => (l.embellishments || []).find(e => e.name.toLowerCase() === n)?.name;
   const bases = [...(l.crafted || []).flatMap(c => (loot.INV[c.inv] || []).filter(() => c.cls === 4).map(sl => ({ id: c.id, name: c.name, slot: sl }))), ...(R.extraItems || []).filter(x => x.slot)];
   const groups = {}; for (const b of bases) { const g = craftedLib.groupOf(b.slot); (groups[g] ??= new Set()).add(b.name); }
@@ -902,7 +915,13 @@ const liveBuild = async () => JSON.parse(await download('https://wago.tools/api/
 // Season preview: latest build of the preview game (PTR "wowt" or beta "wow_beta", from season-ptr.json)
 const previewBuild = async () => previewLib.buildOf(JSON.parse(await download('https://wago.tools/api/builds/latest', 'game builds', 15000)), previewState().game);
 // Does the loot data need a refresh? -> { reason } | null. No data, data made for an older patch, or older than 14 days.
-ipcMain.handle('loot:status', async () => {
+ipcMain.handle('loot:status', async (_e, why) => {
+  const r = await lootStatus(), l = loadLoot();
+  dataLog(`Check (${why || 'app'}, ${ptrMode() ? previewState().label + ' data' : 'live data'}): ${r ? 'update needed: ' + r.reason : 'up to date'}` +
+    (l ? ` · data from ${l.builtAt}, game build ${l.gameBuild || '?'}, food ${l.foodVer ? 'checked' : 'not checked'}, simc ${loadSettings().simcPath ? 'set' : 'not set'}` : ''));
+  return r;
+});
+async function lootStatus() {
   const l = loadLoot(); if (!l) return { reason: 'no game data yet' };
   if (!l.craftVer) return { reason: 'new crafted item tables' };
   if (!l.foodVer && loadSettings().simcPath) return { reason: 'food list to check with simc' };
@@ -912,17 +931,19 @@ ipcMain.handle('loot:status', async () => {
   if (b && !l.gameBuild && Date.now() - Date.parse(l.builtAt) > 2 * 864e5) return { reason: `game build ${b}` };
   if (Date.now() - Date.parse(l.builtAt) > 14 * 864e5) return { reason: 'data older than 14 days' };
   return null;
-});
+}
 // Season / boss data from the GitHub repo (small files): -> { updated: [files], generated, from, skipped? }
 ipcMain.handle('data:refresh', async () => {
-  const r = await DF().refresh(DATA_URL, url => download(url, 'boss and season data', 20000));
+  let r; try { r = await DF().refresh(DATA_URL, url => download(url, 'boss and season data', 20000)); }
+  catch (e) { dataLog(`Boss and season data from GitHub: failed (${e.message})`); throw e; }
+  dataLog(`Boss and season data from GitHub: ${r.updated.length ? 'updated ' + r.updated.join(', ') : r.skipped || 'up to date'} (version ${r.generated || '?'})`);
   shipped = null;
   previewCache = null;
   if (r.updated.length) emitLog(`>> Boss and season data updated from GitHub (${r.updated.join(', ')}).`);
   return { ...r, ...DF().info() };
 });
 // Food list reduced with simc (lib/foods.js): only foods simc can load that give a damage stat, duplicates merged.
-async function checkFoods(built, log) {
+async function checkFoods(built, log, detail = trace) {
   const { simcPath } = loadSettings(), food = built.consumables?.food || [];
   if (!food.length) return;
   if (!simcPath || !fs.existsSync(simcPath)) { log('>> Food: select the simc binary, then update again, to keep only the foods that add damage.'); return; }
@@ -933,14 +954,20 @@ async function checkFoods(built, log) {
     if (!r.list.length) throw new Error('no food recognised');
     built.consumables.food = r.list; built.foodVer = 1;
     log(`>> Food: ${r.list.length} kept (a damage stat, duplicates merged); ${r.dropped.length} left out (no damage stat, not loadable by simc, or weaker than another).`);
-    for (const d of r.dropped) trace(`   food left out: ${d}`);
+    for (const d of r.dropped) detail(`   food left out: ${d}`);
   } catch (e) { log(`>> Food check failed (${e.message}): full food list kept.`); }
   finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch {} }
 }
 let lootBusy = false;   // the Live/PTR switch is refused while game data is written (files follow the mode)
-ipcMain.handle('loot:update', async () => { lootBusy = true; try { return await lootUpdate(); } finally { lootBusy = false; } });
+ipcMain.handle('loot:update', async (_e, why) => {
+  lootBusy = true;
+  dataLog(`=== Update loot data (${why || 'button'}) · Polygnome ${app.getVersion()} · ${ptrMode() ? previewState().label + ' data' : 'live data'} · simc ${loadSettings().simcPath || 'not set'}`);
+  try { const r = await lootUpdate(); dataLog('=== done'); return r; }
+  catch (e) { dataLog(`=== FAILED: ${e.message}`); throw e; }
+  finally { lootBusy = false; }
+});
 async function lootUpdate() {
-  const log = emitLog;
+  const log = l => { emitLog(l); dataLog(l); };
   const names = { instance: 'JournalInstance', encounter: 'JournalEncounter', encItem: 'JournalEncounterItem', item: 'Item', sparse: 'ItemSparse', tier: 'JournalTier', tierX: 'JournalTierXInstance' };
   // Season preview: the latest PTR or beta build of the game (season-ptr.json "game") and simc's *_ptr.inc tables
   const pv = previewState(), ptrBuild = ptrMode() ? await previewBuild() : null;
@@ -978,7 +1005,7 @@ async function lootUpdate() {
     delete t.skill; delete t.effects; delete t.cdata; delete t.cdq; built = loot.build(t);
   }
   built.gameBuild = ptrBuild || await liveBuild().catch(() => null); built.ptr = !!ptrBuild; built.craftVer = 2;
-  await checkFoods(built, log);
+  await checkFoods(built, log, dataLog);
   writeJson(lootFile(), built);
   // Enchants, gems and socket bonuses for "Enchants & gems" (Best in Slot) and for carrying gems onto new pieces.
   const enhT = {}; for (const [k, u0] of Object.entries(enhLib.URLS)) { const u = ptrUrl(u0); enhT[k] = await optional(`${k === 'perm' ? 'enchant list' : k === 'ie' ? 'enchant effects' : k === 'gemData' ? 'gem data' : 'item bonus data'} (simc)`, u, 'keeping the bundled enchant/gem data'); if (!enhT[k]) break; }
