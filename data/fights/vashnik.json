@@ -101,7 +101,7 @@
     "stage": 1,
     "after": 1,
     "from": "logs",
-    "checked": "first lust 1 s after the start of stage 1 in 15 kills (IQR 0-2 s) (15 of the fastest Warcraft Logs kills; 12 with a second lust, not modelled), 2026-10-26"
+    "checked": "first lust 1 s after the start of stage 1 in 15 kills (IQR 0-2 s) (15 of the fastest Warcraft Logs kills; one lust each), 2026-10-26"
    }
   },
   "heroic": {
@@ -187,7 +187,7 @@
     "stage": 1,
     "after": 1,
     "from": "logs",
-    "checked": "first lust 1 s after the start of stage 1 in 15 kills (IQR 1-2 s) (15 of the fastest Warcraft Logs kills; 10 with a second lust, not modelled), 2026-10-26"
+    "checked": "first lust 1 s after the start of stage 1 in 15 kills (IQR 1-2 s) (15 of the fastest Warcraft Logs kills; 1 with a second lust, not modelled), 2026-10-26"
    }
   },
   "normal": {
@@ -217,7 +217,7 @@
     "stage": 1,
     "after": 2,
     "from": "logs",
-    "checked": "first lust 2 s after the start of stage 1 in 12 kills (IQR 1-2 s) (13 of the fastest Warcraft Logs kills; 2 with a second lust, not modelled), 2026-10-26"
+    "checked": "first lust 2 s after the start of stage 1 in 12 kills (IQR 1-2 s) (13 of the fastest Warcraft Logs kills; 12 lust at the pull, 1 later: pull group used; 1 with a second lust, not modelled), 2026-10-26"
    }
   }
  }

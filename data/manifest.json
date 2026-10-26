@@ -1,19 +1,19 @@
 {
- "generated": "2026-10-26T21:12:50.511Z",
+ "generated": "2026-10-26T21:19:11.660Z",
  "minApp": "0.5.0",
  "files": {
   "season.json": "b61af48f1de355b04ad8c7e7adf7999ea40eafce77ec53ea7d79cbf2ff28d3d3",
   "progression.json": "e08a8a28ac7277dc53be6f275fc3c0242a7d050051b3ed94204244f6d1f4bb49",
   "crafted.json": "b16dadad7871664c0822dc3f9e1abb47dc06238bd37b75ebd877659db3da5689",
   "fights/coiledaltar.json": "f98a2cd93c253482c4e539f293170c87f71bc9c816b018c2cb9c5fc63fff636c",
-  "fights/explorers.json": "963ee88ebb4090cf7a201af40464d8f9abc7b94811aecce5f1028cd776447f31",
-  "fights/kithix.json": "2a979e3e838c8204e438536b1cf8c69be026496a740dd9dc365a5e800ef858c3",
-  "fights/nekzali.json": "8d2c42d466493a9f4c20643e0c04520311a725c69ab1e750d6d66eed356977b8",
-  "fights/nymrissa.json": "e042596189a2a5f5de8efcda9a5875c40f826d262c3ccd5be83eee16754ab4e2",
-  "fights/sentinels.json": "9327dcb335b0a70c7ca0bf290e911709e4a21622cdadcd17abc99ee187f479da",
-  "fights/sszorak.json": "5c4aa070b2dcf63f8130ecbc86cad49ce90b3806d5630d6e8afad7f4340432e1",
-  "fights/twinfangs.json": "f952f5fe3aabc7d66b0fbd8c342e6e31ff7f03eb4f03477d6b493707d547eca5",
-  "fights/ulatek.json": "ca64108dc9a4afbdb26c1740707ef5743253d8c29315635e1e1b1273d71701e1",
-  "fights/vashnik.json": "d7c034624c6af9dd292a668378692391e1a8305b1247644e98bc0637c7ee8f7f"
+  "fights/explorers.json": "b443551d15ead7a14a09cc40f8a3ddbc6acd9325332f4a2db6dc46254ac8c870",
+  "fights/kithix.json": "bca8325812f33fc938303891feebe43f4ab675757dbbb884ff6bc5285d2ca52d",
+  "fights/nekzali.json": "a8ca53599fb815cd9ba28080878bf47ebde31b007efb65a388e1af44b9c6b98e",
+  "fights/nymrissa.json": "2597e9a976f763a958e96fba4a96d3f92ca38269ba00cc576a2de6ddd0f5b330",
+  "fights/sentinels.json": "53b742de4ffe39998476193566a3ada868400d45852a5e35b31551c979a3d3a8",
+  "fights/sszorak.json": "bb16ecd8fe2e3c10205f3159c9130c8b459a0c8233e90b59c446aba577187e80",
+  "fights/twinfangs.json": "7ed2f21a0007c8aba280cdb5d1807bca2356a0df06c20bf7fca87dcbba329fdc",
+  "fights/ulatek.json": "d2e8edb3bdfe21c94647b7a322c074c6ea1ab70332bdfb0fd02b5f895381550e",
+  "fights/vashnik.json": "d7a2bc4cf63314cac0dcf5f6d1445d15cb4db851157249fabda78c4e742fb9fe"
  }
 }
