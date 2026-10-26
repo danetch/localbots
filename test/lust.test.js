@@ -49,3 +49,21 @@ test('lust: boss build places the measured lust in the chosen fight length', () 
   assert.strictEqual(B.build(def, { difficulty: 'mythic', duration: 400 }).lust.at, 304);   // stage 2 at 75 % of 400 s + 4
   assert.strictEqual(B.build(def, { difficulty: 'heroic', duration: 400 }).lust.at, null);  // no data: pull
 });
+
+test('lust: buff on a non-lust class is the raid lust; a caster\'s extra self lust is not counted', () => {
+  const ev = [
+    { t: 1, type: 'applybuff', abilityGameID: 2825, targetClass: 'Warrior' }, { t: 1, type: 'applybuff', abilityGameID: 2825, targetClass: 'Shaman' },
+    { t: 1, type: 'applydebuff', abilityGameID: 57724, targetClass: 'Warrior' },
+    { t: 95, type: 'applybuff', abilityGameID: 80353, targetClass: 'Mage' }, { t: 95, type: 'applydebuff', abilityGameID: 80354, targetClass: 'Mage' }];
+  assert.deepStrictEqual(L.detect(ev), { times: [1], how: 'lust buff on a non-lust class' });
+  // drums / unknown buff id: Sated on a non-lust class
+  assert.deepStrictEqual(L.detect([{ t: 4, type: 'applydebuff', abilityGameID: 57723, targetClass: 'Rogue' }, { t: 90, type: 'applydebuff', abilityGameID: 57723, targetClass: 'Evoker' }]).times, [4]);
+});
+
+test('lust: two strategies (pull / later) -> the larger group, not their median', () => {
+  const def = { difficulties: {} }, k = (lust, d = 580) => ({ lust, count: 1, duration: d, phases: [] });
+  const later = L.classify([k(1), k(2), k(150), k(160), k(155), k(158), k(1)], def);    // 3 pull, 4 later
+  assert.ok(later.pct >= 26 && later.pct <= 28, JSON.stringify(later)); assert.match(later.checked, /3 lust at the pull, 4 later: later group used/);
+  const pullWins = L.classify([k(1), k(2), k(1), k(150), k(160), k(3)], def);          // 4 pull, 2 later
+  assert.deepStrictEqual([pullWins.stage, pullWins.after], [1, 2]);   // median of 1, 2, 1, 3 s assert.match(pullWins.checked, /pull group used/);
+});

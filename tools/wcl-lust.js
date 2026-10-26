@@ -33,12 +33,12 @@ const moved = (a, b) => !a || !b || (a.stage ?? null) !== (b.stage ?? null) || M
       try {
         const top = await wcl.topKills(enc.id, DIFF[d], n), kills = [];
         for (const k of top) {
-          try { const F = await wcl.lustFight(k.code, k.fightID); if (!F.kill) continue; const ts = L.lustTimes(F.events); kills.push({ lust: ts[0] ?? null, count: ts.length, duration: F.duration, phases: F.phases }); }
+          try { const F = await wcl.lustFight(k.code, k.fightID); if (!F.kill) continue; const r = L.detect(F.events); kills.push({ lust: r.times[0] ?? null, count: r.times.length, how: r.how, duration: F.duration, phases: F.phases }); }
           catch (e) { /* private or deleted report: skip */ }
         }
-        const entry = L.classify(kills, def);
+        const entry = L.classify(kills, def), hows = {}; for (const k of kills) hows[k.how] = (hows[k.how] || 0) + 1;
         const was = D.bloodlust;
-        lines.push(`${def.id} ${d}: ${entry ? (entry.stage != null ? `stage ${entry.stage} + ${entry.after} s` : `${entry.pct} %`) + ` — ${entry.checked}` : `not enough kills with a lust (${kills.filter(k => k.lust != null).length}/${kills.length})`}${entry && was && !moved(was, entry) ? ' (unchanged)' : ''}`);
+        lines.push(`${def.id} ${d}: ${entry ? (entry.stage != null ? `stage ${entry.stage} + ${entry.after} s` : `${entry.pct} %`) + ` — ${entry.checked}` : `not enough kills with a lust (${kills.filter(k => k.lust != null).length}/${kills.length})`}${entry && was && !moved(was, entry) ? ' (unchanged)' : ''} · detection: ${Object.entries(hows).map(([h, c]) => `${c}× ${h}`).join(', ')}`);
         if (entry && moved(was, entry)) { entry.checked += `, ${new Date().toISOString().slice(0, 10)}`; D.bloodlust = entry; touched = true; }
       } catch (e) { lines.push(`${def.id} ${d}: ${e.message}`); }
     }

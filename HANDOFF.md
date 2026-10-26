@@ -1,7 +1,7 @@
 POLYGNOME (formerly LOCALBOTS) - PROJECT HANDOFF
 ================================================
 
-=== START HERE (state on 26 Oct 2026, app v0.9.0) ===
+=== START HERE (state on 26 Oct 2026, app v0.9.1) ===
 New conversation: attach the GitHub repo danetch/localbots, read this file and README.md, then wait for the user's request.
 The sections below are a chronological log (oldest first, 22 Oct -> 25 Oct); when two notes disagree, the later one wins.
 The older "FILE MAP" just below predates the current layout: trust the code and the dated sections.
@@ -800,3 +800,12 @@ for minor-patch PTRs like 12.1.7).
   weekly (Wed 05:41 UTC) + dispatch (input `only`), PR "Fight data: Bloodlust timing" on branch fight-data, merged after npm test.
   New seasons: once the promoted season.json has its WCL zone (season start), the weekly run measures the new fights.
 - Tests: test/lust.test.js + e2e (option reaches simc; off when raid buffs are off). 81 pass. UI checked in Electron.
+
+=== 26 OCT: v0.9.1 — LUST DETECTION FIXED, TWO STRATEGIES ===
+- First real run: most top kills showed a "second lust" > 30 s after the first. User: Mages (Temporal Warp) and possibly other lust classes can
+  lust again on themselves despite Sated. lib/lust.js detect(): the lust BUFF on players whose class cannot cast lust (not Shaman / Mage /
+  Hunter / Evoker; lib/wcl.js lustFight now returns targetClass from masterData actors), fallback Sated-type debuff on those players, then
+  on anyone. tools/wcl-lust.js prints the detection used per kill.
+- classify(): kills split into "lust at the pull" (<= 10 s) and "later"; the larger group is modelled (pull on a tie), then stage-anchored
+  or share of the kill as before. Ula'tek had half/half: the median of both (28 % H, 12 % M) matched neither strategy.
+- Tests: 83 pass.
