@@ -124,7 +124,13 @@
     "p99": 280,
     "byIlvl": []
    },
-   "topDuration": 310
+   "topDuration": 310,
+   "bloodlust": {
+    "stage": 1,
+    "after": 1,
+    "from": "logs",
+    "checked": "first lust 1 s after the start of stage 1 in 15 kills (IQR 0-1 s) (15 of the fastest Warcraft Logs kills; 12 with a second lust, not modelled), 2026-10-26"
+   }
   },
   "heroic": {
    "label": "Heroic",
@@ -222,7 +228,13 @@
      ]
     ]
    },
-   "topDuration": 232
+   "topDuration": 232,
+   "bloodlust": {
+    "stage": 1,
+    "after": 1,
+    "from": "logs",
+    "checked": "first lust 1 s after the start of stage 1 in 11 kills (IQR 0-1 s) (14 of the fastest Warcraft Logs kills; 6 with a second lust, not modelled), 2026-10-26"
+   }
   },
   "normal": {
    "label": "Normal / LFR",
@@ -256,6 +268,12 @@
     "appendage": 109,
     "extinguish": 109,
     "intermission": 109
+   },
+   "bloodlust": {
+    "stage": 1,
+    "after": 1,
+    "from": "logs",
+    "checked": "first lust 1 s after the start of stage 1 in 13 kills (IQR 0-1 s) (14 of the fastest Warcraft Logs kills; 3 with a second lust, not modelled), 2026-10-26"
    }
   }
  }

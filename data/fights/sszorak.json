@@ -99,7 +99,13 @@
      ]
     ]
    },
-   "topDuration": 360
+   "topDuration": 360,
+   "bloodlust": {
+    "stage": 1,
+    "after": 1,
+    "from": "logs",
+    "checked": "first lust 1 s after the start of stage 1 in 14 kills (IQR 0-1 s) (15 of the fastest Warcraft Logs kills; 10 with a second lust, not modelled), 2026-10-26"
+   }
   },
   "heroic": {
    "label": "Heroic",
@@ -177,7 +183,13 @@
      ]
     ]
    },
-   "topDuration": 233
+   "topDuration": 233,
+   "bloodlust": {
+    "stage": 1,
+    "after": 1,
+    "from": "logs",
+    "checked": "first lust 1 s after the start of stage 1 in 15 kills (IQR 0-2 s) (15 of the fastest Warcraft Logs kills; 7 with a second lust, not modelled), 2026-10-26"
+   }
   },
   "normal": {
    "label": "Normal",
@@ -200,6 +212,12 @@
    "repeat": {
     "surge": 59,
     "crosswinds": 59
+   },
+   "bloodlust": {
+    "stage": 1,
+    "after": 1,
+    "from": "logs",
+    "checked": "first lust 1 s after the start of stage 1 in 14 kills (IQR 1-1 s) (14 of the fastest Warcraft Logs kills; 3 with a second lust, not modelled), 2026-10-26"
    }
   }
  }
