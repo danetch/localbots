@@ -345,9 +345,9 @@
    },
    "topDuration": 602,
    "bloodlust": {
-    "pct": 12,
+    "pct": 49,
     "from": "logs",
-    "checked": "first lust at 12 % of the kill (IQR 0-49 %, 68 s median) (15 of the fastest Warcraft Logs kills; 10 with a second lust, not modelled), 2026-10-26"
+    "checked": "first lust at 49 % of the kill in 15 kills (IQR 49-50 %, 285 s median) (15 of the fastest Warcraft Logs kills; one lust each), 2026-10-26"
    }
   }
  }
