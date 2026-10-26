@@ -1,0 +1,54 @@
+# Fight data from real kills (needs the repo secrets WCL_CLIENT_ID / WCL_CLIENT_SECRET): Bloodlust timing per boss and difficulty
+# (tools/wcl-lust.js, lib/lust.js). Weekly and on demand; changes go through the pull request "Fight data: Bloodlust timing" (branch
+# fight-data), merged by the workflow once the tests pass (data on main reaches every installed app at its next start).
+name: fight-data
+on:
+  schedule:
+    - cron: '41 5 * * 3'      # Wednesday, after the weekly reset in both US and EU
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Fight ids, comma separated (empty = all)'
+        required: false
+        default: ''
+permissions:
+  contents: write
+  pull-requests: write
+concurrency: fight-data
+jobs:
+  lust:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }      # tools/make-data.js reads the fight files' git history
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - id: l
+        env:
+          WCL_CLIENT_ID: ${{ secrets.WCL_CLIENT_ID }}
+          WCL_CLIENT_SECRET: ${{ secrets.WCL_CLIENT_SECRET }}
+          ONLY: ${{ github.event.inputs.only }}
+        run: node tools/wcl-lust.js --write ${ONLY:+--only $ONLY}
+      - name: Pull request and merge
+        if: steps.l.outputs.changed != ''
+        env:
+          CHANGED: ${{ steps.l.outputs.changed }}
+        run: |
+          set -e
+          git config user.name "polygnome-watch"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B fight-data
+          node tools/make-data.js
+          npm install --no-audit --no-fund
+          npm test
+          git add data
+          git commit -m "Fight data: Bloodlust timing from Warcraft Logs ($CHANGED)"
+          git push -f origin fight-data
+          if [ -z "$(gh pr list --head fight-data --state open --json number -q '.[].number')" ]; then
+            { echo "Bloodlust timing measured on the fastest Warcraft Logs kills (tools/wcl-lust.js) for: $CHANGED."
+              echo; echo "Each fight file's difficulties[d].bloodlust has a \`checked\` note (kills, spread, date). Merged automatically after the tests."
+            } > body.md
+            gh pr create --base main --head fight-data --title "Fight data: Bloodlust timing ($CHANGED)" --body-file body.md
+          fi
+          gh pr merge fight-data --merge --delete-branch

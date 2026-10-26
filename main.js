@@ -139,12 +139,14 @@ let shipped = null;
 const userFightEdited = (file, text) => !dataLib.shippedCopy(text, shipped || (shipped = new Set(JSON.parse(fs.readFileSync(DF().file('shipped-hashes.json'), 'utf8')))));
 const bossDefs = () => bossLib.list([DF().dir('fights'), userFightsDir()], { keep: (dir, file, text) => dir !== userFightsDir() || userFightEdited(file, text) })
   .filter(b => ptrMode() || !b.ptr).map(b => b.ptr ? { ...b, name: b.name + ' (PTR)' } : b);
+// f.lust = { mode: 'auto' (real kills of the boss; pull without boss data) | 'pull' | 'time' | 'pct', value } -> f.lustArgs (lib/lust.js)
+const lustLib = require('./lib/lust');
 function resolveFight(f) {
-  if (!f?.boss) return f;
+  if (!f?.boss) return f ? { ...f, lustArgs: lustLib.args({ ...(f.lust || {}), auto: null }) } : f;
   const def = bossDefs().find(b => b.id === f.boss);
   if (!def) throw new Error(`Boss fight “${f.boss}” not found.`);
   const r = bossLib.build(def, { difficulty: f.difficulty, duration: f.duration });
-  return { ...f, fightStyle: '', duration: r.length, targets: r.targets, raidEvents: r.events, bossArgs: r.extraArgs };   // no fight_style: simc clears raid_events when fight_style=Patchwerk is given (sim.cpp init_fight_style)
+  return { ...f, fightStyle: '', duration: r.length, targets: r.targets, raidEvents: r.events, bossArgs: r.extraArgs, lustArgs: lustLib.args({ ...(f.lust || {}), auto: r.lust.at }) };   // no fight_style: simc clears raid_events when fight_style=Patchwerk is given (sim.cpp init_fight_style)
 }
 // Talent builds chosen in the panel (o.builds = [{string}]): one build replaces the active talents= line; several are simulated one after
 // the other and returned as { builds: [{ name, string, result }] }.

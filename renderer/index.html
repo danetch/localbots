@@ -139,7 +139,11 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
    <option value="DungeonSlice">Dungeon slice</option><option value="DungeonRoute">Dungeon route</option></select></label>
    <label>Targets<input id="tg" type="number" min="1" max="20" value="1"></label>
    <label title="Set automatically from real kills for a boss fight; clear it to go back to the automatic length">Length (s)<input id="dur" type="number" min="10" value="300"></label>
-   <label>Variance %<input id="vary" type="number" min="0" max="100" value="20"></label></div></details>
+   <label>Variance %<input id="vary" type="number" min="0" max="100" value="20"></label></div>
+  <div class="row"><label title="When Bloodlust / Heroism is used (one per fight). “As in real kills”: measured on the fastest Warcraft Logs kills of the boss">Bloodlust<select id="lust">
+   <option value="auto">As in real kills</option><option value="pull">At the pull</option><option value="time">At a time (s)</option><option value="pct">At boss health (%)</option></select></label>
+   <label id="lustvl" hidden><span id="lustvt">Seconds</span><input id="lustv" type="number" min="1" max="1200" value="60"></label></div>
+  <div class="it" id="lustnote"></div></details>
 
  <details class="card sec" id="s_buff"><summary><span class="n"></span>Raid buffs &amp; extra options<span class="sm" id="sm_buff"></span></summary>
   <label>Raid buffs<select id="raid"><option value="full">Full raid buffs (default)</option><option value="none">No raid buffs</option><option value="custom">Custom…</option></select></label>
@@ -253,9 +257,18 @@ api.settings().then(s=>{$('simc').textContent=s.simcPath||'No simc selected';
  $('rsv').value=s.reserve??6;thrUpd();if(s.precision)$('prec').value=s.precision;
  const f=s.fight;window.__savedFight=f;if(f&&f.boss&&bosses.some(b=>b.id===f.boss)){$('boss').value=f.boss;$('boss').onchange();if(f.difficulty)$('bdiff').value=f.difficulty;bossPreview()}if(f){$('fs').value=f.fightStyle||'Patchwerk';$('tg').value=f.targets||1;$('dur').value=f.duration||300;$('vary').value=Math.round((f.vary??0.2)*100);
  $('raid').value=f.raid||'full';$('raid').onchange();if(f.raidOn)document.querySelectorAll('.rb').forEach(c=>c.checked=f.raidOn.includes(c.value));
- $('c_flask').value=f.flask||'';$('c_food').value=f.food||'';$('c_potion').value=f.potion||'';$('c_rune').value=f.rune||'';$('nocons').checked=!!f.noCons;$('extra').value=f.extra||''}});
-async function bossPreview(){const on=!!$('boss').value;$('fs').disabled=$('tg').disabled=on;$('fs').parentElement.hidden=$('tg').parentElement.hidden=on;$('bdiff').disabled=!on;$('bdiff').parentElement.hidden=!on;$('bprev').hidden=!on;if(!on)return;
+ $('c_flask').value=f.flask||'';$('c_food').value=f.food||'';$('c_potion').value=f.potion||'';$('c_rune').value=f.rune||'';$('nocons').checked=!!f.noCons;$('extra').value=f.extra||'';if(f.lust){lustMode=$('lust').value=f.lust.mode||'auto';if(f.lust.value&&lustVals[lustMode]!=null)lustVals[lustMode]=$('lustv').value=f.lust.value}lustUi()}});
+// Bloodlust choice: value field for time / health, and what "as in real kills" means for the selected boss (lastLust from the preview)
+let lastLust=null,lustMode='auto';const lustVals={time:60,pct:30};
+function lustUi(){const m=$('lust').value;if(m!==lustMode){if(lustVals[lustMode]!=null)lustVals[lustMode]=+$('lustv').value||lustVals[lustMode];if(lustVals[m]!=null)$('lustv').value=lustVals[m];lustMode=m}
+ const on=$('raid').value!=='none'&&($('raid').value!=='custom'||!!document.querySelector('.rb[value=bloodlust]:checked'));
+ $('lustvl').hidden=m!=='time'&&m!=='pct';$('lustvt').textContent=m==='pct'?'Boss health %':'Seconds';
+ const E=lastLust?.entry,auto=!$('boss').value?'at the pull (no boss fight selected)':lastLust?.at!=null?`at ${lastLust.at}s (${E.stage!=null?`${E.after}s after stage ${E.stage} starts`:`${E.pct}% of the kill`}, real kills)`:'at the pull (no real-kill data for this boss yet)';
+ $('lustnote').textContent=!on?'Bloodlust is off in the raid buffs.':m==='auto'?`Bloodlust ${auto}.`:m==='pull'?'Bloodlust at the pull.':m==='time'?`Bloodlust at ${+$('lustv').value||0}s.`:`Bloodlust when the boss drops below ${+$('lustv').value||0}% health.`}
+$('lust').onchange=$('lustv').oninput=lustUi;setTimeout(lustUi,0);
+async function bossPreview(){const on=!!$('boss').value;$('fs').disabled=$('tg').disabled=on;$('fs').parentElement.hidden=$('tg').parentElement.hidden=on;$('bdiff').disabled=!on;$('bdiff').parentElement.hidden=!on;$('bprev').hidden=!on;if(!on){lastLust=null;lustUi();return}
  const r=await api.bossPreview({boss:$('boss').value,difficulty:$('bdiff').value,duration:+$('dur').value||300});if(!r){$('bprev').textContent='Boss fight not found.';return}
+ lastLust=r.lust||null;lustUi();
  const TAG={bigwigs:'BigWigs',guide:'guide',assumed:'guessed'};
  const L=r.summary.map(m=>`• ${m.label}${m.assumed.length?' *':''} [times: ${TAG[m.timesFrom]||m.timesFrom}]: ${m.times.slice(0,8).map(t=>t+'s').join(', ')}${m.times.length>8?' …':''}`).join('\n');
  $('bprev').textContent=(lenNote||`Length ${r.length}s`)+(r.stages.length>1?` · stages start at ${r.stages.map(s=>`${s.id}: ${s.at}s`).join(', ')}`:'')+(r.targets>1?`\nBosses cleaved together (separate health): ${r.bosses.join(' + ')}${r.present.filter(p=>p.absent.length).map(p=>` · ${p.name} from ${p.absent[p.absent.length-1][1]}s`).join('')}`:'')+`\n* = effect size guessed. Edit the files to refine (button “Edit…”).\n`+L}
@@ -310,9 +323,9 @@ $('ab_later').onclick=()=>{try{localStorage.setItem('lb_app_dismissed',$('ab_go'
 setTimeout(checkAppAtStart,4000);
 const RB={bloodlust:'Bloodlust',arcane_intellect:'Arcane Intellect',battle_shout:'Battle Shout',power_word_fortitude:'Power Word: Fortitude',mark_of_the_wild:'Mark of the Wild',skyfury:'Skyfury',mystic_touch:'Mystic Touch',chaos_brand:'Chaos Brand',hunters_mark:'Hunter’s Mark'};
 $('rbuffs').innerHTML=Object.entries(RB).map(([k,v])=>`<label class="in"><input type="checkbox" class="rb" value="${k}" checked>${v}</label>`).join('');
-$('raid').onchange=()=>$('rbuffs').hidden=$('raid').value!=='custom';
+$('raid').onchange=()=>{$('rbuffs').hidden=$('raid').value!=='custom';lustUi()};document.addEventListener('change',e=>{if(e.target.classList?.contains('rb'))lustUi()});
 const getFight=()=>({boss:$('boss').value,difficulty:$('bdiff').value,fightStyle:$('fs').value,targets:+$('tg').value||1,duration:+$('dur').value||300,vary:Math.min(100,Math.max(0,+$('vary').value||0))/100,
- raid:$('raid').value,raidOn:[...document.querySelectorAll('.rb:checked')].map(c=>c.value),flask:$('c_flask').value,food:$('c_food').value,potion:$('c_potion').value,rune:$('c_rune').value,noCons:$('nocons').checked,extra:$('extra').value});
+ raid:$('raid').value,raidOn:[...document.querySelectorAll('.rb:checked')].map(c=>c.value),flask:$('c_flask').value,food:$('c_food').value,potion:$('c_potion').value,rune:$('c_rune').value,noCons:$('nocons').checked,extra:$('extra').value,lust:{mode:$('lust').value,value:+$('lustv').value||0}});
 
 
 async function loadLoot(){lootInfo=await api.lootInfo();$('lootst').textContent=lootInfo?'Data from '+new Date(lootInfo.builtAt).toLocaleDateString('en-GB'):'No data yet: click the button.';
@@ -512,7 +525,7 @@ function updSum(){const set=(k,t)=>{const e=$('sm_'+k);if(e)e.textContent=t};
  const cat=$('cat').checked?('Catalyst'+($('catmax').value!==''?` (max ${$('catmax').value})`:'')):'no Catalyst';
  set('opt',[mode==='top'?`${$('top').value} finalists`:mode==='bis'?`${$('rounds').value} rounds`:'',cat].filter(Boolean).join(' · '));
  const bo=bosses.find(x=>x.id===$('boss').value);
- set('fight',(bo?`${bo.name.split(' — ')[0]} (${($('bdiff').selectedOptions[0]||{}).textContent||''})`:`${$('fs').selectedOptions[0].textContent.split(' (')[0]}, ${$('tg').value} target${+$('tg').value>1?'s':''}`)+` · ${$('dur').value}s`);
+ set('fight',(bo?`${bo.name.split(' — ')[0]} (${($('bdiff').selectedOptions[0]||{}).textContent||''})`:`${$('fs').selectedOptions[0].textContent.split(' (')[0]}, ${$('tg').value} target${+$('tg').value>1?'s':''}`)+` · ${$('dur').value}s`+({pull:' · lust at pull',time:` · lust at ${$('lustv').value}s`,pct:` · lust at ${$('lustv').value}%`}[$('lust').value]||''));
  const ov=['c_flask','c_food','c_potion','c_rune'].filter(i=>$(i).value).length;
  set('buff',[{full:'full raid buffs',none:'no raid buffs',custom:'custom raid buffs'}[$('raid').value],$('extra').value.trim()?'extra options':''].filter(Boolean).join(' · '));
  const ni=document.querySelectorAll('.ins:checked').length;set('loot',ni?`${ni} instance${ni>1?'s':''}`+($('upg').value==='max'?' · fully upgraded':''):mode==='bis'?'bag items only':'pick instances');

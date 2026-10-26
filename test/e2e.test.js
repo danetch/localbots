@@ -116,3 +116,11 @@ test('food check: same foods and same simc reuse the previous result (no simc ru
   await checkFoods(other, l => l2.push(l));
   assert.match(l2.join('\n'), /checking 3 foods/);
 });
+
+test('bloodlust choice reaches simc (time; health; off with raid buffs off)', async () => {
+  const text = 'warrior="Bob"\nspec=fury\nlevel=90\nhead=,id=10\n# Helm B (300)\n# head=,id=20\n';
+  const run = async fight => { fs.writeFileSync(process.env.FAKESIMC_LOG, ''); await H['sim:topgear']({}, { text, threads: 1, topN: 2, fight, precision: 'fast', report: false }); return fs.readFileSync(process.env.FAKESIMC_LOG, 'utf8'); };
+  assert.match(await run({ fightStyle: 'Patchwerk', raid: 'full', lust: { mode: 'time', value: 95 } }), /bloodlust_time=95/);
+  assert.match(await run({ boss: 'kithix', difficulty: 'mythic', raid: 'full', lust: { mode: 'pct', value: 30 } }), /bloodlust_percent=30/);
+  assert.doesNotMatch(await run({ fightStyle: 'Patchwerk', raid: 'none', lust: { mode: 'time', value: 95 } }), /bloodlust_time/);
+});

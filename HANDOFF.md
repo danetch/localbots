@@ -1,7 +1,7 @@
 POLYGNOME (formerly LOCALBOTS) - PROJECT HANDOFF
 ================================================
 
-=== START HERE (state on 26 Oct 2026, app v0.8.0) ===
+=== START HERE (state on 26 Oct 2026, app v0.9.0) ===
 New conversation: attach the GitHub repo danetch/localbots, read this file and README.md, then wait for the user's request.
 The sections below are a chronological log (oldest first, 22 Oct -> 25 Oct); when two notes disagree, the later one wins.
 The older "FILE MAP" just below predates the current layout: trust the code and the dated sections.
@@ -745,6 +745,7 @@ Where each lives, so it can be checked if a result looks wrong:
 - Embellishment slots ("unverified" list) and crafted item level: data/crafted.json. Crafted stat ids 32/36/40/49.
 - Item levels per track rank, per source and per boss: data/progression.json (Method guides). Voidcore = Myth 1/6.
 - Boss mechanics effect sizes (add counts / health, damage buffs, vulnerable multipliers, durations): data/fights/*.json `assumed` lists.
+- Bloodlust: one per fight (the first one of real kills; a second lust is counted in `checked`, not simulated).
   Timings and kill lengths come from real logs (Lorrgs, Warcraft Logs); effect sizes do not.
 
 === 26 OCT: v0.7.2 — FOOD CHECK REMEMBERED ===
@@ -779,3 +780,23 @@ for minor-patch PTRs like 12.1.7).
 - Verified: 76 tests; Season start step run locally with season_started (PR created, commented, merged; zone 58 written; tracks from the
   levels). NOT verified: Blizzard / WCL / wago from GitHub Actions for the new checks (first real watch run after this push), the WCL
   zone naming for a brand-new raid, auto-merge with the real gh.
+
+=== 26 OCT: v0.9.0 — BLOODLUST TIMING FROM REAL KILLS ===
+- Before: lust always at the pull (simc defaults bloodlust_time=0 / bloodlust_percent=0, engine/sim/sim.cpp bloodlust_check_t; the app only
+  set override.bloodlust through the raid buffs).
+- lib/lust.js: lustTimes(events) = first application of a Sated-type debuff (57724 Sated, 57723 Exhaustion, 80354 Temporal Displacement,
+  264689 Fatigued, 390435 Exhaustion) or lust buff (2825, 32182, 80353, 264667, 390386); applications > 30 s apart = another lust.
+  classify(kills, def): stage-anchored { stage, after } when >= 60 % of kills lust <= 20 s after the same stage start (WCL phase id = our
+  stage id; stage must exist in the fight file), else { pct } = median share of the kill; >= 5 kills. seconds(entry, bounds, length);
+  args({ mode, value, auto }) -> bloodlust_time=N | bloodlust_percent=N + bloodlust_time=9999 (health only) | nothing (pull).
+- Fight files: difficulties[d].bloodlust { stage, after } | { pct }, from "logs", checked "<n kills, IQR, second lusts, date>".
+  lib/boss.js build() -> lust { at, entry }. main.js resolveFight -> f.lustArgs; lib/fight.js adds them only when lust is on (raid full /
+  default, or custom with bloodlust ticked), values validated.
+- Fight card: "Bloodlust: As in real kills / At the pull / At a time (s) / At boss health (%)" + note (what "real kills" means for the boss,
+  or "no real-kill data yet" = pull); summary shows non-default choices; saved with the fight settings.
+- Measurement: lib/wcl.js lustFight(code, fightID) (fights + phaseTransitions, events dataType All with filterExpression on the ids);
+  tools/wcl-lust.js (speed rankings top 15 per encounter and difficulty, encounter found by boss name in the zone of season.json /
+  season-ptr.json for "ptr" fights; --write only when new or moved >= 3 s / 3 % / other stage). .github/workflows/fight-data.yml:
+  weekly (Wed 05:41 UTC) + dispatch (input `only`), PR "Fight data: Bloodlust timing" on branch fight-data, merged after npm test.
+  New seasons: once the promoted season.json has its WCL zone (season start), the weekly run measures the new fights.
+- Tests: test/lust.test.js + e2e (option reaches simc; off when raid buffs are off). 81 pass. UI checked in Electron.
