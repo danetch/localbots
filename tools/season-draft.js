@@ -26,6 +26,16 @@ const wr = (f, j) => fs.writeFileSync(path.join(data, f), JSON.stringify(j, null
   let groups = [];
   try { const G = trackGroups({ xTree: await get('ItemXBonusTree'), treeNode: await get('ItemBonusTreeNode'), bonus: await get('ItemBonus') }, items); groups = [...new Set(Object.values(G).flat())]; }
   catch (e) { console.error(`\nupgrade tracks not read: ${e.message}`); }
+  // item level of every upgrade-track rank: simc's PTR tables (item_bonus_ptr.inc + item_scaling_ptr.inc), else the live ones
+  let levels = null;
+  const SIMC = 'https://raw.githubusercontent.com/simulationcraft/simc/master/engine/dbc/generated/';
+  for (const suf of ['_ptr', '']) {
+    try {
+      const t = async n => { const r = await fetch(SIMC + n + suf + '.inc'); if (!r.ok) throw new Error(`${n}${suf}.inc: ${r.status}`); return r.text(); };
+      const L = seasonLib.groupLevels(await t('item_bonus'), await t('item_scaling'));
+      if (groups.some(g => L[g])) { levels = L; console.error(`\ntrack item levels from simc ${suf ? 'PTR' : 'live'} tables`); break; }
+    } catch (e) { console.error(`\nsimc tables${suf}: ${e.message}`); }
+  }
   // tier set id: newest simc season profile folder (profiles/MID3) if simc has it already
   let tierSet = null;
   try {
@@ -36,7 +46,7 @@ const wr = (f, j) => fs.writeFileSync(path.join(data, f), JSON.stringify(j, null
   const prevSeason = rd('season-ptr.json');
   const live = { season: rd('season.json'), progression: rd('progression.json'), crafted: rd('crafted.json') };
   const d = seasonLib.draft({ live, prev: prevSeason ? { season: prevSeason, progression: rd('progression-ptr.json'), crafted: rd('crafted-ptr.json') } : null,
-    raids: raids.map(r => ({ id: r.id, name: r.name, bosses: encs.filter(e => e.inst === r.id).sort((a, b) => a.order - b.order).map(e => e.name) })), groups, game, build, tierSet });
+    raids: raids.map(r => ({ id: r.id, name: r.name, bosses: encs.filter(e => e.inst === r.id).sort((a, b) => a.order - b.order).map(e => e.name) })), groups, game, build, tierSet, levels });
   if (!d.added.length) { console.log('\nRaid(s) already in data/season-ptr.json: nothing written.'); return; }
   wr('season-ptr.json', d.season); wr('progression-ptr.json', d.progression); wr('crafted-ptr.json', d.crafted);
   console.log(`\n${prevSeason ? 'Updated' : 'Written'} data/season-ptr.json (${d.season.season.id}, ${d.season.game} build ${build}): added ${d.added.join(', ')}.`);

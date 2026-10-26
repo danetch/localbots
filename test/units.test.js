@@ -462,14 +462,16 @@ test('watch: changes between two states, failed checks never count as new', () =
 test('watch: collect reads every source (mocked network)', async () => {
   const W = require('../tools/watch');
   const res = (body, ok = true) => ({ ok, status: ok ? 200 : 500, json: async () => body, text: async () => body });
-  const f = async u => /builds\/latest/.test(u) ? res({ wow: { version: '12.1.5.1' }, wowt: { version: '12.2.0.5' } })
+  const bz = v => 'Region!STRING:0|BuildConfig!HEX:16|CDNConfig!HEX:16|KeyRing!HEX:16|BuildId!DEC:4|VersionsName!String:0|ProductConfig!HEX:16\n## seqn = 1\n' + ['us', 'eu', 'sg'].map(r => `${r}|a|b|c|${v.split('.')[3]}|${v}|d`).join('\n');
+  const f = async u => /products\/wow\/versions/.test(u) ? res(bz('12.1.5.1')) : /products\/wowt\//.test(u) ? res(bz('12.2.0.5')) : /products\/wow_beta/.test(u) ? res('', false)
+    : /builds\/latest/.test(u) ? res(JSON.stringify({ wow: { version: '12.1.5.1' }, wowt: { version: '12.2.0.5' } }))
     : /JournalInstance\/csv\?build/.test(u) ? res('ID,Name_lang\n1,A\n2,B\n') : /JournalInstance/.test(u) ? res('ID,Name_lang\n1,A\n')
     : /client_data_version_ptr/.test(u) ? res('// Client data versioning information for 12.2.0.5') : /client_data_version/.test(u) ? res('// Client data versioning information for 12.1.5.1') : res('', false);
   const gh = async p => p === '/repos/simulationcraft/simc' ? { default_branch: 'midnight' } : /profiles/.test(p) ? [{ type: 'dir', name: 'MID2' }, { type: 'file', name: 'x' }]
     : [{ type: 'dir', name: 'Core' }, { type: 'dir', name: 'TheVenomousAbyss' }, { type: 'file', name: 'README.md' }];
   const r = await W.collect({ f, gh, env: {} });
   assert.deepStrictEqual(r.errors, []);
-  assert.deepStrictEqual(r.values, { ptrBuild: { live: '12.1.5.1', ptr: '12.2.0.5', beta: null }, ptrRaids: { build: '12.2.0.5', extra: { 2: 'B' } }, betaRaids: null, liveRaids: {},
+  assert.deepStrictEqual(r.values, { ptrBuild: { live: '12.1.5.1', ptr: '12.2.0.5', beta: null, source: 'blizzard' }, liveRegions: { us: '12.1.5.1', eu: '12.1.5.1' }, ptrRaids: { build: '12.2.0.5', extra: { 2: 'B' } }, betaRaids: null, liveRaids: {}, liveSince: {},
     bigwigs: ['TheVenomousAbyss'], simc: { branch: 'midnight', live: '12.1.5.1', ptr: '12.2.0.5', profiles: ['MID2'] } });
   // instance 3 was on the PTR last time and is live now
   const f2 = async u => /JournalInstance\/csv\?build/.test(u) ? res('ID,Name_lang\n1,A\n2,B\n3,C\n') : /JournalInstance/.test(u) ? res('ID,Name_lang\n1,A\n3,C\n') : f(u);
@@ -487,4 +489,43 @@ test('watch: beta instances and instances going live', () => {
   assert.deepStrictEqual(W.changes(now, now), []);
   // first run of the new checks (old state without them): baseline, no issue
   assert.deepStrictEqual(W.changes({ ptrRaids: old.ptrRaids }, now), []);
+});
+
+test('versions: Blizzard version table per region, wago fallback, export region and version', async () => {
+  const V = require('../lib/versions');
+  const t = 'Region!STRING:0|BuildConfig!HEX:16|CDNConfig!HEX:16|KeyRing!HEX:16|BuildId!DEC:4|VersionsName!String:0|ProductConfig!HEX:16\n## seqn = 4097282\nus|d7|c1|3c|70575|12.1.5.70575|53\neu|d7|c1|3c|70575|12.1.5.70575|53\nkr|d7|c1|3c|70400|12.1.5.70400|53\n';
+  assert.deepStrictEqual(V.parse(t), { us: '12.1.5.70575', eu: '12.1.5.70575', kr: '12.1.5.70400' });
+  const r = await V.product(async () => t, 'wow');
+  assert.strictEqual(r.source, 'blizzard'); assert.strictEqual(V.of(r, 'kr'), '12.1.5.70400'); assert.strictEqual(V.of(r, 'tw'), '12.1.5.70575');
+  const w = await V.product(async u => { if (/battle\.net/.test(u)) throw new Error('down'); return JSON.stringify({ wowt: { version: '12.1.7.70493' } }); }, 'wowt');
+  assert.deepStrictEqual([w.source, V.of(w, 'eu')], ['wago', '12.1.7.70493']);
+  const exp = '# SimC Addon 12.1.5-01\n# WoW 12.1.5.70575, TOC 120105\nwarlock="Lofo"\nregion=eu\nserver=hyjal\n';
+  assert.deepStrictEqual([V.regionOf(exp), V.exportVersion(exp)], ['eu', '12.1.5.70575']);
+  assert.ok(V.cmp('12.1.7.100', '12.1.5.70575') > 0 && V.cmp('12.1.5.70391', '12.1.5.70575') < 0);
+});
+
+test('watch: season start = previewed raid live + Warcraft Logs kills since then', async () => {
+  const W = require('../tools/watch'), fs = require('fs'), path = require('path'), os = require('os'), f0 = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'pg-')), 'season-ptr.json');
+  fs.writeFileSync(f0, JSON.stringify({ season: { id: 'MID3', raids: ['The Next Raid'], raidBosses: { 'The Next Raid': ["Boss One", "Boss Two"] } } }));
+  try {
+    const res = (body, ok = true) => ({ ok, status: ok ? 200 : 500, json: async () => body, text: async () => typeof body === 'string' ? body : JSON.stringify(body) });
+    let killsAsked = null;
+    const f = async (u, o) => {
+      if (/oauth\/token/.test(u)) return res({ access_token: 't' });
+      if (/api\/v2\/client/.test(u)) { const q = JSON.parse(o.body);
+        if (/zones/.test(q.query)) return res({ data: { worldData: { zones: [{ id: 50, name: 'Old', frozen: true, encounters: [] }, { id: 58, name: 'The Next Raid', frozen: false, encounters: [{ id: 3001, name: "Boss One" }, { id: 3002, name: 'Boss Two' }] }] } } });
+        killsAsked = q.variables; return res({ data: { reportData: { reports: { has_more_pages: false, data: [{ code: 'abc', fights: [{ id: 5, encounterID: 3001, kill: true }] }] } } } }); }
+      if (/JournalInstance\/csv\?build/.test(u)) return res('ID,Name_lang\n1310,The Next Raid\n'); if (/JournalInstance/.test(u)) return res('ID,Name_lang\n1310,The Next Raid\n');
+      if (/products\/wow\//.test(u)) return res('Region!STRING:0|VersionsName!String:0\nus|12.2.0.1\n'); if (/products/.test(u)) return res('', false);
+      return res('', false);
+    };
+    const gh = async () => { throw new Error('offline'); };
+    const old = { ptrRaids: { extra: { 1310: 'The Next Raid' } }, liveRaids: {}, liveSince: {} };
+    const r = await W.collect({ f, gh, env: { WCL_CLIENT_ID: 'i', WCL_CLIENT_SECRET: 's' }, old, previewFile: f0 });
+    assert.deepStrictEqual(r.values.liveRaids, { 1310: 'The Next Raid' });
+    assert.strictEqual(r.values.seasonStart.started, true); assert.strictEqual(r.values.seasonStart.zone, 58);
+    assert.strictEqual(killsAsked.z, 58); assert.strictEqual(killsAsked.s, Date.parse(r.values.liveSince[1310]));
+    const ch = W.changes({ ...old, seasonStart: null }, r.values).find(c => c.key === 'seasonStart');
+    assert.ok(ch && ch.seasonStarted);
+  } finally { fs.rmSync(path.dirname(f0), { recursive: true, force: true }); }
 });

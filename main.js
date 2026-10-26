@@ -270,6 +270,7 @@ ipcMain.handle('settings:get', () => loadSettings());
 ipcMain.handle('settings:set', (_e, o) => {
   if ('ptr' in (o || {}) && (busy || lootBusy)) throw new Error('A simulation or a game data update is running: switch Live / PTR when it is done.');
   const s = loadSettings(); for (const k of ['ptr', 'beta']) if (k in (o || {})) s[k] = !!o[k];
+  if ('region' in (o || {}) && versionsLib.REGIONS.includes(o.region)) s.region = o.region;   // from the export (game version per region)
   if ('ptr' in (o || {})) { const st = previewState(); if (s.ptr && !st.available) throw new Error(st.note); s.ptrSeason = s.ptr ? st.next.id : undefined; }
   saveSettings(s); lootCache = { key: '', data: null }; previewCache = null; return s;
 });
@@ -910,10 +911,13 @@ ipcMain.handle('loot:info', () => {
     instances: Object.entries(l.instances).map(([id, i]) => ({ id, name: i.name, items: Object.values(i.bosses).reduce((n, b) => n + b.items.length, 0) }))
       .sort((a, b) => b.id - a.id) };
 });
-// Current live game build (wago.tools), e.g. "12.1.5.70575". Used to refresh the loot data automatically after a patch.
-const liveBuild = async () => JSON.parse(await download('https://wago.tools/api/builds/latest', 'game build', 15000)).wow.version;
+// Current game build in the player's region (Blizzard's version service, wago.tools as fallback; lib/versions.js), e.g. "12.1.5.70575".
+// Region = the last export's region= line (settings.region). Used to refresh the loot data automatically after a patch.
+const versionsLib = require('./lib/versions');
+const gameBuild = async p => versionsLib.of(await versionsLib.product(u => download(u, 'game version', 15000), p), loadSettings().region);
+const liveBuild = () => gameBuild('wow');
 // Season preview: latest build of the preview game (PTR "wowt" or beta "wow_beta", from season-ptr.json)
-const previewBuild = async () => previewLib.buildOf(JSON.parse(await download('https://wago.tools/api/builds/latest', 'game builds', 15000)), previewState().game);
+const previewBuild = () => gameBuild(previewState().game);
 // Does the loot data need a refresh? -> { reason } | null. No data, data made for an older patch, or older than 14 days.
 ipcMain.handle('loot:status', async (_e, why) => {
   const r = await lootStatus(), l = loadLoot();

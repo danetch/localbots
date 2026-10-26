@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Season start: the previewed season becomes the live one (lib/season.js promote). Run on a branch, review, merge on season start day.
-//   node tools/season-promote.js
+//   node tools/season-promote.js [--wcl-zone <Warcraft Logs zone id of the new raid>]
 // - data/season.json, progression.json, crafted.json <- their -ptr versions ("game" and "todo" dropped); -ptr files deleted.
 // - fights marked "ptr": true lose the flag; the others (old season) move to data/fights-archive/<old season id>/ (kept in the repo,
 //   no longer listed in the app nor downloaded: the manifest only covers data/fights).
@@ -11,7 +11,8 @@ const wr = (f, j) => fs.writeFileSync(path.join(data, f), JSON.stringify(j, null
 
 const fdir = path.join(data, 'fights');
 const fights = fs.readdirSync(fdir).filter(f => f.endsWith('.json')).map(f => ({ file: f, json: JSON.parse(fs.readFileSync(path.join(fdir, f), 'utf8')) }));
-const p = seasonLib.promote({ season: rd('season.json'), seasonPtr: rd('season-ptr.json'), progressionPtr: rd('progression-ptr.json'), craftedPtr: rd('crafted-ptr.json'), fights });
+const zi = process.argv.indexOf('--wcl-zone'), wclZone = zi > 0 ? process.argv[zi + 1] : null;
+const p = seasonLib.promote({ wclZone, season: rd('season.json'), seasonPtr: rd('season-ptr.json'), progressionPtr: rd('progression-ptr.json'), craftedPtr: rd('crafted-ptr.json'), fights });
 if (!p) { console.log('Nothing to promote (no data/season-ptr.json, or it is already the live season).'); process.exit(0); }
 if (!p.keep.length) console.warn(`Warning: no fight marked "ptr" for ${p.to}: the boss list will be empty after the switch.`);
 wr('season.json', p.season);

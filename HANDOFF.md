@@ -1,7 +1,7 @@
 POLYGNOME (formerly LOCALBOTS) - PROJECT HANDOFF
 ================================================
 
-=== START HERE (state on 26 Oct 2026, app v0.7.2) ===
+=== START HERE (state on 26 Oct 2026, app v0.8.0) ===
 New conversation: attach the GitHub repo danetch/localbots, read this file and README.md, then wait for the user's request.
 The sections below are a chronological log (oldest first, 22 Oct -> 25 Oct); when two notes disagree, the later one wins.
 The older "FILE MAP" just below predates the current layout: trust the code and the dated sections.
@@ -31,8 +31,9 @@ Code map (current)
 Open items (25 Oct)
 - v0.7.0: Live / PTR switch in the header (section "25 OCT: v0.7.0"). Greyed out for everyone until data/season-ptr.json is
   on main (runbook step 3).
-- Next season is now prepared by the watch as PULL REQUESTS (section "25 OCT: SEASON PULL REQUESTS"): "Next season in testing"
-  (branch season-next) and "Season start" (branch season-start). Never merge "Season start" before the season start day.
+- Next season is FULLY AUTOMATIC since 26 Oct (user's choice; section "26 OCT: v0.8.0"): the watch opens AND merges "Next season in
+  testing" (season-next) as soon as its tests pass, and merges "Season start" (season-start) when Warcraft Logs shows kills of the new
+  raid since it went live. Without the WCL secrets the Season start PR waits for a manual merge.
   The live-data glue of tools/season-draft.js (wago downloads) has NOT run for real yet (wago blocked in the sandbox): check the first
   PR it opens.
 - v0.6.0 CONFIRMED by the user (26 Oct, manual "Update loot data"): "Food: 12 kept", "Crafted base items found: 98 · embellishments in
@@ -610,7 +611,7 @@ embellishment").
 Since 25 Oct steps 1-3 run automatically in the watch workflow and arrive as the pull request "Next season in testing" (branch
 season-next), and step 6 as the pull request "Season start" (branch season-start). The steps below say what those PRs did and what to
 check; they also work by hand (tools/season-draft.js, tools/season-promote.js).
-1. wago /api/builds/latest -> wowt build; JournalInstance on that build vs live -> new raid instance id(s).
+1. Blizzard version service (lib/versions.js; wago fallback) -> wowt build; JournalInstance on that build vs live -> new raid instance id(s).
 2. node tools/journal-draft.js --instance <id> --ptr   (or the same code in the user's browser on wago) -> data/fights/<boss>.json drafts.
    Review every mechanic type; councils (cleaved or split?); stage starts are placeholders.
 3. data/season-ptr.json (tools/season-draft.js; by hand: copy season.json: id MID3/…, "game": "wowt" (PTR) or "wow_beta" (beta of a new expansion), name, tierSet, upgradeTracks = item_bonus type-34 groups of the new raid's drops
@@ -751,3 +752,30 @@ Where each lives, so it can be checked if a result looks wrong:
   userData/food-check.json (food-check-ptr.json in preview mode, deleted with the other PTR files): key = sha256 of the sorted food list
   from the game data (value|label|id) + simc path + size + mtime. Same key -> cached list reused, log "Food: N kept, same foods and same
   simc as the check of <date>: not simulated again". A new simc build or a changed food list -> checked again. Test in e2e (73 pass).
+
+=== 26 OCT: v0.8.0 — AUTOMATIC SEASONS, BLIZZARD VERSIONS, TRACK ITEM LEVELS FROM SIMC ===
+User goal: watch the game versions; when a PTR with the next season shows up, publish its data; when the season goes live, switch
+everything, without manual steps. Decisions: both PRs merged automatically; the Live/PTR switch stays reserved to a new SEASON (no switch
+for minor-patch PTRs like 12.1.7).
+- lib/versions.js: Blizzard's version service (TACT v2, https://us.version.battle.net/v2/products/<wow|wowt|wow_beta|wowxptr>/versions,
+  pipe table, one row per region us/eu/kr/tw/cn/sg/xx; VERIFIED in the user's browser: wow 12.1.5.70575 everywhere, wowt 12.1.7.70493,
+  wow_beta 12.0.1.66220), wago.tools /api/builds/latest as fallback (same version for every region). regionOf(export) (region=),
+  exportVersion(export) ("# WoW 12.1.5.70575, TOC 120105", written by the SimC addon: GetBuildInfo), cmp, patch.
+- App: liveBuild / previewBuild = version of the player's region (settings.region, sent by the renderer from the export's region= line;
+  settings:set accepts us/eu/kr/tw/cn) -> automatic "Update loot data" after a patch follows the player's region. Blizzard is blocked in the
+  Claude sandbox (403): not run from the app here, only the parser + fallback are tested.
+- Track item levels: simc item_bonus.inc type 49 (Value_0 = item scaling config) + item_scaling.inc __item_scaling_config_data (3rd column =
+  item level). lib/season.js groupLevels / trackLevels; VERIFIED on 12.1.5.70575: groups 616/617/618 = Champion/Hero/Myth of progression.json
+  exactly; ranks after 6 are drop-only (618: 337 341 344). tools/season-draft.js reads simc master *_ptr.inc first, then the live tables, and
+  fills progression-ptr.json tracks (to-do item only for tracks not found). Fixture: test/fixtures/simc (real rows of groups 616-618).
+- season-ptr.json now stores season.raidBosses { raid: [Journal boss names] } (season-draft) to find the raid's Warcraft Logs zone.
+- tools/watch.js: ptrBuild from Blizzard (+ source, liveRegions per region); liveSince { instance: first day seen live }; seasonStart (WCL
+  secrets + previewed raid live): zone = non-frozen WCL zone whose encounters match >= half of the raid's bosses (names compared without case
+  / punctuation), kills of its first boss (Journal order) since liveSince -> { started, zone, zoneName, raid, since }. Issue "Season started"
+  once; output season_started / season_zone every day while true (idempotent step). collect() takes previewFile (tests).
+- watch.yml: "Next season in testing" -> gh pr merge season-next --merge --delete-branch after the tests (later raids start again from main).
+  "Season start" runs on went_live OR season_started; promote with --wcl-zone (season.sources.warcraftLogsZone), PR stays open until
+  season_started, then comment + merge. Merges made with GITHUB_TOKEN do not trigger release.yml (data only, apps download it).
+- Verified: 76 tests; Season start step run locally with season_started (PR created, commented, merged; zone 58 written; tracks from the
+  levels). NOT verified: Blizzard / WCL / wago from GitHub Actions for the new checks (first real watch run after this push), the WCL
+  zone naming for a brand-new raid, auto-merge with the real gh.

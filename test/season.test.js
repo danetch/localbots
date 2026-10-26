@@ -18,7 +18,7 @@ test('season: draft from a new PTR raid, then a second raid added', () => {
   assert.strictEqual(d.progression.seasonId, 'MID3'); assert.strictEqual(d.crafted.seasonId, 'MID3');
   assert.deepStrictEqual(Object.keys(d.progression.sources.raid_mythic.bossOverrides), ['boss one', 'boss two']);
   assert.deepStrictEqual(d.progression.sources.raid_mythic.bossOverrides['boss one'], { track: 'myth', rank: 1 });
-  assert.ok(d.todo.some(t => /item level of every rank/.test(t)) && d.todo.some(t => /sources/.test(t)));
+  assert.ok(d.todo.some(t => /item levels not found/.test(t)) && d.todo.some(t => /rank of each source/.test(t)) && d.todo.some(t => /sources/.test(t)));   // no simc levels given
   assert.ok(require('../lib/datafiles').valid('season-ptr.json', JSON.stringify(d.season)));
   assert.strictEqual(L.season.season.id, 'MID2');   // live objects untouched
   const d2 = S.draft({ live: L, prev: { season: d.season, progression: d.progression, crafted: d.crafted }, raids: [{ id: '1310', name: 'The Next Raid', bosses: [] }, { id: '1311', name: 'Second Raid', bosses: ['Big Boss'] }], groups: [], game: 'wowt' });
@@ -41,4 +41,17 @@ test('season: promotion moves the preview live and archives the old fights', () 
   assert.strictEqual(S.promote({ season: p.season, seasonPtr: d.season, fights }), null);   // already live
   // the app then sees no preview: back to Live for anyone who had the switch on
   assert.strictEqual(require('../lib/preview').status(p.season, null, { ptr: true, ptrSeason: 'MID3' }).wentLive, true);
+});
+
+test('season: upgrade-track item levels from simc item_bonus + item_scaling (real 12.1.5 extract)', () => {
+  const fs = require('fs'), dir = path.join(__dirname, 'fixtures', 'simc');
+  const L = S.groupLevels(fs.readFileSync(path.join(dir, 'item_bonus.inc'), 'utf8'), fs.readFileSync(path.join(dir, 'item_scaling.inc'), 'utf8'));
+  assert.deepStrictEqual(L[618], [318, 321, 324, 328, 331, 334, 337, 341, 344]);        // 7..9 = drop-only levels (344 = last bosses)
+  const T = S.trackLevels({ 616: 'champion', 617: 'hero', 618: 'myth' }, L), P = rd('progression.json');
+  for (const k of ['champion', 'hero', 'myth']) assert.deepStrictEqual(T[k], P.tracks[k].ilvl, k);
+  // a draft with the PTR's levels fills the tracks and drops that to-do item
+  const d = S.draft({ live: live(), prev: null, raids: [{ id: '1', name: 'R', bosses: ['B'] }], groups: [615, 616, 617, 618], game: 'wowt', levels: { 616: [1, 2, 3, 4, 5, 6], 617: [11, 12, 13, 14, 15, 16], 618: [21, 22, 23, 24, 25, 26, 27] } });
+  assert.deepStrictEqual(d.progression.tracks.myth.ilvl, [21, 22, 23, 24, 25, 26]);
+  assert.ok(!d.todo.some(t => /item levels not found/.test(t)));
+  assert.deepStrictEqual(d.season.season.raidBosses, { R: ['B'] });
 });

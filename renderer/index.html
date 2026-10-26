@@ -543,6 +543,8 @@ $('hist').onclick=e=>{const b=e.target.closest('.hrow');if(!b)return;const h=loa
 $('hclear').onclick=()=>{try{localStorage.removeItem(HK)}catch{}renderHist()};renderHist();
 $('copy').onclick=async()=>{try{await navigator.clipboard.writeText(copyText);$('copy').textContent='Copied';setTimeout(()=>$('copy').textContent='Copy',1500)}catch{$('copy').textContent='Copy failed'}};
 document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter'&&!$('go').disabled)$('go').click()});
+// region of the export (region=eu): the app compares the loot data with the game version of that region
+{let lastReg='';$('txt').addEventListener('input',()=>{const m=/^\s*region=(\w+)\s*$/mi.exec($('txt').value),r=m?m[1].toLowerCase():'';if(r&&r!==lastReg){lastReg=r;api.setOption({region:r}).catch(()=>{})}})}
 try{const t=localStorage.getItem('lb_export');if(t&&!$('txt').value){$('txt').value=t;$('txt').dispatchEvent(new Event('input'))}}catch{}
 $('txt').addEventListener('input',()=>{try{localStorage.setItem('lb_export',$('txt').value)}catch{}});
 showTab('res');updSum();

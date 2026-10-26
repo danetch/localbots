@@ -3,7 +3,10 @@
 // (label "watch") when one changes. State: .github/watch-state.json (committed by the workflow). The first run only records a baseline.
 //   node tools/watch.js [--dry]     env: GITHUB_TOKEN, GITHUB_REPOSITORY (issues), WCL_CLIENT_ID / WCL_CLIENT_SECRET (optional)
 // Signals:
-//   ptrBuild    wago.tools /api/builds/latest -> wowt (PTR) and wow_beta (beta) versions
+//   ptrBuild    live / PTR (wowt) / beta (wow_beta) versions from Blizzard's version service (lib/versions.js; wago.tools as fallback),
+//               liveRegions = live version per region
+//   seasonStart the previewed raid (data/season-ptr.json) is live AND Warcraft Logs has kills of it since it went live (liveSince):
+//               the season has started -> the workflow merges the "Season start" pull request
 //   ptrRaids    JournalInstance on the PTR build vs live: new Adventure Guide instances (a new raid = next season in testing)
 //   betaRaids   the same on the beta build (a new expansion)
 //   liveRaids   instances seen on the PTR / beta that are now in the LIVE Adventure Guide (the patch is out: season start ahead)
@@ -11,7 +14,7 @@
 //   simc        simc's PTR client data version (client_data_version_ptr.inc) and season profile folders (profiles/MID3...)
 //   wcl         Warcraft Logs zones (a raid-testing zone appears there), only with the API client in the repo secrets
 // Outputs (GITHUB_OUTPUT): changed=true|false, new_instances / new_beta_instances = <ids for tools/journal-draft.js and season-draft.js>,
-// went_live = <ids now live> (season-promote pull request).
+// went_live = <ids now live> (season-promote pull request), season_started=true|false + season_zone (Warcraft Logs zone id).
 const fs = require('fs'), path = require('path');
 const STATE = path.join(__dirname, '..', '.github', 'watch-state.json');
 const BW_SKIP = new Set(['.github', 'Core', 'Libs', 'Locales', 'Media', 'Options', 'Plugins', 'Tools']);
@@ -22,12 +25,19 @@ function csvIds(text) {              // JournalInstance CSV -> { id: name }
 }
 
 // Each check -> value stored in the state (plain JSON). f = fetch, gh = GitHub API GET (json), env.
-async function collect({ f = fetch, gh, env = process.env, log = () => {}, old = null } = {}) {
+async function collect({ f = fetch, gh, env = process.env, log = () => {}, old = null, previewFile = path.join(__dirname, '..', 'data', 'season-ptr.json') } = {}) {
   const out = {}, errors = [];
   const tryDo = async (k, fn) => { try { out[k] = await fn(); } catch (e) { errors.push(`${k}: ${e.message}`); log(`!! ${k}: ${e.message}`); } };
   const json = async u => { const r = await f(u); if (!r.ok) throw new Error(`${u} -> ${r.status}`); return r.json(); };
   const text = async u => { const r = await f(u); if (!r.ok) throw new Error(`${u} -> ${r.status}`); return r.text(); };
-  await tryDo('ptrBuild', async () => { const b = await json('https://wago.tools/api/builds/latest'); return { live: b.wow?.version || null, ptr: b.wowt?.version || null, beta: b.wow_beta?.version || null }; });
+  const V = require('../lib/versions');
+  await tryDo('ptrBuild', async () => {
+    const one = async p => { try { return await V.product(text, p); } catch { return null; } };
+    const [w, t, b] = [await one('wow'), await one('wowt'), await one('wow_beta')];
+    if (!w) throw new Error('no live version (Blizzard and wago.tools)');
+    out.liveRegions = Object.fromEntries(V.REGIONS.filter(r => w.regions[r]).map(r => [r, w.regions[r]]));
+    return { live: V.of(w, 'us'), ptr: t ? V.of(t, 'us') : null, beta: b ? V.of(b, 'us') : null, source: w.source };
+  });
   let live = null;
   const liveIds = async () => live || (live = csvIds(await text('https://wago.tools/db2/JournalInstance/csv')));
   for (const [k, prod] of [['ptrRaids', 'ptr'], ['betaRaids', 'beta']]) await tryDo(k, async () => {
@@ -39,6 +49,25 @@ async function collect({ f = fetch, gh, env = process.env, log = () => {}, old =
   await tryDo('liveRaids', async () => {
     const was = { ...(old?.ptrRaids?.extra || {}), ...(old?.betaRaids?.extra || {}) }, L = await liveIds();
     return Object.fromEntries([...Object.entries(old?.liveRaids || {}), ...Object.entries(was).filter(([id]) => L[id])]);
+  });
+  // first day each previewed instance was seen live (start of the window for the Warcraft Logs kills)
+  if (out.liveRaids) out.liveSince = Object.fromEntries(Object.keys(out.liveRaids).map(id => [id, old?.liveSince?.[id] || new Date().toISOString().slice(0, 10)]));
+  // season start: the raid of data/season-ptr.json is live and Warcraft Logs shows kills of its first boss since then
+  const pv = (() => { try { return JSON.parse(fs.readFileSync(previewFile, 'utf8')); } catch { return null; } })();
+  const previewLive = Object.entries(out.liveRaids || {}).filter(([, n]) => pv?.season?.raids?.includes(n));
+  if (pv && previewLive.length && env.WCL_CLIENT_ID && env.WCL_CLIENT_SECRET) await tryDo('seasonStart', async () => {
+    const wcl = require('../lib/wcl').client({ id: env.WCL_CLIENT_ID, secret: env.WCL_CLIENT_SECRET, fetch: f });
+    const zones = await wcl.zones(), key = x => String(x).toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (const [id, raid] of previewLive) {
+      const bosses = (pv.season.raidBosses?.[raid] || []).map(key); if (!bosses.length) continue;
+      const z = zones.filter(z => !z.frozen).map(z => ({ z, n: (z.encounters || []).filter(e => bosses.includes(key(e.name))).length })).sort((a, b) => b.n - a.n)[0];
+      if (!z || z.n < Math.ceil(bosses.length / 2)) return { raid, started: false, why: 'no Warcraft Logs zone with its bosses yet' };
+      const first = z.z.encounters.find(e => key(e.name) === bosses[0]) || z.z.encounters.find(e => bosses.includes(key(e.name)));
+      const since = Date.parse(out.liveSince[id]);
+      const kills = await wcl.zoneFights(z.z.id, first.id, { start: since, end: Date.now(), kills: true, max: 3 });
+      return { raid, zone: z.z.id, zoneName: z.z.name, since: out.liveSince[id], started: kills.length > 0, kills: kills.length };
+    }
+    return null;
   });
   await tryDo('bigwigs', async () => (await gh('/repos/BigWigsMods/BigWigs/contents')).filter(x => x.type === 'dir' && !BW_SKIP.has(x.name)).map(x => x.name).sort());
   await tryDo('simc', async () => {
@@ -68,6 +97,8 @@ function changes(old, now) {
     if (fresh.length) ch.push({ key: k, [field]: fresh.map(([id]) => id), title: `New Adventure Guide instance(s) on the ${label}: ${fresh.map(([, n]) => n).join(', ')}`,
       body: `${label} build ${now[k].build}: ${fresh.map(([id, n]) => `**${n}** (JournalInstance ${id})`).join(', ')} not on live.\n\nIf it is a raid, the next season is in testing: the workflow opens / updates the pull request "Next season in testing" (branch \`season-next\`: season-ptr.json drafted by tools/season-draft.js, fight drafts by tools/journal-draft.js). Review its to-do list, then merge: the Live / PTR switch becomes available in the app. HANDOFF.md, SEASON 3 RUNBOOK.` });
   }
+  if (now.seasonStart?.started && !old?.seasonStart?.started) ch.push({ key: 'seasonStart', seasonStarted: true, title: `Season started: first ${now.seasonStart.raid} kills on Warcraft Logs`,
+    body: `Warcraft Logs zone **${now.seasonStart.zoneName}** (${now.seasonStart.zone}) has kills of ${now.seasonStart.raid} since it went live (${now.seasonStart.since}): the season has started.\n\nThe workflow merges the "Season start" pull request (tools/season-promote.js): every installed Polygnome switches to the new season at its next start.` });
   if (had('liveRaids')) {
     const fresh = Object.entries(now.liveRaids || {}).filter(([id]) => !(old.liveRaids || {})[id]);
     if (fresh.length) ch.push({ key: 'liveRaids', wentLive: fresh.map(([id]) => id), title: `Now in the live Adventure Guide: ${fresh.map(([, n]) => n).join(', ')}`,
@@ -110,7 +141,8 @@ async function main() {
   // written only when a value changed (the workflow commits it): no daily commit when nothing moves
   if (!dry && (!old || JSON.stringify(old.values) !== JSON.stringify(merged))) fs.writeFileSync(STATE, JSON.stringify({ values: merged }, null, 1) + '\n');
   const ids = f => ch.flatMap(c => c[f] || []).join(',');
-  if (env.GITHUB_OUTPUT) fs.appendFileSync(env.GITHUB_OUTPUT, `changed=${ch.length > 0}\nnew_instances=${ids('newInstances')}\nnew_beta_instances=${ids('newBetaInstances')}\nwent_live=${ids('wentLive')}\n`);
+  const st = merged.seasonStart;   // reported every day while true: the merge step is idempotent (nothing to do once promoted)
+  if (env.GITHUB_OUTPUT) fs.appendFileSync(env.GITHUB_OUTPUT, `changed=${ch.length > 0}\nnew_instances=${ids('newInstances')}\nnew_beta_instances=${ids('newBetaInstances')}\nwent_live=${ids('wentLive')}\nseason_started=${!!st?.started}\nseason_zone=${st?.started ? st.zone : ''}\n`);
   if (env.GITHUB_STEP_SUMMARY) fs.appendFileSync(env.GITHUB_STEP_SUMMARY, `## Season watch\n\n${old ? ch.map(c => `- ${c.title}`).join('\n') || 'No change.' : 'Baseline recorded.'}\n\n` +
     '```json\n' + JSON.stringify(merged, null, 1) + '\n```\n' + (errors.length ? `\nFailed checks: ${errors.join(' · ')}\n` : ''));
 }

@@ -1,12 +1,13 @@
 # Season watch: every day, tools/watch.js looks for a new PTR / beta build, new Adventure Guide instances on the PTR or beta, previewed
 # instances that reached the live game, new BigWigs raid folders, new simc PTR data / season profiles and new Warcraft Logs zones, and opens
 # an issue (label "watch") for each change. Warcraft Logs is checked only with the secrets WCL_CLIENT_ID / WCL_CLIENT_SECRET.
-# Next season data is prepared as PULL REQUESTS (never pushed to main: data on main reaches every installed app):
+# Next season data goes through PULL REQUESTS that the workflow MERGES ITSELF once the tests pass (user's choice, 26 Oct: fully automatic):
 #  - new PTR / beta instance -> branch "season-next": fight drafts (tools/journal-draft.js) + data/season-ptr.json, progression-ptr.json,
-#    crafted-ptr.json for a new RAID (tools/season-draft.js), PR "Next season in testing" with the to-do list. Merging it turns on the
-#    Live / PTR switch in the app.
-#  - a previewed instance is in the live Adventure Guide -> branch "season-start": tools/season-promote.js, PR "Season start". Merge it on
-#    the day the season starts (upgrade tracks change then, not at the patch).
+#    crafted-ptr.json for a new RAID (tools/season-draft.js), PR "Next season in testing", merged at once: the Live / PTR switch becomes
+#    available in every installed app (opt-in preview).
+#  - a previewed raid is in the live Adventure Guide -> branch "season-start": tools/season-promote.js, PR "Season start", left open;
+#    merged when the season really starts = Warcraft Logs has kills of that raid since it went live (season_started; needs the WCL
+#    secrets, otherwise the PR waits for a manual merge). The patch usually comes a week before the season: upgrade tracks change then.
 name: watch
 on:
   schedule:
@@ -87,20 +88,24 @@ jobs:
             } > body.md
             gh pr create --base main --head season-next --title "Next season in testing: $S" --body-file body.md
           fi
+          # tests passed above: merge (the branch is deleted, the next new raid starts again from main, where the preview now lives)
+          if [ -n "$(gh pr list --head season-next --state open --json number -q '.[].number')" ]; then gh pr merge season-next --merge --delete-branch; fi
 
       - name: Season start (branch season-start, pull request)
-        if: steps.w.outputs.went_live != ''
+        if: steps.w.outputs.went_live != '' || steps.w.outputs.season_started == 'true'
         env:
           IDS: ${{ steps.w.outputs.went_live }}
+          STARTED: ${{ steps.w.outputs.season_started }}
+          ZONE: ${{ steps.w.outputs.season_zone }}
         run: |
           set -eo pipefail
           git checkout -B season-start origin/main
           if [ ! -f data/season-ptr.json ]; then echo "::notice::instances $IDS are live but no next season is prepared on main (data/season-ptr.json): nothing to promote"; exit 0; fi
           # only a raid of the prepared season starts it (a dungeon or delve reaching live does not)
-          RAIDS=$(node -p "const w=require('./.github/watch-state.json').values.liveRaids||{},r=require('./data/season-ptr.json').season.raids;'$IDS'.split(',').map(i=>w[i]).filter(n=>r.includes(n)).join(', ')")
+          RAIDS=$(node -p "const w=require('./.github/watch-state.json').values.liveRaids||{},r=require('./data/season-ptr.json').season.raids;Object.values(w).filter(n=>r.includes(n)).join(', ')")
           if [ -z "$RAIDS" ]; then echo "::notice::instances $IDS are live but none is a raid of data/season-ptr.json: nothing to promote"; exit 0; fi
           TODO=$(node -p "(require('./data/season-ptr.json').todo||[]).map(t=>'- [ ] '+t).join('\n')")
-          node tools/season-promote.js | tee promote.txt
+          node tools/season-promote.js ${ZONE:+--wcl-zone $ZONE} | tee promote.txt
           node tools/make-data.js
           npm install --no-audit --no-fund
           npm test
@@ -111,7 +116,8 @@ jobs:
           if [ -z "$(gh pr list --head season-start --state open --json number -q '.[].number')" ]; then
             { echo "$RAIDS (previewed on the PTR / beta) is in the live Adventure Guide: the patch is out."
               echo
-              echo "**Merge on the day the season starts, not before**: upgrade tracks and item levels change at the season start."
+              echo "**Merged automatically when the season starts** (first kills of the raid on Warcraft Logs since it went live), not at"
+              echo "the patch: upgrade tracks and item levels change at the season start. Merge by hand only if that signal is not available."
               echo "Apps with the Live / PTR switch on go back to Live at their next start; the old season's fights leave the boss list"
               echo "(kept in data/fights-archive/)."
               echo
@@ -119,4 +125,8 @@ jobs:
               [ -n "$TODO" ] && { echo; echo "### Still open in the preview's to-do list"; echo "$TODO"; }
             } > body.md
             gh pr create --base main --head season-start --title "Season start: $(node -p "require('./data/season.json').season.name")" --body-file body.md
+          fi
+          if [ "$STARTED" = "true" ]; then
+            gh pr comment season-start --body "Warcraft Logs has kills of $RAIDS since it went live (zone $ZONE): the season has started, merging."
+            gh pr merge season-start --merge --delete-branch
           fi
