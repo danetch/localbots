@@ -38,9 +38,11 @@ Open items (25 Oct)
 - v0.6.0 CONFIRMED by the user (26 Oct, manual "Update loot data"): "Food: 12 kept", "Crafted base items found: 98 · embellishments in
   simc table: 54", Midnight pieces. Also confirmed: Wowhead icons + tooltips, simc HTML report, simc auto update (70391), item stats.
   Open: the automatic loot update at startup did not run the food check on the user's PC (cause unknown; reproduced fine in Electron:
-  v0.7.1 writes logs/data-updates.log to find out next time). "Saved Loadout" talent builds: the user sees none (export format of the
-  addon unknown: ask for the talent lines of an export). "This season" vs Journal "Current Season": same selection for the user (v0.7.1
-  hides the duplicate; still unknown whether S1 raids were in it).
+  v0.7.1 writes logs/data-updates.log to find out next time).
+  CONFIRMED 26 Oct: the addon's loadout format is exactly "# Saved Loadout: <name>" + "# talents=<string>" (user's export: M+, Gouffres,
+  Raid; the active talents= line duplicates one of them); the "Talent builds" section shows them (user had not noticed it). "This season"
+  filter works: S1 raids absent, "Left out (last season's upgrade tracks): ..." shown; the Journal's "Current Season" no longer lists the S1
+  raids, hence the duplicate entry hidden in v0.7.1.
 - Repo secrets WCL_CLIENT_ID / WCL_CLIENT_SECRET added 25 Oct and working (watch run 40239189404 recorded the zone list).
   The secrets API is closed to the Claude proxy: check a watch run instead. "Allow GitHub Actions to create pull requests" is on.
 - Season watch: daily workflow (.github/workflows/watch.yml -> issues labelled "watch"), plus a weekly Claude scheduled task
@@ -741,6 +743,5 @@ Where each lives, so it can be checked if a result looks wrong:
 - One diamond max (Eversong): lib/enhance.js. Radiant Jewelbinder socket on head/wrist/waist: lib/enhance.js. Hunter scopes BM/MM only.
 - Embellishment slots ("unverified" list) and crafted item level: data/crafted.json. Crafted stat ids 32/36/40/49.
 - Item levels per track rank, per source and per boss: data/progression.json (Method guides). Voidcore = Myth 1/6.
-- Talent loadout comment format "# Saved Loadout: name" + "# talents=": lib/talents.js (not seen in a real export yet).
 - Boss mechanics effect sizes (add counts / health, damage buffs, vulnerable multipliers, durations): data/fights/*.json `assumed` lists.
   Timings and kill lengths come from real logs (Lorrgs, Warcraft Logs); effect sizes do not.
