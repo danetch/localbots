@@ -2,7 +2,8 @@
 // Bloodlust timing per boss and difficulty from real kills (lib/lust.js): the fastest Warcraft Logs kills (speed rankings) of each fight in
 // data/fights, first lust of each kill, classified as "N s after stage S" or "P % of the kill".
 //   WCL_CLIENT_ID=... WCL_CLIENT_SECRET=... node tools/wcl-lust.js [--zone 53] [--n 15] [--write] [--only kithix,sszorak]
-// --write updates difficulties[d].bloodlust in data/fights/*.json when it is new or moved (stage / >= 3 s / >= 3 %); then run tools/make-data.js.
+// --write updates difficulties[d].bloodlust in data/fights/*.json when it is new or moved (stage / >= 3 s / >= 3 %), or always with --force
+// (refreshes the `checked` notes, e.g. after a detection change); then run tools/make-data.js.
 // Zone: data/season.json sources.warcraftLogsZone (or data/season-ptr.json for fights marked "ptr"). Runs where the WCL secrets are
 // (GitHub Actions: .github/workflows/fight-data.yml); warcraftlogs.com is blocked in the Claude sandbox.
 const fs = require('fs'), path = require('path'), bossLib = require('../lib/boss'), L = require('../lib/lust');
@@ -39,7 +40,7 @@ const moved = (a, b) => !a || !b || (a.stage ?? null) !== (b.stage ?? null) || M
         const entry = L.classify(kills, def), hows = {}; for (const k of kills) hows[k.how] = (hows[k.how] || 0) + 1;
         const was = D.bloodlust;
         lines.push(`${def.id} ${d}: ${entry ? (entry.stage != null ? `stage ${entry.stage} + ${entry.after} s` : `${entry.pct} %`) + ` — ${entry.checked}` : `not enough kills with a lust (${kills.filter(k => k.lust != null).length}/${kills.length})`}${entry && was && !moved(was, entry) ? ' (unchanged)' : ''} · detection: ${Object.entries(hows).map(([h, c]) => `${c}× ${h}`).join(', ')}`);
-        if (entry && moved(was, entry)) { entry.checked += `, ${new Date().toISOString().slice(0, 10)}`; D.bloodlust = entry; touched = true; }
+        if (entry && (moved(was, entry) || has('force'))) { entry.checked += `, ${new Date().toISOString().slice(0, 10)}`; D.bloodlust = entry; touched = true; }
       } catch (e) { lines.push(`${def.id} ${d}: ${e.message}`); }
     }
     if (touched) { changed.push(def.id); if (has('write')) fs.writeFileSync(fp, JSON.stringify(def, null, 1) + '\n'); }

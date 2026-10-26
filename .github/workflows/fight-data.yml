@@ -11,6 +11,10 @@ on:
         description: 'Fight ids, comma separated (empty = all)'
         required: false
         default: ''
+      force:
+        description: 'Rewrite every entry (refresh the notes), not only the ones that moved'
+        type: boolean
+        default: false
 permissions:
   contents: write
   pull-requests: write
@@ -30,7 +34,8 @@ jobs:
           WCL_CLIENT_ID: ${{ secrets.WCL_CLIENT_ID }}
           WCL_CLIENT_SECRET: ${{ secrets.WCL_CLIENT_SECRET }}
           ONLY: ${{ github.event.inputs.only }}
-        run: node tools/wcl-lust.js --write ${ONLY:+--only $ONLY}
+          FORCE: ${{ github.event.inputs.force }}
+        run: node tools/wcl-lust.js --write ${ONLY:+--only $ONLY} $([ "$FORCE" = true ] && echo --force)
       - name: Pull request and merge
         if: steps.l.outputs.changed != ''
         env:
