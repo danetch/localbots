@@ -1,7 +1,7 @@
 POLYGNOME (formerly LOCALBOTS) - PROJECT HANDOFF
 ================================================
 
-=== START HERE (state on 26 Oct 2026, app v0.7.1) ===
+=== START HERE (state on 26 Oct 2026, app v0.7.2) ===
 New conversation: attach the GitHub repo danetch/localbots, read this file and README.md, then wait for the user's request.
 The sections below are a chronological log (oldest first, 22 Oct -> 25 Oct); when two notes disagree, the later one wins.
 The older "FILE MAP" just below predates the current layout: trust the code and the dated sections.
@@ -745,3 +745,9 @@ Where each lives, so it can be checked if a result looks wrong:
 - Item levels per track rank, per source and per boss: data/progression.json (Method guides). Voidcore = Myth 1/6.
 - Boss mechanics effect sizes (add counts / health, damage buffs, vulnerable multipliers, durations): data/fights/*.json `assumed` lists.
   Timings and kill lengths come from real logs (Lorrgs, Warcraft Logs); effect sizes do not.
+
+=== 26 OCT: v0.7.2 — FOOD CHECK REMEMBERED ===
+- User: the food check (~5 s of simc runs) ran at every "Update loot data". main.js checkFoods now stores its result in
+  userData/food-check.json (food-check-ptr.json in preview mode, deleted with the other PTR files): key = sha256 of the sorted food list
+  from the game data (value|label|id) + simc path + size + mtime. Same key -> cached list reused, log "Food: N kept, same foods and same
+  simc as the check of <date>: not simulated again". A new simc build or a changed food list -> checked again. Test in e2e (73 pass).

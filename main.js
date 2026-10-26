@@ -943,10 +943,24 @@ ipcMain.handle('data:refresh', async () => {
   return { ...r, ...DF().info() };
 });
 // Food list reduced with simc (lib/foods.js): only foods simc can load that give a damage stat, duplicates merged.
+// The result is remembered (userData/food-check.json, -ptr in preview mode): same foods from the game data and same simc binary
+// (path, size, date) -> the previous result is reused instead of simulating every food again.
+const foodCacheFile = () => ud('food-check.json');
+const foodKey = (food, simcPath) => { const st = fs.statSync(simcPath);
+  return crypto.createHash('sha256').update(JSON.stringify([food.map(o => `${o.value}|${o.label}|${o.id || ''}`).sort(), simcPath, st.size, st.mtimeMs])).digest('hex'); };
 async function checkFoods(built, log, detail = trace) {
   const { simcPath } = loadSettings(), food = built.consumables?.food || [];
   if (!food.length) return;
   if (!simcPath || !fs.existsSync(simcPath)) { log('>> Food: select the simc binary, then update again, to keep only the foods that add damage.'); return; }
+  const key = foodKey(food, simcPath);
+  try {
+    const c = JSON.parse(fs.readFileSync(foodCacheFile(), 'utf8'));
+    if (c.key === key && c.list?.length) {
+      built.consumables.food = c.list; built.foodVer = 1;
+      log(`>> Food: ${c.list.length} kept, same foods and same simc as the check of ${new Date(c.at).toLocaleDateString('en-GB')}: not simulated again.`);
+      return;
+    }
+  } catch { /* no previous check */ }
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'polygnome-food-')); let n = 0;
   try {
     log(`>> Food: checking ${food.length} foods with simc (stat each one gives)…`);
@@ -955,6 +969,7 @@ async function checkFoods(built, log, detail = trace) {
     built.consumables.food = r.list; built.foodVer = 1;
     log(`>> Food: ${r.list.length} kept (a damage stat, duplicates merged); ${r.dropped.length} left out (no damage stat, not loadable by simc, or weaker than another).`);
     for (const d of r.dropped) detail(`   food left out: ${d}`);
+    try { writeJson(foodCacheFile(), { key, at: new Date().toISOString(), list: r.list, dropped: r.dropped }); } catch {}
   } catch (e) { log(`>> Food check failed (${e.message}): full food list kept.`); }
   finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch {} }
 }
@@ -1088,4 +1103,4 @@ app.whenReady().then(() => {
   win.loadFile('renderer/index.html');
 });
 app.on('window-all-closed', () => { child?.kill(); app.quit(); });
-module.exports = { checkFoods };   // for tests
+module.exports = { checkFoods, foodKey };   // for tests

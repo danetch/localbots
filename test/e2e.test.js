@@ -102,3 +102,17 @@ test('game data log: startup check written to logs/data-updates.log', async () =
   const t = fs.readFileSync(path.join(ud, 'logs', 'data-updates.log'), 'utf8');
   assert.match(t, /Check \(app start, live data\): (update needed: .+|up to date)/);
 });
+
+test('food check: same foods and same simc reuse the previous result (no simc run)', async () => {
+  const { checkFoods, foodKey } = require('../main.js'), simc = path.join(__dirname, 'fakesimc.js');
+  const food = [{ value: 'roast', label: 'Roast' }, { value: 'tea', label: 'Tea' }], kept = [{ value: 'roast', label: 'Roast — +59 Mastery' }];
+  fs.writeFileSync(path.join(ud, 'food-check.json'), JSON.stringify({ key: foodKey(food, simc), at: '2026-10-26T10:00:00Z', list: kept, dropped: ['Tea'] }));
+  const lines = [], built = { consumables: { food: [...food] } };
+  await checkFoods(built, l => lines.push(l));
+  assert.deepStrictEqual(built.consumables.food, kept); assert.strictEqual(built.foodVer, 1);
+  assert.match(lines.join('\n'), /not simulated again/);
+  // another food list: checked again (the cached result does not apply)
+  const other = { consumables: { food: [...food, { value: 'stew', label: 'Stew' }] } }, l2 = [];
+  await checkFoods(other, l => l2.push(l));
+  assert.match(l2.join('\n'), /checking 3 foods/);
+});
