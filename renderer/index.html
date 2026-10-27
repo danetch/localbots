@@ -277,8 +277,9 @@ api.bossList().then(B=>{bosses=B;$('boss').innerHTML='<option value="">None (use
 // Fight length follows the typical real kill (Warcraft Logs median guild kill, at the export's item level when known) unless the user
 // typed another length: the field is "auto" while it still shows 300 or the last value set here.
 let autoLen='300',lenNote='';
-async function autoLength(){const on=!!$('boss').value;if(!on){lenNote='';return}
- const r=await api.bossLength({boss:$('boss').value,difficulty:$('bdiff').value,text:$('txt').value}).catch(()=>null);if(!r)return;
+// Back to "None": the generic style / targets come back (bossPreview) and an automatic boss length returns to the default 300 s.
+async function autoLength(){const on=!!$('boss').value;if(!on){lenNote='';if(autoLen!=='300'&&$('dur').value===autoLen){$('dur').value='300';autoLen='300'}bossPreview();return}
+ const r=await api.bossLength({boss:$('boss').value,difficulty:$('bdiff').value,text:$('txt').value}).catch(()=>null);if(!r){bossPreview();return}
  const dl={heroic:'Heroic',mythic:'Mythic'}[$('bdiff').value]||r.label;
  lenNote=r.from==='ilvl'?`Length ${r.length}s: median ${dl} kill for raids at item level ${r.ilvl} (Warcraft Logs, ${r.bracket}${r.kills?`, ${r.kills.toLocaleString('en-US')} kills`:''}; all raids: ${r.median}s).`
   :r.from==='median'?`Length ${r.length}s: median ${dl} kill on Warcraft Logs${r.kills?` (${r.kills.toLocaleString('en-US')} kills)`:''}. Paste an export to adjust it to your item level.`:'';
