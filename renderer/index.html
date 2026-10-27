@@ -88,8 +88,8 @@ details.sec[open]>summary .sm{opacity:.45}
 dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:16px 18px;width:min(560px,92vw)}
 dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:14px 0 4px}
 /* ---- help hints: ⓘ icons (.hint) and any element with data-tip share one floating tooltip (#tip) ---- */
-.hint{display:inline-flex;align-items:center;justify-content:center;flex:none;width:15px;height:15px;margin-left:5px;padding:0;border:1px solid currentColor;border-radius:50%;
- color:var(--mute);opacity:.75;font:italic 600 10px/1 Georgia,"Times New Roman",serif;text-transform:none;letter-spacing:0;cursor:help;vertical-align:1px;user-select:none}
+.hint{display:inline-flex;align-items:center;justify-content:center;flex:none;width:15px;height:15px;margin-left:5px;padding:0;border-radius:50%;
+ color:var(--mute);opacity:.75;font-size:0;font-style:normal;text-transform:none;letter-spacing:0;cursor:help;vertical-align:-2px;user-select:none}.hint svg{display:block;width:15px;height:15px}
 .hint:hover,.hint:focus-visible,.hint.on{opacity:1;color:var(--acc)}.hint:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
 #tip{position:fixed;z-index:1000;max-width:340px;padding:8px 11px;border-radius:6px;background:var(--ink);color:var(--panel);font-size:12px;line-height:1.45;font-weight:400;
  text-transform:none;letter-spacing:0;white-space:pre-line;box-shadow:0 4px 14px rgba(0,0,0,.25);pointer-events:none;opacity:0;transition:opacity .12s}
@@ -293,7 +293,7 @@ async function bossPreview(){const on=!!$('boss').value;$('fs').disabled=$('tg')
  lastLust=r.lust||null;lustUi();sumNow();
  const TAG={bigwigs:'BigWigs',guide:'guide',assumed:'guessed'};
  const L=r.summary.map(m=>`• ${m.label}${m.assumed.length?' *':''} [times: ${TAG[m.timesFrom]||m.timesFrom}]: ${m.times.slice(0,8).map(t=>t+'s').join(', ')}${m.times.length>8?' …':''}`).join('\n');
- $('bprev').textContent=(lenNote||`Length ${r.length}s`)+(r.stages.length>1?` · stages start at ${r.stages.map(s=>`${s.id}: ${s.at}s`).join(', ')}`:'')+(r.targets>1?`\nBosses cleaved together (separate health): ${r.bosses.join(' + ')}${r.present.filter(p=>p.absent.length).map(p=>` · ${p.name} from ${p.absent[p.absent.length-1][1]}s`).join('')}`:'')+`\n* = effect size guessed. Edit the files to refine (button “Edit…”).\n`+L}
+ $('bprev').textContent=(lenNote||`Length ${r.length}s`)+(r.stages.length>1?` · stages start at ${r.stages.map(s=>`${s.id}: ${s.at}s`).join(', ')}`:'')+(r.targets>1?`\nBosses cleaved together (separate health): ${r.bosses.join(' + ')}${r.present.filter(p=>p.absent.length).map(p=>` · ${p.name} from ${p.absent[p.absent.length-1][1]}s`).join('')}`:'')+'\n'+L+(r.summary.some(m=>m.assumed.length)?'\n* = effect size guessed. Edit the files to refine (button “Edit…”).':'')}
 api.bossList().then(B=>{bosses=B;$('boss').innerHTML='<option value="">None (use the style below)</option>'+B.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');
  const f=window.__savedFight||{};if(f.boss&&B.some(b=>b.id===f.boss)){$('boss').value=f.boss;$('boss').onchange();if(f.difficulty)$('bdiff').value=f.difficulty;bossPreview()}});
 // Fight length follows the typical real kill (Warcraft Logs median guild kill, at the export's item level when known) unless the user
@@ -594,7 +594,8 @@ $('txt').addEventListener('input',()=>{try{localStorage.setItem('lb_export',$('t
 // ---- Help hints: one floating tooltip for every ⓘ (.hint) and every element with data-tip ----
 // Hover shows it after a short delay, keyboard focus at once; a click on an ⓘ pins it (it never toggles the checkbox or section it sits in).
 {const tip=$('tip');let cur=null,timer=0,pinned=false;
- const prep=h=>{if(h.dataset.ready)return;h.dataset.ready=1;h.tabIndex=0;h.setAttribute('role','button');h.setAttribute('aria-label','Help');h.setAttribute('aria-describedby','tip')};
+ const ICON='<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7.3" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="4.6" r="1" fill="currentColor"/><rect x="7.25" y="6.8" width="1.5" height="5.2" rx=".75" fill="currentColor"/></svg>';
+ const prep=h=>{if(h.dataset.ready)return;h.dataset.ready=1;h.innerHTML=ICON;h.tabIndex=0;h.setAttribute('role','button');h.setAttribute('aria-label','Help');h.setAttribute('aria-describedby','tip')};
  const prepAll=()=>document.querySelectorAll('.hint').forEach(prep);prepAll();
  {let q=0;new MutationObserver(()=>{if(!q)q=requestAnimationFrame(()=>{q=0;prepAll()})}).observe(document.body,{childList:true,subtree:true})}
  function show(el){const t=el.dataset.tip;if(!t)return;cur=el;const host=el.closest('dialog')||document.body;if(tip.parentElement!==host)host.appendChild(tip);tip.textContent=t;tip.classList.add('on');tip.setAttribute('aria-hidden','false');document.querySelectorAll('.hint.on').forEach(h=>h.classList.remove('on'));if(el.classList.contains('hint'))el.classList.add('on');
