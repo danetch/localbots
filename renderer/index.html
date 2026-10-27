@@ -109,6 +109,24 @@ h3{display:flex;align-items:center;font-size:12px;font-weight:600;margin:10px 0 
 .step .ck{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);font-weight:700;font-size:12px;color:var(--mute)}
 .step.done .ck{background:var(--pos);border-color:var(--pos);color:#fff}.step.done{opacity:.75}
 .step .tx2{flex:1;min-width:0}.step .tx2 b{display:block;font-weight:600}.step .tx2 span{color:var(--mute);font-size:12px}
+/* ---- Fight tab: timeline of the selected boss fight ---- */
+.linkbtn{border:0;background:none;padding:0;color:var(--acc);font:inherit;font-size:12px;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.linkbtn:hover:not(:disabled){border:0}
+#fightv h2{font-size:15px;margin:0 0 2px}.fl{margin:12px 0 6px;font-size:12px}
+.fl-row{display:grid;grid-template-columns:210px 1fr;align-items:center;min-height:26px;border-bottom:1px solid var(--line)}.fl-row:last-child{border:0}
+.fl-lab{padding-right:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fl-lab .it{font-size:11px}
+.fl-tr{position:relative;height:24px}
+.fl-axis{border:0;min-height:18px}.fl-axis .fl-tr{height:16px}.fl-axis .fl-tr span{position:absolute;transform:translateX(-50%);color:var(--mute);font-size:11px;white-space:nowrap}
+.fl-axis .fl-tr span:first-child{transform:none}
+.fl-stage{position:absolute;top:3px;bottom:3px;border-radius:3px;font-style:normal;font-size:11px;line-height:18px;padding-left:6px;overflow:hidden;white-space:nowrap;background:var(--hl);border:1px solid var(--line)}
+.fl-stage.alt{background:var(--bg)}
+.fl-m{position:absolute;top:6px;bottom:6px;min-width:3px;border-radius:2px;opacity:.85;cursor:default}.fl-m:hover{opacity:1;box-shadow:0 0 0 1px var(--ink)}
+.fl-on{position:absolute;top:9px;bottom:9px;border-radius:3px;background:var(--mute);opacity:.45}
+.fl-lust{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:#c2410c;pointer-events:none}
+.fl-lust.hd{pointer-events:auto;width:10px;margin-left:-5px;background:none}.fl-lust.hd::before{content:"";position:absolute;left:4px;top:0;bottom:0;width:2px;background:#c2410c}
+.fl-lust.hd::after{content:"";position:absolute;left:1px;top:7px;width:8px;height:8px;background:#c2410c;transform:rotate(45deg)}
+.fl-leg{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 0 14px;font-size:12px;color:var(--mute)}.fl-leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.fl-notes{font-size:12px;color:var(--mute);line-height:1.6;max-width:760px}.fl-notes b{color:var(--ink);font-weight:600}
 @media(max-width:1000px){body{height:auto;overflow:auto}main{grid-template-columns:1fr}#setup{overflow:visible}#resbox{min-height:70vh}header{flex-wrap:wrap}}
 </style></head><body>
 <header>
@@ -156,7 +174,7 @@ Tick one to simulate it instead of the exported build, or several to compare the
   <div class="row" style="margin-top:0"><label><span class="lt">Boss fight<i class="hint" data-tip="A real boss of the current raids: mechanics, stage timings and kill length from BigWigs and Warcraft Logs, Bloodlust as in real kills.
 “None” uses a generic fight style instead.">i</i></span><select id="boss"><option value="">None (use the style below)</option></select></label>
    <label hidden>Difficulty<select id="bdiff" disabled></select></label><button id="bedit" type="button" class="small" data-tip="Open the folder with the boss fight files to adjust timings or mechanics">Edit…</button></div>
-  <div class="it" id="bprev" hidden style="white-space:pre-wrap"></div>
+  <div class="it" id="bprev" hidden></div>
   <div class="row"><label><span class="lt">Style<i class="hint" data-tip="simc's generic fight styles, used when no boss fight is chosen. Patchwerk: one stationary target, no mechanics.">i</i></span><select id="fs">
    <option value="Patchwerk">Patchwerk (stationary)</option><option value="LightMovement">Light movement</option><option value="HeavyMovement">Heavy movement</option>
    <option value="HecticAddCleave">Hectic add cleave</option><option value="CleaveAdd">Cleave add</option><option value="CastingPatchwerk">Casting Patchwerk</option>
@@ -221,10 +239,11 @@ Speed, leech and avoidance enchants (head, shoulders, feet) are left as they are
 
 <section class="card" id="resbox">
  <div class="tabs" role="tablist">
-  <button class="tab on" data-tab="res" role="tab">Results</button><button class="tab" data-tab="hist" role="tab" id="tabh" data-tip="Your last 10 runs: click one to see its results again">History</button><button class="tab" data-tab="log" role="tab" data-tip="What simc and Polygnome are doing, and the full log files">Activity log</button>
+  <button class="tab on" data-tab="res" role="tab">Results</button><button class="tab" data-tab="fight" role="tab" id="tabf" hidden data-tip="Timeline and details of the selected boss fight">Fight</button><button class="tab" data-tab="hist" role="tab" id="tabh" data-tip="Your last 10 runs: click one to see its results again">History</button><button class="tab" data-tab="log" role="tab" data-tip="What simc and Polygnome are doing, and the full log files">Activity log</button>
   <span class="grow"></span><button id="rep" class="small" hidden data-tip="Open simc's HTML report of the best result in your browser">Open simc report</button><button id="copy" class="small" hidden data-tip="Copy the results as plain text">Copy</button></div>
  <div class="pane" id="p_res"><div id="sum" class="it"></div>
   <div id="res" data-start="1"></div></div>
+ <div class="pane" id="p_fight" hidden><div id="fightv"></div></div>
  <div class="pane" id="p_hist" hidden><div class="rhead"><span class="it">Last 10 runs · click one to reopen it</span><button id="hclear" class="small">Clear</button></div><div id="hist"></div></div>
  <div class="pane" id="p_log" hidden><div class="rhead" style="margin-bottom:6px"><span class="it">End of the current run. Every run is saved in full to a log file.</span><button id="logfile" class="small">Show full log file</button><button id="datalog" class="small" data-tip="Game data updates: startup checks, “Update loot data”, season data from GitHub">Game data log</button></div><div id="log" aria-live="polite" style="height:calc(100% - 34px)"></div></div>
 </section>
@@ -286,14 +305,51 @@ function lustUi(){const m=$('lust').value;if(m!==lustMode){if(lustVals[lustMode]
  const on=$('raid').value!=='none'&&($('raid').value!=='custom'||!!document.querySelector('.rb[value=bloodlust]:checked'));
  $('lustvl').hidden=m!=='time'&&m!=='pct';$('lustvt').textContent=m==='pct'?'Boss health %':'Seconds';
  const E=lastLust?.entry,auto=!$('boss').value?'at the pull (no boss fight selected)':lastLust?.at!=null?`at ${lastLust.at}s (${E.stage!=null?`${E.after}s after stage ${E.stage} starts`:`${E.pct}% of the kill`}, real kills)`:'at the pull (no real-kill data for this boss yet)';
+ if(lastFight)renderFight();
  $('lustnote').textContent=!on?'Bloodlust is off in the raid buffs.':m==='auto'?`Bloodlust ${auto}.`:m==='pull'?'Bloodlust at the pull.':m==='time'?`Bloodlust at ${+$('lustv').value||0}s.`:`Bloodlust when the boss drops below ${+$('lustv').value||0}% health.`}
 $('lust').onchange=$('lustv').oninput=lustUi;setTimeout(lustUi,0);
-async function bossPreview(){const on=!!$('boss').value;$('fs').disabled=$('tg').disabled=on;$('fs').closest('.row').hidden=on;$('bdiff').disabled=!on;$('bdiff').parentElement.hidden=!on;$('bprev').hidden=!on;sumNow();if(!on){lastLust=null;lustUi();return}
- const r=await api.bossPreview({boss:$('boss').value,difficulty:$('bdiff').value,duration:+$('dur').value||300});if(!r){$('bprev').textContent='Boss fight not found.';return}
- lastLust=r.lust||null;lustUi();sumNow();
- const TAG={bigwigs:'BigWigs',guide:'guide',assumed:'guessed'};
- const L=r.summary.map(m=>`• ${m.label}${m.assumed.length?' *':''} [times: ${TAG[m.timesFrom]||m.timesFrom}]: ${m.times.slice(0,8).map(t=>t+'s').join(', ')}${m.times.length>8?' …':''}`).join('\n');
- $('bprev').textContent=(lenNote||`Length ${r.length}s`)+(r.stages.length>1?` · stages start at ${r.stages.map(s=>`${s.id}: ${s.at}s`).join(', ')}`:'')+(r.targets>1?`\nBosses cleaved together (separate health): ${r.bosses.join(' + ')}${r.present.filter(p=>p.absent.length).map(p=>` · ${p.name} from ${p.absent[p.absent.length-1][1]}s`).join('')}`:'')+'\n'+L+(r.summary.some(m=>m.assumed.length)?'\n* = effect size guessed. Edit the files to refine (button “Edit…”).':'')}
+async function bossPreview(){const on=!!$('boss').value;$('fs').disabled=$('tg').disabled=on;$('fs').closest('.row').hidden=on;$('bdiff').disabled=!on;$('bdiff').parentElement.hidden=!on;$('bprev').hidden=!on;sumNow();if(!on){lastLust=null;lastFight=null;$('tabf').hidden=true;if(!$('p_fight').hidden)showTab('res');lustUi();return}
+ const r=await api.bossPreview({boss:$('boss').value,difficulty:$('bdiff').value,duration:+$('dur').value||300});if(!r){$('bprev').textContent='Boss fight not found.';$('tabf').hidden=true;return}
+ lastLust=r.lust||null;lastFight=r;$('tabf').hidden=false;lustUi();sumNow();
+ const n=r.summary.length;
+ $('bprev').innerHTML=esc([`${r.length} s`,r.stages.length>1?`${r.stages.length} stages`:'',r.targets>1?`${r.targets} bosses`:'',`${n} mechanic${n>1?'s':''}`].filter(Boolean).join(' · '))+' · <button class="linkbtn" id="fdet" type="button">Details</button>';
+ $('fdet').onclick=()=>showTab('fight');renderFight()}
+// ---- Fight tab: timeline (stages, bosses present, mechanics, Bloodlust) and the notes behind it ----
+let lastFight=null;
+const FTYPE={adds:['Adds','#d08a1a'],movement:['Movement','var(--acc)'],vulnerable:['Boss takes more damage','var(--pos)'],invulnerable:['Boss untargetable','var(--neg)'],damage_done_buff:['Damage buff','#9b6bd6']};
+const FSRC={logs:'real kills (Warcraft Logs / Lorrgs)',bigwigs:'BigWigs timers',guide:'a boss guide',assumed:'an estimate'};
+const ms=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+// Bloodlust moment as set in the Fight card (null when Bloodlust is off); health % is shown at the matching share of the length (approximate).
+function lustAt(r){if($('raid').value==='none'||($('raid').value==='custom'&&!document.querySelector('.rb[value=bloodlust]:checked')))return null;
+ const m=$('lust').value,v=+$('lustv').value||0;
+ return m==='pull'?{at:0,how:'at the pull (your choice)'}:m==='time'?{at:Math.min(v,r.length),how:'at the time you set'}:m==='pct'?{at:Math.round(r.length*(1-v/100)),how:`when the boss drops below ${v} % health (shown at about that share of the fight)`}
+  :r.lust&&r.lust.at!=null?{at:r.lust.at,how:'as in real kills'}:{at:0,how:'at the pull (no real-kill data for this boss yet)'}}
+function renderFight(){const r=lastFight,el=$('fightv');if(!r){el.innerHTML='';return}
+ const L=r.length,pc=t=>Math.min(100,Math.max(0,t/L*100)).toFixed(2)+'%',la=lustAt(r);
+ const bo=bosses.find(b=>b.id===$('boss').value),title=bo?bo.name.split(' — ')[0]:'Boss fight',dl=(($('bdiff').selectedOptions[0]||{}).textContent||'').split(' (')[0];
+ const step=L>600?120:L>300?60:30,ticks=[];for(let t=0;t<=L;t+=step)ticks.push(t);
+ const lust=(hd)=>la?`<span class="fl-lust${hd?' hd':''}" style="left:${pc(la.at)}"${hd?` data-tip="Bloodlust at ${ms(la.at)} (${esc(la.how)})"`:''}></span>`:'';
+ const row=(lab,track,tip)=>`<div class="fl-row"><span class="fl-lab"${tip?` data-tip="${esc(tip)}"`:''}>${lab}</span><div class="fl-tr">${track}${lust(false)}</div></div>`;
+ const st=r.stages.map((x,i)=>{const e=i+1<r.stages.length?r.stages[i+1].at:L;return `<i class="fl-stage${i%2?' alt':''}" style="left:${pc(x.at)};width:calc(${pc(e-x.at)} - 2px)" data-tip="Stage ${x.id}: ${ms(x.at)} – ${ms(e)}">Stage ${x.id}</i>`}).join('');
+ // bosses: main boss always there; extra bosses of a council fight are drawn where they are present
+ const present=b=>{const out=[];let t=0;for(const [a,z] of b.absent){if(a>t)out.push([t,a]);t=Math.max(t,z)}if(t<L)out.push([t,L]);return out};
+ const bossRows=r.targets>1?[`${row(esc(r.bosses[0]),`<i class="fl-on" style="left:0;width:100%" data-tip="${esc(r.bosses[0])}: whole fight"></i>`)}`,...r.present.map(b=>row(esc(b.name),present(b).map(([a,z])=>`<i class="fl-on" style="left:${pc(a)};width:${pc(z-a)}" data-tip="${esc(b.name)}: ${ms(a)} – ${ms(z)}"></i>`).join('')))].join(''):'';
+ const mech=r.summary.map(m=>{const [tn,col]=FTYPE[m.type]||[m.type,'var(--mute)'];
+  const what=m.type==='vulnerable'&&m.multiplier?` · damage taken ×${m.multiplier}`:m.type==='damage_done_buff'&&m.multiplier?` · damage ×${m.multiplier}`:m.type==='adds'&&m.count?` · ${m.count} add${m.count>1?'s':''}`:'';
+  const src=`Timing from ${FSRC[m.timesFrom]||m.timesFrom}${m.assumed.length?` · effect guessed (${m.assumed.join(', ')})`:''}`;
+  return row(`${esc(m.label)}${m.assumed.length?' <span class="it">*</span>':''}`,m.times.map(t=>`<i class="fl-m" style="left:${pc(t)};width:${pc(m.duration||0)};background:${col}" data-tip="${esc(`${m.label}\n${ms(t)}${m.duration?` for ${m.duration} s`:''}${what}\n${src}`)}"></i>`).join(''),`${m.label}\n${tn}${what} · ${m.times.length} time${m.times.length>1?'s':''}\n${src}`)}).join('');
+ const types=[...new Set(r.summary.map(m=>m.type))];
+ const notes=[lenNote?`<b>Length.</b> ${esc(lenNote.replace(/^Length /,''))}`:`<b>Length.</b> ${L} s (set in the Fight card).`,
+  r.targets>1?`<b>Bosses.</b> ${esc(r.bosses.join(' + '))} are cleaved together, each with its own health.`:'',
+  la?`<b>Bloodlust.</b> At ${ms(la.at)}, ${esc(la.how)}.${r.lust?.entry?.checked&&$('lust').value==='auto'?` Measured: ${esc(r.lust.entry.checked)}.`:''}`:'<b>Bloodlust.</b> Off (raid buffs).',
+  `<b>Timings.</b> Stage starts and cast times come from real kills where marked, otherwise from BigWigs timers or guides; hover a mark for its source.`,
+  r.summary.some(m=>m.assumed.length)?'<b>*</b> Effect size guessed (add health, damage taken, durations…). Edit the fight files to refine them.':''].filter(Boolean);
+ el.innerHTML=`<h2>${esc(title)}${dl?` <span class="it" style="font-size:13px;font-weight:400">· ${esc(dl)}</span>`:''}</h2><div class="it">${ms(L)} (${L} s) · ${r.stages.length} stage${r.stages.length>1?'s':''} · ${r.summary.length} mechanics${la?` · Bloodlust at ${ms(la.at)}`:''}</div>`+
+  `<div class="fl"><div class="fl-row fl-axis"><span></span><div class="fl-tr">${ticks.map(t=>`<span style="left:${pc(t)}">${ms(t)}</span>`).join('')}</div></div>`+
+  `<div class="fl-row"><span class="fl-lab">Stages</span><div class="fl-tr">${st}${lust(true)}</div></div>${bossRows}${mech}</div>`+
+  `<div class="fl-leg">${types.map(t=>`<span><i style="background:${(FTYPE[t]||[,'var(--mute)'])[1]}"></i>${(FTYPE[t]||[t])[0]}</span>`).join('')}${la?'<span><i style="background:#c2410c;width:3px"></i>Bloodlust</span>':''}</div>`+
+  `<div class="fl-notes">${notes.map(n=>`<div>${n}</div>`).join('')}</div><div class="row" style="margin-top:10px"><button class="small" id="fedit" data-tip="Open the folder with the boss fight files">Edit fight files…</button></div>`;
+ $('fedit').onclick=()=>api.bossEdit()}
 api.bossList().then(B=>{bosses=B;$('boss').innerHTML='<option value="">None (use the style below)</option>'+B.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');
  const f=window.__savedFight||{};if(f.boss&&B.some(b=>b.id===f.boss)){$('boss').value=f.boss;$('boss').onchange();if(f.difficulty)$('bdiff').value=f.difficulty;bossPreview()}});
 // Fight length follows the typical real kill (Warcraft Logs median guild kill, at the export's item level when known) unless the user
@@ -537,7 +593,7 @@ function setTheme(t){if(t==='auto')delete document.documentElement.dataset.theme
 {let t='auto';try{t=localStorage.getItem('lb_theme')||'auto'}catch{}$('theme').value=t;setTheme(t)}
 $('theme').onchange=()=>setTheme($('theme').value);
 function showTab(t){document.querySelectorAll('.tab').forEach(b=>{const on=b.dataset.tab===t;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
- for(const k of ['res','hist','log'])$('p_'+k).hidden=k!==t;$('copy').style.display=t==='res'?'':'none'}
+ for(const k of ['res','fight','hist','log'])$('p_'+k).hidden=k!==t;$('copy').style.display=t==='res'?'':'none'}
 document.querySelector('.tabs').onclick=e=>{const b=e.target.closest('.tab');if(b)showTab(b.dataset.tab)};
 $('cat').addEventListener('change',()=>$('catmaxl').hidden=!$('cat').checked);
 const collapseSections=()=>document.querySelectorAll('#setup details.sec').forEach(d=>d.open=false);

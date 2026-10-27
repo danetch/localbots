@@ -1,7 +1,7 @@
 POLYGNOME (formerly LOCALBOTS) - PROJECT HANDOFF
 ================================================
 
-=== START HERE (state on 27 Oct 2026 morning, app v0.10.0, 89 tests; see "27 OCT" at the end for the latest changes) ===
+=== START HERE (state on 27 Oct 2026 morning, app v0.10.1, 89 tests; see "27 OCT" at the end for the latest changes) ===
 New conversation: attach the GitHub repo danetch/localbots, read this START HERE and README.md, then wait for the user's request.
 Everything below START HERE is a chronological log (oldest first, 21 Oct -> 26 Oct); when two notes disagree, the later one wins.
 The old "FILE MAP", "FEATURES IMPLEMENTED", "KNOWN LIMITATIONS" and "ENVIRONMENT NOTES" sections (21 Oct) are outdated (zips, wago-only,
@@ -886,3 +886,14 @@ for minor-patch PTRs like 12.1.7).
 - Verified in real Electron under Xvfb (first launch, all modes expanded, Settings) and with test/ui/mock.js in an Electron harness
   (results, dark mode, 1000 px, crafted/enchant cards, keyboard and click behaviour of hints). npm test 89 pass. Screenshots on Linux
   use a fallback font (no Segoe UI): Windows text is a bit narrower.
+
+=== 27 OCT: v0.10.1 — FIGHT TAB, UPRIGHT INFO ICON ===
+- ⓘ icon = inline SVG injected by the hint setup (circle, centred dot, straight stem); markup keeps a plain "i" as fallback text.
+- Boss fight details left the Fight card (it grew to 390-570 px): the card shows one line ("615 s · 4 stages · 2 bosses · 7 mechanics ·
+  Details"); Details opens a "Fight" tab (#tabf / #p_fight, visible only while a boss is selected; None hides it and goes back to Results).
+  renderFight(): time axis, stage bands, one row per boss for council fights (present windows), one row per mechanic (marks at cast times,
+  bar width = duration, colour by type: adds / movement / vulnerable / invulnerable / damage buff), Bloodlust line from the card's choice
+  (lustAt(): real kills / pull / time / health % shown at that share of the length / off with raid buffs), hover tips (time, duration,
+  effect, timing source, guessed parts), notes (length source, cleaved bosses, measured Bloodlust, footnote "*" only when something is
+  guessed). lib/boss.js build() summary now also carries duration, multiplier, count.
+- Verified in real Electron (Coiled Altar Mythic, Ula'tek Heroic dark, Twin Fangs at 1000 px, None hides the tab, Bloodlust choice redraws).
