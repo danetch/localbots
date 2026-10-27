@@ -1,7 +1,7 @@
 POLYGNOME (formerly LOCALBOTS) - PROJECT HANDOFF
 ================================================
 
-=== START HERE (state on 26 Oct 2026 evening, app v0.9.1, 89 tests) ===
+=== START HERE (state on 27 Oct 2026 morning, app v0.10.0, 89 tests; see "27 OCT" at the end for the latest changes) ===
 New conversation: attach the GitHub repo danetch/localbots, read this START HERE and README.md, then wait for the user's request.
 Everything below START HERE is a chronological log (oldest first, 21 Oct -> 26 Oct); when two notes disagree, the later one wins.
 The old "FILE MAP", "FEATURES IMPLEMENTED", "KNOWN LIMITATIONS" and "ENVIRONMENT NOTES" sections (21 Oct) are outdated (zips, wago-only,
@@ -863,7 +863,7 @@ for minor-patch PTRs like 12.1.7).
   tested: lib/season.js, lib/lust.js), lib/updater.js, renderer-only logic (bcmp build compare, Bloodlust card, region sent from the export).
 - START HERE rewritten as a self-contained briefing; outdated 21 Oct sections flagged; runbook updated for the automatic merges.
 
-=== 27 OCT: v0.9.2 / v0.9.3 FIGHT CARD FIXES + UI HINTS / DECLUTTER (branch ui-hints, not released yet) ===
+=== 27 OCT: v0.9.2 / v0.9.3 FIGHT CARD FIXES + UI HINTS / DECLUTTER (UI part released as v0.10.0) ===
 - v0.9.2 (released): choosing "None" after a boss left Style / Targets hidden and disabled (autoLength returned before bossPreview).
   Now refreshed, and an automatic boss length goes back to 300 s (a typed length is kept).
 - v0.9.3 (released): the Fight summary line only refreshed on user events, so late values (boss length from IPC, the saved fight
