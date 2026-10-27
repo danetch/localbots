@@ -277,9 +277,9 @@ $('txt').oninput=()=>{const L=$('txt').value.split(/\r?\n/);let e=0,b=0;
 let bosses=[];
 api.settings().then(s=>{$('simc').textContent=s.simcPath||'No simc selected';
  $('rsv').value=s.reserve??6;thrUpd();if(s.precision)$('prec').value=s.precision;
- const f=s.fight;window.__savedFight=f;if(f&&f.boss&&bosses.some(b=>b.id===f.boss)){$('boss').value=f.boss;$('boss').onchange();if(f.difficulty)$('bdiff').value=f.difficulty;bossPreview()}if(f){$('fs').value=f.fightStyle||'Patchwerk';$('tg').value=f.targets||1;$('dur').value=f.duration||300;$('vary').value=Math.round((f.vary??0.2)*100);
+ const f=s.fight;window.__savedFight=f;if(f&&f.boss&&f.durAuto&&f.duration)autoLen=String(f.duration);if(f&&f.boss&&bosses.some(b=>b.id===f.boss)){$('boss').value=f.boss;$('boss').onchange();if(f.difficulty)$('bdiff').value=f.difficulty;bossPreview()}if(f){$('fs').value=f.fightStyle||'Patchwerk';$('tg').value=f.targets||1;$('dur').value=f.duration||300;$('vary').value=Math.round((f.vary??0.2)*100);
  $('raid').value=f.raid||'full';$('raid').onchange();if(f.raidOn)document.querySelectorAll('.rb').forEach(c=>c.checked=f.raidOn.includes(c.value));
- $('c_flask').value=f.flask||'';$('c_food').value=f.food||'';$('c_potion').value=f.potion||'';$('c_rune').value=f.rune||'';$('nocons').checked=!!f.noCons;$('extra').value=f.extra||'';if(f.lust){lustMode=$('lust').value=f.lust.mode||'auto';if(f.lust.value&&lustVals[lustMode]!=null)lustVals[lustMode]=$('lustv').value=f.lust.value}lustUi()}});
+ $('c_flask').value=f.flask||'';$('c_food').value=f.food||'';$('c_potion').value=f.potion||'';$('c_rune').value=f.rune||'';$('nocons').checked=!!f.noCons;$('extra').value=f.extra||'';if(f.lust){lustMode=$('lust').value=f.lust.mode||'auto';if(f.lust.value&&lustVals[lustMode]!=null)lustVals[lustMode]=$('lustv').value=f.lust.value}lustUi()}sumNow()});
 // Bloodlust choice: value field for time / health, and what "as in real kills" means for the selected boss (lastLust from the preview)
 let lastLust=null,lustMode='auto';const lustVals={time:60,pct:30};
 function lustUi(){const m=$('lust').value;if(m!==lustMode){if(lustVals[lustMode]!=null)lustVals[lustMode]=+$('lustv').value||lustVals[lustMode];if(lustVals[m]!=null)$('lustv').value=lustVals[m];lustMode=m}
@@ -288,9 +288,9 @@ function lustUi(){const m=$('lust').value;if(m!==lustMode){if(lustVals[lustMode]
  const E=lastLust?.entry,auto=!$('boss').value?'at the pull (no boss fight selected)':lastLust?.at!=null?`at ${lastLust.at}s (${E.stage!=null?`${E.after}s after stage ${E.stage} starts`:`${E.pct}% of the kill`}, real kills)`:'at the pull (no real-kill data for this boss yet)';
  $('lustnote').textContent=!on?'Bloodlust is off in the raid buffs.':m==='auto'?`Bloodlust ${auto}.`:m==='pull'?'Bloodlust at the pull.':m==='time'?`Bloodlust at ${+$('lustv').value||0}s.`:`Bloodlust when the boss drops below ${+$('lustv').value||0}% health.`}
 $('lust').onchange=$('lustv').oninput=lustUi;setTimeout(lustUi,0);
-async function bossPreview(){const on=!!$('boss').value;$('fs').disabled=$('tg').disabled=on;$('fs').closest('.row').hidden=on;$('bdiff').disabled=!on;$('bdiff').parentElement.hidden=!on;$('bprev').hidden=!on;if(!on){lastLust=null;lustUi();return}
+async function bossPreview(){const on=!!$('boss').value;$('fs').disabled=$('tg').disabled=on;$('fs').closest('.row').hidden=on;$('bdiff').disabled=!on;$('bdiff').parentElement.hidden=!on;$('bprev').hidden=!on;sumNow();if(!on){lastLust=null;lustUi();return}
  const r=await api.bossPreview({boss:$('boss').value,difficulty:$('bdiff').value,duration:+$('dur').value||300});if(!r){$('bprev').textContent='Boss fight not found.';return}
- lastLust=r.lust||null;lustUi();
+ lastLust=r.lust||null;lustUi();sumNow();
  const TAG={bigwigs:'BigWigs',guide:'guide',assumed:'guessed'};
  const L=r.summary.map(m=>`• ${m.label}${m.assumed.length?' *':''} [times: ${TAG[m.timesFrom]||m.timesFrom}]: ${m.times.slice(0,8).map(t=>t+'s').join(', ')}${m.times.length>8?' …':''}`).join('\n');
  $('bprev').textContent=(lenNote||`Length ${r.length}s`)+(r.stages.length>1?` · stages start at ${r.stages.map(s=>`${s.id}: ${s.at}s`).join(', ')}`:'')+(r.targets>1?`\nBosses cleaved together (separate health): ${r.bosses.join(' + ')}${r.present.filter(p=>p.absent.length).map(p=>` · ${p.name} from ${p.absent[p.absent.length-1][1]}s`).join('')}`:'')+`\n* = effect size guessed. Edit the files to refine (button “Edit…”).\n`+L}
@@ -347,7 +347,7 @@ setTimeout(checkAppAtStart,4000);
 const RB={bloodlust:'Bloodlust',arcane_intellect:'Arcane Intellect',battle_shout:'Battle Shout',power_word_fortitude:'Power Word: Fortitude',mark_of_the_wild:'Mark of the Wild',skyfury:'Skyfury',mystic_touch:'Mystic Touch',chaos_brand:'Chaos Brand',hunters_mark:'Hunter’s Mark'};
 $('rbuffs').innerHTML=Object.entries(RB).map(([k,v])=>`<label class="in"><input type="checkbox" class="rb" value="${k}" checked>${v}</label>`).join('');
 $('raid').onchange=()=>{$('rbuffs').hidden=$('raid').value!=='custom';lustUi()};document.addEventListener('change',e=>{if(e.target.classList?.contains('rb'))lustUi()});
-const getFight=()=>({boss:$('boss').value,difficulty:$('bdiff').value,fightStyle:$('fs').value,targets:+$('tg').value||1,duration:+$('dur').value||300,vary:Math.min(100,Math.max(0,+$('vary').value||0))/100,
+const getFight=()=>({durAuto:!!$('boss').value&&$('dur').value===autoLen,boss:$('boss').value,difficulty:$('bdiff').value,fightStyle:$('fs').value,targets:+$('tg').value||1,duration:+$('dur').value||300,vary:Math.min(100,Math.max(0,+$('vary').value||0))/100,
  raid:$('raid').value,raidOn:[...document.querySelectorAll('.rb:checked')].map(c=>c.value),flask:$('c_flask').value,food:$('c_food').value,potion:$('c_potion').value,rune:$('c_rune').value,noCons:$('nocons').checked,extra:$('extra').value,lust:{mode:$('lust').value,value:+$('lustv').value||0}});
 
 
@@ -546,6 +546,8 @@ $('setbtn').onclick=()=>$('setdlg').showModal();$('setclose').onclick=()=>$('set
 $('setdlg').addEventListener('click',e=>{if(e.target===$('setdlg'))$('setdlg').close()});
 new MutationObserver(()=>{$('setdot').hidden=!!$('simc').textContent&&$('simc').textContent!=='No simc selected';$('setbtn').dataset.tip=$('setdot').hidden?'simc engine, threads, precision, theme and app updates':'No simc selected yet: open Settings to download or select it.';renderStart()}).observe($('simc'),{childList:true,characterData:true,subtree:true});
 const cap=t=>t?t[0].toUpperCase()+t.slice(1):'';
+// summary refresh from code paths that may run early (restored settings, late IPC replies): never throws
+function sumNow(){try{updSum()}catch{}}
 function updSum(){const set=(k,t)=>{const e=$('sm_'+k);if(e)e.textContent=t};
  const t=$('txt').value,cls=(/^\s*(warrior|paladin|deathknight|hunter|shaman|evoker|rogue|monk|druid|demonhunter|priest|mage|warlock)\s*=/mi.exec(t)||[])[1],spec=(/^\s*spec\s*=\s*(\w+)/mi.exec(t)||[])[1];
  let e=0,b=0;for(const l of t.split(/\r?\n/)){const x=l.trim();if(/^\w+=,?id=/.test(x))e++;else if(/^#\s*\w+=,?id=/.test(x))b++}
