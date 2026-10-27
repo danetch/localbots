@@ -75,7 +75,7 @@ header .seg{width:330px}header button.go{flex:none;min-width:150px}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--neg);margin-left:6px}
 #pstrip{display:flex;align-items:center;gap:10px;padding:0 12px 8px;font-size:12px;color:var(--mute)}
 #pstrip .bar{flex:1;height:8px}#ptxt{min-width:230px}#ptime{min-width:130px;text-align:right}
-details.sec{padding:9px 14px}details.sec>summary{display:flex;align-items:baseline;gap:6px}
+details.sec{padding:9px 14px}details.sec>summary{display:flex;align-items:center;gap:6px;white-space:nowrap}details.sec>summary .hint{margin-left:0}
 .sm{margin-left:auto;padding-left:12px;text-transform:none;letter-spacing:0;font-weight:400;font-size:12px;color:var(--ink);opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 details.sec[open]>summary .sm{opacity:.45}
 #secbar{display:flex;gap:6px;justify-content:flex-end;padding:0 2px}
@@ -87,23 +87,46 @@ details.sec[open]>summary .sm{opacity:.45}
 #log{height:100%;min-height:0}
 dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:16px 18px;width:min(560px,92vw)}
 dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:14px 0 4px}
+/* ---- help hints: ⓘ icons (.hint) and any element with data-tip share one floating tooltip (#tip) ---- */
+.hint{display:inline-flex;align-items:center;justify-content:center;flex:none;width:15px;height:15px;margin-left:5px;padding:0;border:1px solid currentColor;border-radius:50%;
+ color:var(--mute);opacity:.75;font:italic 600 10px/1 Georgia,"Times New Roman",serif;text-transform:none;letter-spacing:0;cursor:help;vertical-align:1px;user-select:none}
+.hint:hover,.hint:focus-visible,.hint.on{opacity:1;color:var(--acc)}.hint:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+#tip{position:fixed;z-index:1000;max-width:340px;padding:8px 11px;border-radius:6px;background:var(--ink);color:var(--panel);font-size:12px;line-height:1.45;font-weight:400;
+ text-transform:none;letter-spacing:0;white-space:pre-line;box-shadow:0 4px 14px rgba(0,0,0,.25);pointer-events:none;opacity:0;transition:opacity .12s}
+#tip.on{opacity:1}@media(prefers-reduced-motion:reduce){#tip{transition:none}}
+/* label text + its hint on one line (labels stack text over field) */
+.lt{display:inline-flex;align-items:center;white-space:nowrap}
+h3{display:flex;align-items:center;font-size:12px;font-weight:600;margin:10px 0 3px}
+.cgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:4px 0}.cgrid input{width:100%}
+/* game data status in the header: dot + one line, full text in the hint */
+#lootbox{display:inline-flex;align-items:center;gap:6px;max-width:300px;min-width:0;font-size:12px;color:var(--mute)}
+#lootst{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.sdot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--line)}.sdot.ok{background:var(--pos)}.sdot.busy{background:#d08a1a}.sdot.bad{background:var(--neg)}
+#pstrip.idle{display:none}
+/* getting started checklist (empty Results) */
+.start{max-width:560px;padding:6px 0}.start h2{font-size:15px;margin:0 0 4px}.start>.it{margin-bottom:12px}
+.step{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;background:var(--panel)}
+.step .ck{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);font-weight:700;font-size:12px;color:var(--mute)}
+.step.done .ck{background:var(--pos);border-color:var(--pos);color:#fff}.step.done{opacity:.75}
+.step .tx2{flex:1;min-width:0}.step .tx2 b{display:block;font-weight:600}.step .tx2 span{color:var(--mute);font-size:12px}
 @media(max-width:1000px){body{height:auto;overflow:auto}main{grid-template-columns:1fr}#setup{overflow:visible}#resbox{min-height:70vh}header{flex-wrap:wrap}}
 </style></head><body>
 <header>
  <span class="brand"><img src="icon.png" alt="" width="24" height="24" style="vertical-align:-6px;margin-right:7px">Polygnome</span>
  <div class="seg" role="radiogroup" aria-label="Mode">
-  <label><input type="radio" name="mode" value="top" checked>Top Gear</label>
-  <label><input type="radio" name="mode" value="drop">Droptimizer</label>
-  <label><input type="radio" name="mode" value="bis">Best in Slot</label></div>
- <button id="go" class="go" title="Ctrl+Enter">Run Top Gear</button><button id="stop" disabled>Cancel</button>
+  <label data-tip="Tests every valid combination of your bag items (rings and trinkets in pairs) and ranks them."><input type="radio" name="mode" value="top" checked>Top Gear</label>
+  <label data-tip="Tests each loot drop of the instances you tick on its own against your current gear and ranks the gains."><input type="radio" name="mode" value="drop">Droptimizer</label>
+  <label data-tip="Builds the best set step by step from your bags, optional loot, crafted gear, enchants, gems and consumables, until no upgrade remains."><input type="radio" name="mode" value="bis">Best in Slot</label></div>
+ <button id="go" class="go" data-tip="Start the simulation (Ctrl+Enter)">Run Top Gear</button><button id="stop" disabled data-tip="Stop the running simulation">Cancel</button>
  <span class="grow"></span>
- <span id="lootst" class="it"></span><button id="upd" class="small" title="Loot tables, crafted items, tier sets and consumables: needed for Catalyst, Crafted gear, Droptimizer and Best in Slot">Update loot data</button>
- <button id="setbtn" class="small">Settings<span id="setdot" class="dot" hidden title="No simc selected"></span></button>
- <label class="pvsw" id="pvsw" title="No upcoming season in testing yet."><span class="lv">Live</span><input type="checkbox" role="switch" id="ptron" disabled aria-label="Season preview: PTR / beta game data"><i></i><span class="pv" id="pvlbl">PTR</span></label>
+ <span id="lootbox"><span class="sdot" id="lootdot"></span><span id="lootst"></span></span><button id="upd" class="small" data-tip="Downloads the game data: loot tables, crafted items, tier sets, enchants, gems and consumables.
+Polygnome also does this by itself after a game patch, when the data is missing or older than 14 days.">Update loot data</button>
+ <button id="setbtn" class="small" data-tip="simc engine, threads, precision, theme and app updates">Settings<span id="setdot" class="dot" hidden></span></button>
+ <label class="pvsw" id="pvsw" data-tip="No upcoming season in testing yet."><span class="lv">Live</span><input type="checkbox" role="switch" id="ptron" disabled aria-label="Season preview: PTR / beta game data"><i></i><span class="pv" id="pvlbl">PTR</span></label>
 </header>
 <div id="abanner" role="status" hidden style="display:flex;align-items:center;gap:10px;margin:0 12px 8px;padding:7px 12px;border:1px solid var(--pos);border-radius:8px;background:var(--panel);font-size:13px"><span id="abtxt"></span><span class="grow"></span><button id="ab_go" class="small go2">Update and restart</button><button id="ab_later" class="small">Later</button></div>
 <div id="ubanner" role="status" hidden><span id="ubtxt"></span><span class="grow"></span><button id="ub_go" class="small go2">Update</button><button id="ub_later" class="small">Later</button></div>
-<div id="pstrip"><span id="ptxt">Idle</span>
+<div id="pstrip" class="idle"><span id="ptxt">Idle</span>
  <div class="bar" id="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Simulation progress"><i id="fill"></i></div>
  <span id="ptime"></span></div>
 
@@ -111,123 +134,122 @@ dialog::backdrop{background:rgba(10,20,30,.45)}dialog h2{font-size:12px;text-tra
 <div id="setup">
  <div id="secbar"><button class="small" id="expall">Expand all</button><button class="small" id="colall">Collapse all</button></div>
 
- <details class="card sec" id="s_char" open><summary><span class="n"></span>Character<span class="sm" id="sm_char"></span></summary>
+ <details class="card sec" id="s_char" open><summary><span class="n"></span>Character<i class="hint" data-tip="In game, type /simc and copy the whole text (with the addon's bag items included), then paste it here.
+Polygnome reads your class, spec, equipped gear, bag items, talent loadouts and region from it. It is remembered between sessions.">i</i><span class="sm" id="sm_char"></span></summary>
   <textarea id="txt" placeholder="Paste the full /simc export here (bags included)." spellcheck="false"></textarea>
   <div class="it" id="cnt">Nothing pasted yet.</div></details>
 
- <details class="card sec" id="s_tal" hidden><summary><span class="n"></span>Talent builds<span class="sm" id="sm_tal"></span></summary>
+ <details class="card sec" id="s_tal" hidden><summary><span class="n"></span>Talent builds<i class="hint" data-tip="Talent loadouts found in your export (the active one and the saved ones).
+Tick one to simulate it instead of the exported build, or several to compare them: each one is simulated separately, so the run takes that many times longer.">i</i><span class="sm" id="sm_tal"></span></summary>
   <div id="tal"></div></details>
 
  <details class="card sec" id="s_opt" open><summary><span class="n"></span>Options<span class="sm" id="sm_opt"></span></summary>
-  <div class="it" id="mdesc"></div>
-  <label class="in" style="margin:4px 0"><input type="checkbox" id="rep_on" checked>Create the simc HTML report of the best result (adds some time)</label>
-  <div class="row" data-modes="top"><label>Finalists (pass 2)<input id="top" type="number" min="1" value="30"></label>
-   <label title="Items with a known upgrade track (Champion / Hero / Myth) are raised to its last level (6/6). Crafted items and items already at or above it are left as they are.">Upgrades<select id="tgup"><option value="none">As they are</option><option value="bags">Bag items fully upgraded</option><option value="all">All items fully upgraded</option></select></label></div>
-  <div class="row" data-modes="bis"><label>Max rounds<input id="rounds" type="number" min="1" max="12" value="5"></label>
-   <label title="Round 1 settles the gear; consumables, enchants and gems are added from this round on">Consumables, enchants &amp; gems from round<input id="consfrom" type="number" min="1" max="12" value="2"></label></div>
-  <div class="row" data-modes="top drop bis"><label class="in"><input type="checkbox" id="cat" checked>Include Catalyst (tier) versions</label>
-   <label>Max charges<input id="catmax" type="number" min="0" max="5" placeholder="any"></label></div>
-  <div class="it" data-modes="top drop bis" id="cathint">Each head/shoulder/chest/hands/legs item (bags and loot) may be converted into your class tier piece (keeps level, stats and effects). Needs “Update loot data” once.</div></details>
+  <label class="in" style="margin:2px 0 4px"><input type="checkbox" id="rep_on" checked>simc HTML report of the best result<i class="hint" data-tip="Simulates the best result once more and writes simc's full HTML report (adds some time). Open it with “Open simc report” above the results.">i</i></label>
+  <div class="row" data-modes="top"><label><span class="lt">Finalists<i class="hint" data-tip="Pass 1 tests every combination quickly; the best N are simulated again with high precision (pass 2). More finalists: safer ranking, longer run.">i</i></span><input id="top" type="number" min="1" value="30"></label>
+   <label><span class="lt">Upgrades<i class="hint" data-tip="Items with a known upgrade track (Champion / Hero / Myth) are raised to its last level (6/6). Crafted items and items already at or above it are left as they are.">i</i></span><select id="tgup"><option value="none">As they are</option><option value="bags">Bag items fully upgraded</option><option value="all">All items fully upgraded</option></select></label></div>
+  <div class="row" data-modes="bis"><label><span class="lt">Max rounds<i class="hint" data-tip="Each round tests every possible change against the current set and keeps the best ones. The search stops earlier when a round finds no real gain.">i</i></span><input id="rounds" type="number" min="1" max="12" value="5"></label>
+   <label><span class="lt">Enchants, gems &amp; consumables from round<i class="hint" data-tip="Round 1 settles the gear; consumables, enchants and gems are added from this round on. If the gear stops improving earlier, they join at the next round.">i</i></span><input id="consfrom" type="number" min="1" max="12" value="2"></label></div>
+  <div class="row" data-modes="top drop bis" style="align-items:center"><label class="in"><input type="checkbox" id="cat" checked>Catalyst (tier) versions<i class="hint" data-tip="Each head, shoulder, chest, hands and legs item (bags and loot) is also tried as your class tier piece, as the Catalyst would convert it (same level, stats and effects), with the set bonuses.">i</i></label>
+   <label class="in" id="catmaxl">Max charges<i class="hint" data-tip="Catalyst charges you have. Empty: no limit." style="margin:0">i</i><input id="catmax" type="number" min="0" max="5" placeholder="any" style="width:60px"></label></div></details>
 
  <details class="card sec" id="s_fight" open><summary><span class="n"></span>Fight<span class="sm" id="sm_fight"></span></summary>
-  <div class="row" style="margin-top:0"><label>Boss fight<select id="boss"><option value="">None (use the style below)</option></select></label>
-   <label hidden>Difficulty<select id="bdiff" disabled></select></label><button id="bedit" type="button" class="small" title="Open the folder with the boss fight files">Edit…</button></div>
+  <div class="row" style="margin-top:0"><label><span class="lt">Boss fight<i class="hint" data-tip="A real boss of the current raids: mechanics, stage timings and kill length from BigWigs and Warcraft Logs, Bloodlust as in real kills.
+“None” uses a generic fight style instead.">i</i></span><select id="boss"><option value="">None (use the style below)</option></select></label>
+   <label hidden>Difficulty<select id="bdiff" disabled></select></label><button id="bedit" type="button" class="small" data-tip="Open the folder with the boss fight files to adjust timings or mechanics">Edit…</button></div>
   <div class="it" id="bprev" hidden style="white-space:pre-wrap"></div>
-  <div class="row"><label>Style<select id="fs">
+  <div class="row"><label><span class="lt">Style<i class="hint" data-tip="simc's generic fight styles, used when no boss fight is chosen. Patchwerk: one stationary target, no mechanics.">i</i></span><select id="fs">
    <option value="Patchwerk">Patchwerk (stationary)</option><option value="LightMovement">Light movement</option><option value="HeavyMovement">Heavy movement</option>
    <option value="HecticAddCleave">Hectic add cleave</option><option value="CleaveAdd">Cleave add</option><option value="CastingPatchwerk">Casting Patchwerk</option>
    <option value="DungeonSlice">Dungeon slice</option><option value="DungeonRoute">Dungeon route</option></select></label>
-   <label>Targets<input id="tg" type="number" min="1" max="20" value="1"></label>
-   <label title="Set automatically from real kills for a boss fight; clear it to go back to the automatic length">Length (s)<input id="dur" type="number" min="10" value="300"></label>
-   <label>Variance %<input id="vary" type="number" min="0" max="100" value="20"></label></div>
-  <div class="row"><label title="When Bloodlust / Heroism is used (one per fight). “As in real kills”: measured on the fastest Warcraft Logs kills of the boss">Bloodlust<select id="lust">
+   <label><span class="lt">Targets<i class="hint" data-tip="Number of enemies (generic styles only; boss fights set their own).">i</i></span><input id="tg" type="number" min="1" max="20" value="1" style="width:60px"></label>
+</div>
+  <div class="row"><label><span class="lt">Length (s)<i class="hint" data-tip="Fight length. For a boss fight it is set automatically from real kills at your item level; clear the field to go back to the automatic length.">i</i></span><input id="dur" type="number" min="10" value="300" style="width:66px"></label>
+   <label><span class="lt">Variance %<i class="hint" data-tip="Each simulated fight lasts the length ± this percentage, so results do not depend on one exact length.">i</i></span><input id="vary" type="number" min="0" max="100" value="20" style="width:60px"></label>
+   <label><span class="lt">Bloodlust<i class="hint" data-tip="When Bloodlust / Heroism is used (one per fight). “As in real kills”: measured on the fastest Warcraft Logs kills of the boss; at the pull without a boss fight.">i</i></span><select id="lust">
    <option value="auto">As in real kills</option><option value="pull">At the pull</option><option value="time">At a time (s)</option><option value="pct">At boss health (%)</option></select></label>
    <label id="lustvl" hidden><span id="lustvt">Seconds</span><input id="lustv" type="number" min="1" max="1200" value="60"></label></div>
   <div class="it" id="lustnote"></div></details>
 
  <details class="card sec" id="s_buff"><summary><span class="n"></span>Raid buffs &amp; extra options<span class="sm" id="sm_buff"></span></summary>
-  <label>Raid buffs<select id="raid"><option value="full">Full raid buffs (default)</option><option value="none">No raid buffs</option><option value="custom">Custom…</option></select></label>
+  <label><span class="lt">Raid buffs<i class="hint" data-tip="Full: every raid buff and debuff, Bloodlust included. Custom lets you pick them one by one.">i</i></span><select id="raid"><option value="full">Full raid buffs (default)</option><option value="none">No raid buffs</option><option value="custom">Custom…</option></select></label>
   <div id="rbuffs" hidden style="columns:2;margin-top:4px"></div>
-  <label style="margin-top:6px">Extra simc options (one key=value per line)<textarea id="extra" style="height:44px" placeholder="key=value" spellcheck="false"></textarea></label></details>
+  <label style="margin-top:6px"><span class="lt">Extra simc options<i class="hint" data-tip="Any simc option, one key=value per line, added to every simulation. Options that change the engine or write files (threads, iterations, output…) are ignored.">i</i></span><textarea id="extra" style="height:44px" placeholder="key=value" spellcheck="false"></textarea></label></details>
 
  <details class="card sec" id="s_cons"><summary><span class="n"></span>Consumables<span class="sm" id="sm_cons"></span></summary>
-  <div style="font-weight:600;font-size:12px">Current setup</div>
-  <div class="it">Leave a field empty to use what your export lists; type a name to use another one in every simulation.</div>
-  <div class="row" style="margin-top:2px"><label>Flask<input id="c_flask" list="dl_flask" type="text" placeholder="from export" style="width:100px"></label><label>Food<input id="c_food" list="dl_food" type="text" placeholder="from export" style="width:100px"></label>
-   <label>Potion<input id="c_potion" list="dl_potion" type="text" placeholder="from export" style="width:100px"></label><label>Rune<input id="c_rune" list="dl_rune" type="text" placeholder="from export" style="width:100px"></label></div>
-  <label class="in"><input type="checkbox" id="nocons">No consumables</label>
-  <div class="it" id="conshint">Suggestions appear after “Update loot data”.</div><div id="dls"></div>
+  <h3 style="margin-top:0">Current setup<i class="hint" id="conshint" data-tip="Leave a field empty to use what your export lists; type a name to use another one in every simulation.">i</i></h3>
+  <div class="cgrid"><label>Flask<input id="c_flask" list="dl_flask" type="text" placeholder="export"></label><label>Food<input id="c_food" list="dl_food" type="text" placeholder="export"></label>
+   <label>Potion<input id="c_potion" list="dl_potion" type="text" placeholder="export"></label><label>Rune<input id="c_rune" list="dl_rune" type="text" placeholder="export"></label></div>
+  <label class="in"><input type="checkbox" id="nocons">No consumables</label><div id="dls"></div>
   <div data-modes="top bis">
-   <div style="font-weight:600;font-size:12px;margin-top:10px">Consumables to compare</div>
-   <div class="it" style="margin-bottom:6px">Tick the flasks, food, potions and runes to consider. Best in Slot picks the best of each category alongside your gear; Top Gear ranks them on its best combination and, if one beats your current setup, simulates the finalists again with it. Leave a category empty to keep your current setup.</div>
-   <div id="consBox"></div><div class="it" id="combo"></div>
-   <div class="it" style="margin-top:6px">Secondary stats lose value past 30&nbsp;% from rating (diminishing returns). Best in Slot: when a flask or food and a gear, enchant or gem change push the same stat into that zone, they are simulated together instead of adding up their separate gains.</div>
-   <div class="it" data-modes="bis">Best in Slot adds consumables from the round set in Options (“Consumables, enchants &amp; gems from round”).</div></div></details>
+   <h3>Consumables to compare<i class="hint" data-tip="Tick the flasks, food, potions and runes to consider; leave a category empty to keep your current setup.
+Best in Slot picks the best of each category alongside your gear (from the round set in Options). Top Gear ranks them on its best combination and, if one beats your current setup, simulates the finalists again with it.
+Secondary stats lose value past 30 % from rating (diminishing returns): when a flask or food and a gear change push the same stat into that zone, Best in Slot simulates them together.">i</i></h3>
+   <div id="consBox"></div><div class="it" id="combo"></div></div></details>
 
- <details class="card sec" id="s_loot" data-modes="drop bis" open><summary><span class="n"></span>Loot source<span class="sm" id="sm_loot"></span></summary>
-  <label>Adventure Guide tier<select id="tier"></select></label>
-  <div class="row" style="margin-bottom:0"><input id="ifilt" placeholder="Filter instances…" style="flex:1;min-width:120px"><button id="isel" class="small" title="Tick every raid and dungeon listed below (use the tier selector above to pick the season)">Select all</button><button id="inone" class="small">Clear</button></div>
+ <details class="card sec" id="s_loot" data-modes="drop bis" open><summary><span class="n"></span>Loot source<i class="hint" data-tip="The raids and dungeons whose drops are tested, and the item level of those drops.
+Best in Slot: leave every instance unticked to use your bag items only.">i</i><span class="sm" id="sm_loot"></span></summary>
+  <label><span class="lt">Adventure Guide tier<i class="hint" data-tip="“This season” lists the current season's raids and dungeons; last season's raids are left out.">i</i></span><select id="tier"></select></label>
+  <div class="row" style="margin-bottom:0"><input id="ifilt" placeholder="Filter instances…" style="flex:1;min-width:120px"><button id="isel" class="small" data-tip="Tick every raid and dungeon listed below (use the tier selector above to pick the season)">Select all</button><button id="inone" class="small">Clear</button></div>
   <div id="inst" style="max-height:130px;overflow:auto;margin:6px 0"></div><div class="it" id="seasnote" hidden></div>
-  <div class="row"><label>Custom item level<input id="ilvl" type="number" min="1"></label>
-   <label>Upgrades<select id="upg"><option value="none">As dropped</option><option value="max">Fully upgraded (x/6)</option></select></label>
-   <label id="arml" title="Paste an export with your class to set this automatically">Armor<select id="arm"><option value="cloth">Cloth</option><option value="leather">Leather</option><option value="mail">Mail</option><option value="plate" selected>Plate</option></select></label>
-   <label class="in"><input type="checkbox" id="wp">Include weapons &amp; shields</label></div>
-  <div class="it"><span id="armtxt"></span> <span id="wtxt"></span></div>
-  <div class="row"><button id="editprog">Edit tracks &amp; sources…</button><span class="it" id="seas"></span></div>
-  <div class="it">Each instance has an item level source: “Custom” uses the field above.</div>
-  <div class="it" data-modes="bis">Best in Slot: leave all instances unticked to use bag items only.</div></details>
+  <div class="row"><label><span class="lt">Custom item level<i class="hint" data-tip="Used by the instances whose item level source (the menu next to each instance) is “Custom ilvl”. The other sources follow the season's tracks (Edit tracks &amp; sources).">i</i></span><input id="ilvl" type="number" min="1"></label>
+   <label><span class="lt">Upgrades<i class="hint" data-tip="Fully upgraded: each drop at the last level of its upgrade track (x/6).">i</i></span><select id="upg"><option value="none">As dropped</option><option value="max">Fully upgraded (x/6)</option></select></label>
+   <label id="arml" data-tip="Paste an export with your class to set this automatically">Armor<select id="arm"><option value="cloth">Cloth</option><option value="leather">Leather</option><option value="mail">Mail</option><option value="plate" selected>Plate</option></select></label>
+   <label class="in"><input type="checkbox" id="wp">Include weapons &amp; shields<i class="hint" id="wphint" data-tip="Weapons and shields your class can use. Paste an export to see which ones.">i</i></label></div>
+  <div class="it"><span id="armtxt"></span></div>
+  <div class="row"><button id="editprog" class="small" data-tip="Item levels of each upgrade track and drop source (per boss for Mythic raids). Opens your editable copy.">Edit tracks &amp; sources…</button><span class="it" id="seas"></span></div></details>
 
- <details class="card sec" id="s_craft" data-modes="top drop bis"><summary><span class="n"></span>Crafted gear<span class="sm" id="sm_craft"></span></summary>
+ <details class="card sec" id="s_craft" data-modes="top drop bis"><summary><span class="n"></span>Crafted gear<i class="hint" data-tip="Adds max-level crafted pieces of your armor type to the pool: embellished crafts, plain crafts in the slots you pick, with the stat pairs you tick.
+Only embellished pieces count toward the limit of 2 (the same embellishment twice is allowed).">i</i><span class="sm" id="sm_craft"></span></summary>
   <label class="in"><input type="checkbox" id="cr_on">Add crafted items to the pool (max level)</label>
   <div class="it" id="cr_st">Run “Update loot data” to list craftable items.</div>
-  <div style="font-weight:600;font-size:12px;margin-top:6px">Embellished crafts</div><div id="cr_emb" style="max-height:150px;overflow:auto"></div>
-  <div style="font-weight:600;font-size:12px;margin-top:6px">Crafts without embellishment</div><div class="it">Pick the slots to try a plain crafted piece in (crafted trinkets are only tested here).</div><div id="cr_plain"></div>
-  <div id="cr_pairbox"><div style="font-weight:600;font-size:12px;margin-top:6px">Crafted stat pairs</div><div id="cr_pairnote" class="it"></div><div id="cr_pairs"></div></div>
-  <div class="it" style="margin-top:6px">Crafted weapons are added automatically when you tick a weapon embellishment (only types your class can wield).</div>
-  <div style="font-weight:600;font-size:12px;margin-top:6px">What will be tested</div><div id="cr_prev" class="it">Tick “Add crafted items” to see which pieces are added.</div>
-  <div class="row"><button id="cr_edit">Edit crafted rules…</button></div>
-  <div class="it">Only embellished pieces count toward the limit of 2 (the same embellishment twice is allowed). Stat pairs only apply to crafted pieces whose secondary stats you choose; the others keep their fixed stats. Top Gear first ranks your ticked stat pairs once, searches slots and embellishments with the best pair, then tries every stat-pair combination of the crafted pieces of the best finalists together, so ticking all pairs is fine.</div></details>
+  <div id="cr_body" hidden>
+  <h3>Embellished crafts<i class="hint" data-tip="Each ticked embellishment is tried in the slots it allows. Crafted weapons are added automatically when you tick a weapon embellishment (only types your class can wield).">i</i></h3><div id="cr_emb" style="max-height:150px;overflow:auto"></div>
+  <h3>Crafts without embellishment<i class="hint" data-tip="Pick the slots to try a plain crafted piece in (crafted trinkets are only tested here). Hover a slot to see its items.">i</i></h3><div id="cr_plain"></div>
+  <div id="cr_pairbox"><h3>Crafted stat pairs<i class="hint" data-tip="Only for crafted pieces whose secondary stats you choose; the others keep their fixed stats.
+Top Gear first ranks your ticked pairs once, searches slots and embellishments with the best pair, then tries every pair combination on the best finalists, so ticking all pairs is fine.">i</i></h3><div id="cr_pairnote" class="it"></div><div id="cr_pairs"></div></div>
+  <h3>What will be tested</h3><div id="cr_prev" class="it"></div>
+  <div class="row"><button id="cr_edit" class="small" data-tip="Embellishment slots, crafted item level and extra base items. Opens your editable copy.">Edit crafted rules…</button></div></div></details>
 
- <details class="card sec" id="s_enh" data-modes="top bis"><summary><span class="n"></span>Enchants &amp; gems<span class="sm" id="sm_enh"></span></summary>
+ <details class="card sec" id="s_enh" data-modes="top bis"><summary><span class="n"></span>Enchants &amp; gems<i class="hint" data-tip="Best in Slot adds enchants and gems from the round set in Options. Top Gear optimises them together on the best combination, then simulates every finalist again with them.
+Speed, leech and avoidance enchants (head, shoulders, feet) are left as they are. The best quality rank of each enchant and gem is used.">i</i><span class="sm" id="sm_enh"></span></summary>
   <label class="in"><input type="checkbox" id="en_on">Find the best enchants (rings, chest, legs, weapons)</label>
   <label class="in"><input type="checkbox" id="gm_on">Find the best gems</label>
-  <div class="it" data-modes="top">Top Gear: enchants and gems are optimised together on the best combination, then every finalist is simulated again with them.</div>
-  <div class="row" style="margin-top:2px"><span class="it">Add a socket (Radiant Jewelbinder) to:</span>
+  <div class="row" style="margin-top:2px;gap:12px"><span class="lt it">Extra socket<i class="hint" data-tip="Radiant Jewelbinder adds a socket to a head, wrist or waist piece that has none. Necks and rings always count at least one socket.">i</i></span>
    <label class="in"><input type="checkbox" class="jb" value="head" checked>Head</label><label class="in"><input type="checkbox" class="jb" value="wrist" checked>Wrist</label><label class="in"><input type="checkbox" class="jb" value="waist" checked>Waist</label></div>
-  <div class="it">Necks and rings always count at least one socket. Speed, leech and avoidance enchants (head, shoulders, feet) are left as they are. The best quality rank of each enchant and gem is used.</div>
-  <div style="font-weight:600;font-size:12px;margin-top:6px">What will be tested</div><div id="en_prev" class="it">Paste an export and tick an option.</div></details>
+  <div id="en_box" hidden><h3>What will be tested</h3><div id="en_prev" class="it"></div></div></details>
 </div>
 
 <section class="card" id="resbox">
  <div class="tabs" role="tablist">
-  <button class="tab on" data-tab="res" role="tab">Results</button><button class="tab" data-tab="hist" role="tab" id="tabh">History</button><button class="tab" data-tab="log" role="tab">Activity log</button>
-  <span class="grow"></span><button id="rep" class="small" hidden title="Open simc's HTML report of the best result in your browser">Open simc report</button><button id="copy" class="small" hidden>Copy</button></div>
+  <button class="tab on" data-tab="res" role="tab">Results</button><button class="tab" data-tab="hist" role="tab" id="tabh" data-tip="Your last 10 runs: click one to see its results again">History</button><button class="tab" data-tab="log" role="tab" data-tip="What simc and Polygnome are doing, and the full log files">Activity log</button>
+  <span class="grow"></span><button id="rep" class="small" hidden data-tip="Open simc's HTML report of the best result in your browser">Open simc report</button><button id="copy" class="small" hidden data-tip="Copy the results as plain text">Copy</button></div>
  <div class="pane" id="p_res"><div id="sum" class="it"></div>
-  <div id="res"><div class="empty">1. Paste your /simc export (bags included)<br>2. Pick a mode (top bar) and adjust the options<br>3. Run: results appear here.</div></div></div>
+  <div id="res" data-start="1"></div></div>
  <div class="pane" id="p_hist" hidden><div class="rhead"><span class="it">Last 10 runs · click one to reopen it</span><button id="hclear" class="small">Clear</button></div><div id="hist"></div></div>
- <div class="pane" id="p_log" hidden><div class="rhead" style="margin-bottom:6px"><span class="it">End of the current run. Every run is saved in full to a log file.</span><button id="logfile" class="small">Show full log file</button><button id="datalog" class="small" title="Game data updates: startup checks, “Update loot data”, season data from GitHub">Game data log</button></div><div id="log" aria-live="polite" style="height:calc(100% - 34px)"></div></div>
+ <div class="pane" id="p_log" hidden><div class="rhead" style="margin-bottom:6px"><span class="it">End of the current run. Every run is saved in full to a log file.</span><button id="logfile" class="small">Show full log file</button><button id="datalog" class="small" data-tip="Game data updates: startup checks, “Update loot data”, season data from GitHub">Game data log</button></div><div id="log" aria-live="polite" style="height:calc(100% - 34px)"></div></div>
 </section>
 </main>
 
 <dialog id="setdlg"><div class="rhead"><h1 style="margin:0">Settings</h1><button id="setclose" class="small">Close</button></div>
  <h2>Simulation engine</h2>
- <div class="row" style="margin-top:0"><button id="pick">Select simc…</button><label>Threads left free<input id="rsv" type="number" min="0" value="6" title="Logical processors kept free for WoW and other apps"></label>
-  <label>Precision<select id="prec"><option value="fast">Fast</option><option value="standard" selected>Standard</option><option value="high">High (slow)</option></select></label></div>
+ <div class="row" style="margin-top:0"><button id="pick" data-tip="Use a simc.exe you already have">Select simc…</button><label><span class="lt">Threads left free<i class="hint" data-tip="Logical processors kept free for WoW and other apps while simulating.">i</i></span><input id="rsv" type="number" min="0" value="6"></label>
+  <label><span class="lt">Precision<i class="hint" data-tip="Standard suits most runs. Fast: half the precision, much quicker. High: twice the precision, about four times longer.">i</i></span><select id="prec"><option value="fast">Fast</option><option value="standard" selected>Standard</option><option value="high">High (slow)</option></select></label></div>
  <div id="thrinfo" class="it" style="margin-top:4px"></div>
  <div id="simc" class="it" style="word-break:break-all"></div>
  <div id="eng" class="it" style="margin-top:4px"></div>
  <div class="row"><button id="eget" class="small" hidden>Download / update simc</button></div>
  <div id="engnew" class="it" hidden><span id="engnewtxt"></span> <button id="eforce" class="small"></button></div>
- <h2>Season preview</h2>
+ <h2 class="lt">Season preview<i class="hint" data-tip="The Live / PTR switch in the header turns it on: simc runs with its PTR data, “Update loot data” reads the PTR or beta build, and boss fights prepared for the next season appear (marked PTR). Your live data is kept and comes back when you switch back.
+The switch is available only while an upcoming season is in testing; when that season goes live, Polygnome switches back to Live by itself.">i</i></h2>
  <div id="pvinfo" class="it" style="margin-top:0"></div>
- <div class="it">The <b>Live / PTR</b> switch in the header turns it on. simc runs with its PTR data, “Update loot data” reads the PTR or beta build, and boss fights prepared for the next season appear (marked PTR). Your live data is kept and comes back when you switch back to Live. The switch is available only while an upcoming season is in testing; when that season goes live, Polygnome switches back to Live by itself.</div>
  <h2>Appearance</h2>
  <div class="row" style="margin-top:0"><label>Theme<select id="theme"><option value="auto">Follow the system</option><option value="light">Light</option><option value="dark">Dark</option></select></label></div>
- <label class="in" style="margin-top:8px"><input type="checkbox" id="whon">Wowhead icons and item tooltips (needs internet; restart to turn off)</label>
+ <label class="in" style="margin-top:8px"><input type="checkbox" id="whon">Wowhead icons and item tooltips<i class="hint" data-tip="Item icons and Wowhead tooltips in the results. Needs internet; turning it off takes effect after a restart.">i</i></label>
  <h2>Application</h2>
  <div class="row" style="margin-top:0"><button id="uchk" class="small">Check for app updates</button><span id="ust" class="it"></span></div>
- <label class="in" style="margin-top:8px"><input type="checkbox" id="betaon">Offer beta versions of Polygnome (early builds for the next season)</label>
+ <label class="in" style="margin-top:8px"><input type="checkbox" id="betaon">Offer beta versions of Polygnome<i class="hint" data-tip="Early builds for the next season, published before the regular release.">i</i></label>
 </dialog>
+<div id="tip" role="tooltip" aria-hidden="true"></div>
 
 <script>
 const $=id=>document.getElementById(id),fmt=n=>Math.round(n).toLocaleString('en-US');
@@ -242,7 +264,7 @@ api.prog().then(p=>{prog=p;$('seas').textContent=p.season;renderInst()});
 $('editprog').onclick=()=>api.editProg();
 
 function setMode(m){mode=m;document.querySelectorAll('[data-modes]').forEach(e=>e.hidden=!e.dataset.modes.split(' ').includes(m));
- $('go').textContent=MODES[m][0];$('mdesc').textContent=MODES[m][1];if(typeof schedEnh==='function')schedEnh();if(m!=='top'&&!lootInfo)loadLoot()}
+ $('go').textContent=MODES[m][0];$('go').dataset.tip=MODES[m][1]+' (Ctrl+Enter)';if(typeof schedEnh==='function')schedEnh();if(m!=='top'&&!lootInfo)loadLoot()}
 document.querySelectorAll('[name=mode]').forEach(r=>r.onchange=()=>setMode(r.value));setMode('top');loadLoot();
 
 $('txt').oninput=()=>{const L=$('txt').value.split(/\r?\n/);let e=0,b=0;
@@ -266,7 +288,7 @@ function lustUi(){const m=$('lust').value;if(m!==lustMode){if(lustVals[lustMode]
  const E=lastLust?.entry,auto=!$('boss').value?'at the pull (no boss fight selected)':lastLust?.at!=null?`at ${lastLust.at}s (${E.stage!=null?`${E.after}s after stage ${E.stage} starts`:`${E.pct}% of the kill`}, real kills)`:'at the pull (no real-kill data for this boss yet)';
  $('lustnote').textContent=!on?'Bloodlust is off in the raid buffs.':m==='auto'?`Bloodlust ${auto}.`:m==='pull'?'Bloodlust at the pull.':m==='time'?`Bloodlust at ${+$('lustv').value||0}s.`:`Bloodlust when the boss drops below ${+$('lustv').value||0}% health.`}
 $('lust').onchange=$('lustv').oninput=lustUi;setTimeout(lustUi,0);
-async function bossPreview(){const on=!!$('boss').value;$('fs').disabled=$('tg').disabled=on;$('fs').parentElement.hidden=$('tg').parentElement.hidden=on;$('bdiff').disabled=!on;$('bdiff').parentElement.hidden=!on;$('bprev').hidden=!on;sumNow();if(!on){lastLust=null;lustUi();return}
+async function bossPreview(){const on=!!$('boss').value;$('fs').disabled=$('tg').disabled=on;$('fs').closest('.row').hidden=on;$('bdiff').disabled=!on;$('bdiff').parentElement.hidden=!on;$('bprev').hidden=!on;sumNow();if(!on){lastLust=null;lustUi();return}
  const r=await api.bossPreview({boss:$('boss').value,difficulty:$('bdiff').value,duration:+$('dur').value||300});if(!r){$('bprev').textContent='Boss fight not found.';return}
  lastLust=r.lust||null;lustUi();sumNow();
  const TAG={bigwigs:'BigWigs',guide:'guide',assumed:'guessed'};
@@ -329,9 +351,13 @@ const getFight=()=>({durAuto:!!$('boss').value&&$('dur').value===autoLen,boss:$(
  raid:$('raid').value,raidOn:[...document.querySelectorAll('.rb:checked')].map(c=>c.value),flask:$('c_flask').value,food:$('c_food').value,potion:$('c_potion').value,rune:$('c_rune').value,noCons:$('nocons').checked,extra:$('extra').value,lust:{mode:$('lust').value,value:+$('lustv').value||0}});
 
 
-async function loadLoot(){lootInfo=await api.lootInfo();$('lootst').textContent=lootInfo?'Data from '+new Date(lootInfo.builtAt).toLocaleDateString('en-GB'):'No data yet: click the button.';
+// Game data status in the header: dot (ok / busy / bad / none) + one short line; the full message is in its hint.
+function setLoot(kind,short,full){$('lootdot').className='sdot '+(kind||'');$('lootst').textContent=short;$('lootbox').dataset.tip=full||short;renderStart()}
+async function loadLoot(){lootInfo=await api.lootInfo();
+ if(lootInfo){const d=new Date(lootInfo.builtAt);setLoot('ok','Game data '+d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}),`Game data from ${d.toLocaleDateString('en-GB')}. It is refreshed automatically after a game patch, when missing or older than 14 days.`)}
+ else setLoot('bad','No game data yet','No game data yet: click “Update loot data”. Droptimizer, Best in Slot, Catalyst, crafted gear and consumable suggestions need it.');
  renderCons();renderCrafted();
- const C=lootInfo?.consumables;$('conshint').textContent=C?'Suggested names come from game data; if simc rejects one, copy the name from your export.':'Suggestions appear after “Update loot data”.';
+ const C=lootInfo?.consumables;$('conshint').dataset.tip='Leave a field empty to use what your export lists; type a name to use another one in every simulation.\n'+(C?'Suggested names come from game data; if simc rejects one, copy the name from your export.':'Suggestions appear after “Update loot data”.');
  $('dls').innerHTML=C?Object.entries(C).map(([k,v])=>`<datalist id="dl_${k}">${v.map(o=>`<option value="${esc(o.value)}" label="${esc(o.label)}"></option>`).join('')}</datalist>`).join(''):'';
  const T=lootInfo?.tiers||[];$('tier').innerHTML=T.length?T.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('')+'<option value="">All instances</option>':'<option value="">All instances (update loot data for tiers)</option>';
  renderInst();seasNote()}
@@ -341,8 +367,8 @@ function seasNote(){const t=(lootInfo?.tiers||[]).find(t=>t.id===$('tier').value
  el.textContent=t.left==null?'Run “Update loot data” to leave last season’s raids out of this list.':t.left.length?`Left out (last season’s upgrade tracks): ${t.left.join(', ')}.`:''}
 $('inst').onchange=e=>{if(e.target.classList.contains('isrc'))instSrc[e.target.dataset.i]=e.target.value};
 $('tier').onchange=()=>{renderInst();seasNote()};$('ifilt').oninput=renderInst;$('isel').onclick=()=>document.querySelectorAll('.ins').forEach(c=>c.checked=true);$('inone').onclick=()=>document.querySelectorAll('.ins').forEach(c=>c.checked=false);
-async function updateLoot(why){$('upd').disabled=true;$('ptron').disabled=true;if(why)$('lootst').textContent=`Updating game data (${why})… see the Activity log`;
- try{await api.lootUpdate(why||'button');await loadLoot()}catch(e){$('lootst').textContent=why?`Automatic game data update failed (${msg(e)}): offline? Click “Update loot data” to retry.`:msg(e)}$('upd').disabled=false;showPreview(preview)}
+async function updateLoot(why){$('upd').disabled=true;$('ptron').disabled=true;setLoot('busy','Updating game data…',`Updating game data${why?` (${why})`:''}… see the Activity log.`);
+ try{await api.lootUpdate(why||'button');await loadLoot()}catch(e){setLoot('bad','Game data update failed',why?`Automatic game data update failed (${msg(e)}): offline? Click “Update loot data” to retry.`:`Game data update failed: ${msg(e)}`)}$('upd').disabled=false;showPreview(preview)}
 $('upd').onclick=()=>updateLoot('');
 // At startup: newer boss/season data from GitHub (small), then the game data if a patch came out, it is missing or old (big download).
 async function updateAtStart(){
@@ -355,16 +381,16 @@ const running=()=>$('go').disabled||$('upd').disabled;
 function showPreview(st){preview=st||{available:false};const sw=$('ptron');
  sw.checked=!!preview.on;sw.disabled=!preview.available||running();$('pvlbl').textContent=preview.label||'PTR';
  const tip=preview.available?`${preview.on?'Showing':'Switch to'} ${preview.next.name} (${preview.label} game data). Live: ${preview.live?.name||'current season'}.`:preview.note;
- $('pvsw').title=tip;$('pvinfo').textContent=preview.available?`Upcoming season in testing: ${preview.next.name} (${preview.label}). ${preview.on?'You are on preview data.':'You are on live data.'}`:preview.note}
+ $('pvsw').dataset.tip=tip;$('pvinfo').textContent=preview.available?`Upcoming season in testing: ${preview.next.name} (${preview.label}). ${preview.on?'You are on preview data.':'You are on live data.'}`:preview.note}
 // game data, bosses and season tracks follow the mode
 async function previewChanged(on){lootInfo=null;await loadLoot();
  api.bossList().then(B=>{bosses=B;$('boss').innerHTML='<option value="">None (use the style below)</option>'+B.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');bossPreview()});
  api.prog().then(p=>{prog=p;$('seas').textContent=p.season;renderInst()});
  try{const st=await api.lootStatus('Live/PTR switch');if(st&&!running())updateLoot(`${on?preview.label||'PTR':'live'} game data: ${st.reason}`)}catch{}}
-async function refreshPreview(){try{const st=await api.previewGet();showPreview(st);if(st.reset){$('lootst').textContent=st.note;await previewChanged(false)}}catch{}}
+async function refreshPreview(){try{const st=await api.previewGet();showPreview(st);if(st.reset){setLoot('busy','Back to live data',st.note);await previewChanged(false)}}catch{}}
 api.settings().then(s=>{$('betaon').checked=!!s.beta});refreshPreview();
 $('ptron').onchange=async()=>{const on=$('ptron').checked;
- try{await api.setOption({ptr:on})}catch(e){$('ptron').checked=!on;$('lootst').textContent=msg(e);return}
+ try{await api.setOption({ptr:on})}catch(e){$('ptron').checked=!on;setLoot('bad','Switch refused',msg(e));return}
  await refreshPreview();await previewChanged(on)};
 $('betaon').onchange=()=>api.setOption({beta:$('betaon').checked});
 
@@ -378,7 +404,7 @@ const mmss=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%
 function drawProg(){const el=(Date.now()-pT0)/1000;$('ptxt').textContent=pPct==null?pLabel:`${pLabel} — ${Math.round(pPct*100)} %`;
  $('ptime').textContent=mode!=='bis'&&pPct>0.05&&pPct<1?`${mmss(el)} · ~${mmss(el/pPct*(1-pPct))} left`:mmss(el);
  const b=$('bar');b.classList.toggle('ind',pPct==null);if(pPct!=null){$('fill').style.width=(pPct*100).toFixed(1)+'%';b.setAttribute('aria-valuenow',Math.round(pPct*100))}}
-function startProg(){pT0=Date.now();pPct=null;pLabel='Starting…';drawProg();clearInterval(pTimer);pTimer=setInterval(drawProg,1000)}
+function startProg(){$('pstrip').classList.remove('idle');pT0=Date.now();pPct=null;pLabel='Starting…';drawProg();clearInterval(pTimer);pTimer=setInterval(drawProg,1000)}
 function endProg(ok){clearInterval(pTimer);pPct=ok?1:0;pLabel=ok?'Done':'Stopped';drawProg()}
 api.onProgress(p=>{pPct=pPct==null?p.pct:Math.max(pPct,p.pct);pLabel=p.label;drawProg()});
 
@@ -416,14 +442,14 @@ const slotBox=(x,cls)=>`<div class="slot ${cls||''}"><span class="sl">${esc(slot
 function sheet(items){const L=items.filter(x=>LEFT.includes(x.slot)).sort(byGame),R=items.filter(x=>!LEFT.includes(x.slot)).sort(byGame);
  const col=a=>`<div class="side">${a.map(x=>slotBox(x,x.changed?'chg':'')).join('')}</div>`;return L.length&&R.length?`<div class="sheet">${col(L)}${col(R)}</div>`:col(L.length?L:R)}
 function showTop(r){setRep(r.report);const mx=Math.max(...r.rows.map(x=>Math.abs(x.delta)),0);$('sum').textContent=`Baseline ${fmt(r.base)} DPS · ${r.total} combinations tested${fightLabel}${r.consNote?' · finalists with '+r.consNote:''}${r.gemsNote?' · gems: '+r.gemsNote:''}${r.enchNote?' · enchants: '+r.enchNote:''}`;
- $('res').innerHTML=(r.rows.map((x,i)=>`<div class="r"><b><span class="rk">${i+1}.</span>${fmt(x.mean)} DPS</b> <span class="${x.delta>=0?'pos':'neg'}">${sgn(x.delta)}</span> <span class="it">±${fmt(x.err)}</span><div class="side" style="margin-top:4px">${[...x.items].sort(byGame).map(t=>slotBox({slot:t.slot,label:t.label,wh:t.wh,subs:[t.stats?statTxt(t.stats):'']})).join('')}</div>${gainBar(x.delta,mx)}</div>`).join('')||'<div class="empty">No result.</div>')+consBlock(r);
+ $('res').innerHTML=(r.rows.map((x,i)=>`<div class="r"><b><span class="rk">${i+1}.</span>${fmt(x.mean)} DPS</b> <span class="${x.delta>=0?'pos':'neg'}">${sgn(x.delta)}</span> <span class="it" data-tip="Margin of error of this result (simc). Differences smaller than this are noise.">±${fmt(x.err)}</span><div class="side" style="margin-top:4px">${[...x.items].sort(byGame).map(t=>slotBox({slot:t.slot,label:t.label,wh:t.wh,subs:[t.stats?statTxt(t.stats):'']})).join('')}</div>${gainBar(x.delta,mx)}</div>`).join('')||'<div class="empty">No result.</div>')+consBlock(r);
  setCopy(`Top Gear · baseline ${fmt(r.base)} DPS${fightLabel}\n`+r.rows.map((x,i)=>`${i+1}. ${fmt(x.mean)} DPS (${sgn(x.delta)})\n`+[...x.items].sort(byGame).map(t=>`   ${slotN(t.slot)}: ${t.label}${t.stats?' ('+statTxt(t.stats).replace(/&amp;/g,'&')+')':''}`).join('\n')).join('\n')+consCopy(r))}
 function showDrop(r){setRep(r.report);const mx=Math.max(...r.rows.map(x=>Math.abs(x.delta)),0);$('sum').textContent=`Baseline ${fmt(r.base)} DPS · ${r.total} simulations${fightLabel}`;
- $('res').innerHTML=r.rows.map((x,i)=>`<div class="r"><b><span class="rk">${i+1}.</span></b><span class="${x.delta>=0?'pos':'neg'}">${sgn(x.delta)} (${x.pct>=0?'+':''}${x.pct.toFixed(2)} %)</span> <span class="it">±${fmt(x.err)}</span><div style="margin-top:3px">${slotBox({slot:x.slot,label:x.name,wh:x.wh,subs:[x.sources.map(esc).join(', '),x.stats?statTxt(x.stats):'']})}</div>${gainBar(x.delta,mx)}</div>`).join('')||'<div class="empty">No result.</div>';
+ $('res').innerHTML=r.rows.map((x,i)=>`<div class="r"><b><span class="rk">${i+1}.</span></b><span class="${x.delta>=0?'pos':'neg'}">${sgn(x.delta)} (${x.pct>=0?'+':''}${x.pct.toFixed(2)} %)</span> <span class="it" data-tip="Margin of error of this result (simc). Differences smaller than this are noise.">±${fmt(x.err)}</span><div style="margin-top:3px">${slotBox({slot:x.slot,label:x.name,wh:x.wh,subs:[x.sources.map(esc).join(', '),x.stats?statTxt(x.stats):'']})}</div>${gainBar(x.delta,mx)}</div>`).join('')||'<div class="empty">No result.</div>';
  setCopy(`Droptimizer · baseline ${fmt(r.base)} DPS${fightLabel}\n`+r.rows.map((x,i)=>`${i+1}. ${x.name} (${x.slot}) ${sgn(x.delta)} (${x.pct.toFixed(2)} %) — ${x.sources.join(', ')}`).join('\n'))}
 const slotName=s=>s==='gems'?'gems':/^ench:/.test(s)?sln(s.slice(5))+' enchant':s;
 const STN={crit:'Critical strike',haste:'Haste',mastery:'Mastery',versatility:'Versatility'};
-const drBlock=r=>r.dr&&r.dr.length?'<h1 style="margin-top:14px">Secondary stats &amp; diminishing returns</h1><table><tr><th>Stat</th><th>Rating</th><th>% from rating</th><th>After DR</th><th>Next point worth</th></tr>'+r.dr.map(d=>`<tr><td>${STN[d.stat]}</td><td>${fmt(d.rating)}</td><td>${d.raw.toFixed(1)} %</td><td>${d.eff.toFixed(1)} %</td><td class="${d.slope<1?'neg':''}">${Math.round(d.slope*100)} %</td></tr>`).join('')+'</table><div class="it">Diminishing returns start at 30 % from rating (90 % value up to 40 %, then 80, 70, 60, 50 %). Base and talent percentages are not affected.</div>':'';
+const drBlock=r=>r.dr&&r.dr.length?'<h1 style="margin-top:14px;display:flex;align-items:center">Secondary stats &amp; diminishing returns<i class="hint" data-tip="Diminishing returns start at 30 % from rating (90 % value up to 40 %, then 80, 70, 60, 50 %). Base and talent percentages are not affected. “Next point worth”: value of one more rating point compared to before diminishing returns.">i</i></h1><table><tr><th>Stat</th><th>Rating</th><th>% from rating</th><th>After DR</th><th>Next point worth</th></tr>'+r.dr.map(d=>`<tr><td>${STN[d.stat]}</td><td>${fmt(d.rating)}</td><td>${d.raw.toFixed(1)} %</td><td>${d.eff.toFixed(1)} %</td><td class="${d.slope<1?'neg':''}">${Math.round(d.slope*100)} %</td></tr>`).join('')+'</table>':'';
 const SN={crit:'Crit',haste:'Haste',mastery:'Mastery',vers:'Vers'};
 const statTxt=s=>s?Object.entries(s).map(([k,v])=>{if(k==='ilvl')return 'ilvl '+v;const x=Object.keys(SN).find(n=>k.toLowerCase().includes(n));return `${x?SN[x]:esc(k)} ${fmt(v)}`}).join(' · '):'';
 function showBis(r){setRep(r.report);const g=r.final-r.start;setCopy(`Best in Slot · ${fmt(r.start)} → ${fmt(r.final)} DPS (${sgn(g)})${fightLabel}\n`+[...r.set].sort(byGame).map(s=>`${slotN(s.slot)}: ${s.label}${s.changed?` (replaces ${s.from})`:''}${s.enh?` [${s.enh}]`:''}`).join('\n')+consCopy(r));$('sum').innerHTML=`<b>${fmt(r.start)} → ${fmt(r.final)} DPS</b> <span class="${g>=0?'pos':'neg'}">${sgn(g)} (${(g/r.start*100).toFixed(2)} %)</span> · ${r.rounds.length} round(s)`+(r.statsNote?`<div class="it" style="margin-top:4px">${esc(r.statsNote)}</div>`:'');
@@ -439,7 +465,7 @@ function renderCrafted(){schedCraft();const c=lootInfo?.crafted;if(!c){$('cr_st'
  const keep=new Set([...document.querySelectorAll('.cre:checked')].map(x=>x.value)),keepG=new Set([...document.querySelectorAll('.crg:checked')].map(x=>x.value)),keepP=new Set([...document.querySelectorAll('.crp:checked')].map(x=>x.value)),first=!document.querySelector('.crp');
  $('cr_st').textContent=`${c.items} craftable base item(s) known · crafted item level ${c.ilvl}`+(c.items?'':' — none found: add some under "extraItems" in Edit crafted rules')+(c.old?' · click “Update loot data” to read the current recipe tables':'');
  const G=Object.fromEntries((c.groups||[]).map(g=>[g.group,g.items]));
- $('cr_plain').innerHTML=CR_G.filter(([g])=>G[g]).map(([g,t])=>`<label class="in" title="${esc(G[g].join(', '))}"><input type="checkbox" class="crg" value="${g}" ${keepG.has(g)?'checked':''}><span>${t} <span class="it">(${G[g].length<=4?esc(G[g].join(', ')):G[g].length+' items, your armor type is used'})</span></span></label>`).join('')||'<div class="it">No crafted base items known.</div>';
+ $('cr_plain').innerHTML=CR_G.filter(([g])=>G[g]).map(([g,t])=>`<label class="in" data-tip="${esc(G[g].join(', '))}"><input type="checkbox" class="crg" value="${g}" ${keepG.has(g)?'checked':''}><span>${t} <span class="it">(${G[g].length<=4?esc(G[g].join(', ')):G[g].length+' items, your armor type is used'})</span></span></label>`).join('')||'<div class="it">No crafted base items known.</div>';
  $('cr_pairbox').hidden=c.pairable===0;$('cr_pairnote').textContent=c.pairable!=null&&c.pairable<c.bases?`Only for the crafted pieces whose stats you choose (${c.pairable} of ${c.bases}); the others keep their fixed stats.`:'';
  $('cr_emb').innerHTML=c.emb.map(e=>`<label class="in"><input type="checkbox" class="cre" value="${esc(e.name)}" ${keep.has(e.name)?'checked':''}>${esc(e.name)} <span class="it">(${e.slots.join(', ')}${e.unverified?' · slots unverified':''})</span></label>`).join('')||'<div class="it">No embellishment rules.</div>';
  $('cr_pairs').innerHTML=c.pairs.map(p=>`<label class="in" style="display:inline-flex;margin-right:8px"><input type="checkbox" class="crp" value="${p}" ${first||keepP.has(p)?'checked':''}>${p.split('/').map(s=>SNAME[s]||s).join(' / ')}</label>`).join('');
@@ -447,10 +473,10 @@ function renderCrafted(){schedCraft();const c=lootInfo?.crafted;if(!c){$('cr_st'
 $('cr_edit').onclick=()=>api.editCrafted();
 // Preview of the pieces the Crafted card adds (per slot: base items and number of variants), refreshed when the card or the export changes.
 var crTimer=0;
-async function refreshCraftPrev(){const el=$('cr_prev');if(!$('cr_on').checked){window.__crTotal=null;el.textContent='Tick “Add crafted items” to see which pieces are added.';return}
+async function refreshCraftPrev(){const el=$('cr_prev');$('cr_body').hidden=!$('cr_on').checked||!lootInfo?.crafted;if(!$('cr_on').checked){window.__crTotal=null;el.textContent='';return}
  const r=await api.craftPreview({text:$('txt').value,crafted:getCrafted()}).catch(e=>({error:msg(e)}));
  if(r.error){el.textContent=r.error;return}
- window.__crTotal=r.total;el.innerHTML=`<b>${r.total}</b> crafted variant(s) added to the pool, from your class's armor and accessories (each embellishment in the slots it allows, plain pieces in the slots you picked, × each ticked stat pair where the stats can be chosen):`+
+ window.__crTotal=r.total;el.innerHTML=`<b>${r.total}</b> crafted variant(s) added to the pool:`+
   r.slots.map(s=>`<div style="margin-top:3px"><b>${esc(s.slot)}</b> · ${s.n} variant(s)<br>${s.items.map(esc).join(', ')}</div>`).join('')}
 function schedCraft(){clearTimeout(crTimer);crTimer=setTimeout(refreshCraftPrev,300)}
 $('cr_on').closest('details').addEventListener('change',schedCraft);$('txt').addEventListener('input',schedCraft);
@@ -458,7 +484,7 @@ const getCrafted=()=>({on:$('cr_on').checked,emb:[...document.querySelectorAll('
 // ---- Enchants & gems (Best in Slot) ----
 const getEnh=()=>({ench:$('en_on').checked,gems:$('gm_on').checked,add:[...document.querySelectorAll('.jb:checked')].map(c=>c.value)});
 var enTimer=0;const SLN={main_hand:'main hand',off_hand:'off hand',finger1:'ring 1',finger2:'ring 2'};const sln=s=>SLN[s]||s;
-async function refreshEnhPrev(){const el=$('en_prev'),o=getEnh();if(!o.ench&&!o.gems){el.textContent='Tick an option to see what will be tested.';return}
+async function refreshEnhPrev(){const el=$('en_prev'),o=getEnh();$('en_box').hidden=!o.ench&&!o.gems;if(!o.ench&&!o.gems)return;
  const r=await api.enhPreview({text:$('txt').value,add:o.add}).catch(e=>({error:msg(e)}));
  if(r.error){el.textContent=r.error;return}if(r.empty){el.textContent='Paste an export first.';return}
  el.innerHTML=(o.ench?(r.ench.length?r.ench.map(x=>`<div><b>${esc(sln(x.slot))}</b>: ${x.names.map(esc).join(', ')}</div>`).join(''):'<div>No enchant to test for this character.</div>'):'')+
@@ -470,11 +496,12 @@ try{const e=JSON.parse(localStorage.getItem('lb_enh')||'null');if(e){$('en_on').
 schedEnh();
 const CATS=[['flask','Flasks','flask'],['food','Food','food'],['potion','Potions','potion'],['augmentation','Augment runes','rune']];
 const consSel={flask:new Set(),food:new Set(),potion:new Set(),augmentation:new Set()},consFilter={};
-function renderCons(){$('consBox').innerHTML=CATS.map(([k,t])=>`<div style="margin-bottom:8px"><div style="font-weight:600;font-size:12px">${t} <span class="it" id="cn_${k}"></span></div><input class="cf" data-k="${k}" placeholder="Filter, or type a custom name + Enter" style="width:100%;margin:3px 0"><div id="cl_${k}" style="max-height:110px;overflow:auto"></div></div>`).join('');CATS.forEach(([k])=>renderList(k))}
+function renderCons(){if(!lootInfo?.consumables){$('consBox').innerHTML='<div class="it">Run “Update loot data” to list the flasks, food, potions and runes to compare.</div>';updCount();return}
+ $('consBox').innerHTML=CATS.map(([k,t])=>`<div style="margin-bottom:8px"><div style="font-weight:600;font-size:12px">${t} <span class="it" id="cn_${k}"></span></div><input class="cf" data-k="${k}" placeholder="Filter, or type a custom name + Enter" style="width:100%;margin:3px 0"><div id="cl_${k}" style="max-height:110px;overflow:auto"></div></div>`).join('');CATS.forEach(([k])=>renderList(k))}
 function renderList(k){const C=lootInfo?.consumables||{},ck=CATS.find(c=>c[0]===k)[2],f=(consFilter[k]||'').toLowerCase(),known=C[ck]||[];
- const opts=[{value:'disabled',label:'(none)'},...known,...[...consSel[k]].filter(v=>v!=='disabled'&&!known.some(o=>o.value===v)).map(v=>({value:v,label:v+' (custom)'}))];
+ const opts=[{value:'disabled',label:'None (try without)'},...known,...[...consSel[k]].filter(v=>v!=='disabled'&&!known.some(o=>o.value===v)).map(v=>({value:v,label:v+' (custom)'}))];
  $('cl_'+k).innerHTML=opts.filter(o=>consSel[k].has(o.value)||!f||(o.label+o.value+(o.also||[]).join(' ')).toLowerCase().includes(f)).map(o=>`<label class="in"><input type="checkbox" class="cs" data-k="${k}" value="${esc(o.value)}" ${consSel[k].has(o.value)?'checked':''}><span>${esc(o.label)}${o.also?.length?` <span class="it">(same: ${esc(o.also.join(', '))})</span>`:''}</span></label>`).join('');updCount()}
-function updCount(){let n=0;for(const[k]of CATS){const c=consSel[k].size;$('cn_'+k).textContent=c?`(${c} selected)`:'';n+=c}$('combo').textContent=n?`${n} consumable option${n>1?'s':''} selected`:''}
+function updCount(){let n=0;for(const[k]of CATS){const c=consSel[k].size;if($('cn_'+k))$('cn_'+k).textContent=c?`(${c} selected)`:'';n+=c}$('combo').textContent=n?`${n} consumable option${n>1?'s':''} selected`:''}
 $('consBox').oninput=e=>{if(e.target.classList.contains('cf')){consFilter[e.target.dataset.k]=e.target.value;renderList(e.target.dataset.k)}};
 $('consBox').onkeydown=e=>{if(e.key==='Enter'&&e.target.classList.contains('cf')){const k=e.target.dataset.k,v=e.target.value.trim();if(/^[\w:.\-]+$/.test(v)){consSel[k].add(v);consFilter[k]='';renderList(k);const i=document.querySelector(`.cf[data-k=${k}]`);i.value='';i.focus()}}};
 $('consBox').onchange=e=>{if(e.target.classList.contains('cs')){const s=consSel[e.target.dataset.k];e.target.checked?s.add(e.target.value):s.delete(e.target.value);updCount()}};
@@ -483,9 +510,9 @@ $('consBox').onchange=e=>{if(e.target.classList.contains('cs')){const s=consSel[
 let talBuilds=[],talSel=new Set(),talTimer=0;
 function renderTal(){const el=$('tal');$('s_tal').hidden=talBuilds.length<2;if(talBuilds.length<2)return;
  if(![...talSel].some(s=>talBuilds.some(b=>b.string===s&&b.usable)))talSel=new Set(talBuilds.filter(b=>b.active&&b.usable).map(b=>b.string));
- el.innerHTML=  talBuilds.map(b=>`<label class="in" title="${esc(b.string)}"><input type="checkbox" class="tb" value="${esc(b.string)}" ${talSel.has(b.string)?'checked':''} ${b.usable?'':'disabled'}>${esc(b.name)}${b.active?' <span class="it">(in the export)</span>':''}${b.usable?'':' <span class="it">(other specialization, unusable)</span>'}</label>`).join('')+
+ el.innerHTML=  talBuilds.map(b=>`<label class="in"><input type="checkbox" class="tb" value="${esc(b.string)}" ${talSel.has(b.string)?'checked':''} ${b.usable?'':'disabled'}>${esc(b.name)}${b.active?' <span class="it">(in the export)</span>':''}${b.usable?'':' <span class="it">(other specialization, unusable)</span>'}</label>`).join('')+
   `<div class="it" style="margin-top:3px">${talSel.size>1?`${talSel.size} builds selected: each is simulated separately, so the run takes ${talSel.size}× as long.`:'Pick one build to simulate it instead of the exported one, or several to compare them.'}</div>`}
-async function refreshWeap(){try{const w=await api.weaponsOf($('txt').value);$('wtxt').textContent=w?`${cap(w.cls)} can wield: ${w.names.join(', ')}${w.shield?' · shields':''}.`:''}catch{$('wtxt').textContent=''}}
+async function refreshWeap(){try{const w=await api.weaponsOf($('txt').value);$('wphint').dataset.tip=w?`${cap(w.cls)} can wield: ${w.names.join(', ')}${w.shield?' · shields':''}.`:'Weapons and shields your class can use. Paste an export to see which ones.'}catch{}}
 async function refreshTal(){refreshWeap();try{talBuilds=await api.talents($('txt').value)}catch{talBuilds=[]}renderTal()}
 $('tal').onchange=e=>{if(!e.target.classList.contains('tb'))return;e.target.checked?talSel.add(e.target.value):talSel.delete(e.target.value);renderTal()};
 $('txt').addEventListener('input',()=>{clearTimeout(talTimer);talTimer=setTimeout(refreshTal,300)});
@@ -512,11 +539,12 @@ $('theme').onchange=()=>setTheme($('theme').value);
 function showTab(t){document.querySelectorAll('.tab').forEach(b=>{const on=b.dataset.tab===t;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
  for(const k of ['res','hist','log'])$('p_'+k).hidden=k!==t;$('copy').style.display=t==='res'?'':'none'}
 document.querySelector('.tabs').onclick=e=>{const b=e.target.closest('.tab');if(b)showTab(b.dataset.tab)};
+$('cat').addEventListener('change',()=>$('catmaxl').hidden=!$('cat').checked);
 const collapseSections=()=>document.querySelectorAll('#setup details.sec').forEach(d=>d.open=false);
 $('colall').onclick=collapseSections;$('expall').onclick=()=>document.querySelectorAll('#setup details.sec:not([hidden])').forEach(d=>d.open=true);
 $('setbtn').onclick=()=>$('setdlg').showModal();$('setclose').onclick=()=>$('setdlg').close();
 $('setdlg').addEventListener('click',e=>{if(e.target===$('setdlg'))$('setdlg').close()});
-new MutationObserver(()=>{$('setdot').hidden=!!$('simc').textContent&&$('simc').textContent!=='No simc selected'}).observe($('simc'),{childList:true,characterData:true,subtree:true});
+new MutationObserver(()=>{$('setdot').hidden=!!$('simc').textContent&&$('simc').textContent!=='No simc selected';$('setbtn').dataset.tip=$('setdot').hidden?'simc engine, threads, precision, theme and app updates':'No simc selected yet: open Settings to download or select it.';renderStart()}).observe($('simc'),{childList:true,characterData:true,subtree:true});
 const cap=t=>t?t[0].toUpperCase()+t.slice(1):'';
 // summary refresh from code paths that may run early (restored settings, late IPC replies): never throws
 function sumNow(){try{updSum()}catch{}}
@@ -552,7 +580,7 @@ $('go').onclick=async()=>{
 const HK='lb_hist';
 const loadHist=()=>{try{return JSON.parse(localStorage.getItem(HK)||'[]')}catch{return[]}};
 function renderHist(){const H=loadHist();$('tabh').textContent='History'+(H.length?` (${H.length})`:'');
- $('hist').innerHTML=!H.length?'<div class="empty">No runs yet.</div>':H.map((h,i)=>`<button class="hrow" data-i="${i}" title="Show these results again"><span>${new Date(h.t).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} · ${esc(h.mode)}${esc(h.fight)}</span><b>${esc(h.head)}</b></button>`).join('')}
+ $('hist').innerHTML=!H.length?'<div class="empty">No runs yet.</div>':H.map((h,i)=>`<button class="hrow" data-i="${i}"><span>${new Date(h.t).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} · ${esc(h.mode)}${esc(h.fight)}</span><b>${esc(h.head)}</b></button>`).join('')}
 const trimR=r=>({...r,rows:r.rows?r.rows.slice(0,15):undefined,rounds:r.rounds?r.rounds.slice(0,12):undefined});
 function pushHist(mode,head,r){try{const H=loadHist();H.unshift({t:Date.now(),mode,fight:fightLabel,head,r:r.builds?{builds:r.builds.map(b=>({...b,result:trimR(b.result)}))}:trimR(r)});localStorage.setItem(HK,JSON.stringify(H.slice(0,10)))}catch{}renderHist()}
 $('hist').onclick=e=>{const b=e.target.closest('.hrow');if(!b)return;const h=loadHist()[+b.dataset.i];if(!h)return;fightLabel=h.fight;showTab('res');showAny(h.mode==='Top Gear'?'top':h.mode==='Droptimizer'?'drop':'bis',h.r)};
@@ -563,5 +591,38 @@ document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter'&&!$('go').
 {let lastReg='';$('txt').addEventListener('input',()=>{const m=/^\s*region=(\w+)\s*$/mi.exec($('txt').value),r=m?m[1].toLowerCase():'';if(r&&r!==lastReg){lastReg=r;api.setOption({region:r}).catch(()=>{})}})}
 try{const t=localStorage.getItem('lb_export');if(t&&!$('txt').value){$('txt').value=t;$('txt').dispatchEvent(new Event('input'))}}catch{}
 $('txt').addEventListener('input',()=>{try{localStorage.setItem('lb_export',$('txt').value)}catch{}});
+// ---- Help hints: one floating tooltip for every ⓘ (.hint) and every element with data-tip ----
+// Hover shows it after a short delay, keyboard focus at once; a click on an ⓘ pins it (it never toggles the checkbox or section it sits in).
+{const tip=$('tip');let cur=null,timer=0,pinned=false;
+ const prep=h=>{if(h.dataset.ready)return;h.dataset.ready=1;h.tabIndex=0;h.setAttribute('role','button');h.setAttribute('aria-label','Help');h.setAttribute('aria-describedby','tip')};
+ const prepAll=()=>document.querySelectorAll('.hint').forEach(prep);prepAll();
+ {let q=0;new MutationObserver(()=>{if(!q)q=requestAnimationFrame(()=>{q=0;prepAll()})}).observe(document.body,{childList:true,subtree:true})}
+ function show(el){const t=el.dataset.tip;if(!t)return;cur=el;const host=el.closest('dialog')||document.body;if(tip.parentElement!==host)host.appendChild(tip);tip.textContent=t;tip.classList.add('on');tip.setAttribute('aria-hidden','false');document.querySelectorAll('.hint.on').forEach(h=>h.classList.remove('on'));if(el.classList.contains('hint'))el.classList.add('on');
+  const r=el.getBoundingClientRect(),W=innerWidth,H=innerHeight;tip.style.left='0px';tip.style.top='0px';const w=tip.offsetWidth,h=tip.offsetHeight;
+  let x=Math.min(Math.max(8,r.left+r.width/2-w/2),W-w-8),y=r.bottom+8;if(y+h>H-8)y=Math.max(8,r.top-h-8);tip.style.left=x+'px';tip.style.top=y+'px'}
+ function hide(){clearTimeout(timer);pinned=false;if(cur)cur.classList.remove('on');cur=null;tip.classList.remove('on');tip.setAttribute('aria-hidden','true')}
+ const target=e=>e.target.closest&&e.target.closest('[data-tip]');
+ document.addEventListener('mouseover',e=>{const el=target(e);if(pinned||el===cur)return;clearTimeout(timer);if(!el){if(cur)timer=setTimeout(hide,80);return}timer=setTimeout(()=>show(el),cur?0:350)});
+ document.addEventListener('focusin',e=>{const el=target(e);if(el&&(el.classList.contains('hint')||e.target.matches(':focus-visible'))){pinned=false;clearTimeout(timer);show(el)}else if(cur&&!pinned)hide()});
+ document.addEventListener('focusout',e=>{if(cur&&e.target===cur&&!pinned)hide()});
+ document.addEventListener('click',e=>{const h=e.target.closest&&e.target.closest('.hint');if(h){e.preventDefault();e.stopPropagation();if(pinned&&cur===h)hide();else{show(h);pinned=true}}else if(pinned)hide()},true);
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&cur)hide();const h=e.target.closest&&e.target.closest('.hint');if(h&&(e.key==='Enter'||e.key===' ')){e.preventDefault();show(h);pinned=true}});
+ addEventListener('scroll',()=>cur&&hide(),true);addEventListener('resize',()=>cur&&hide())}
+
+// ---- Getting started: live checklist on the Results tab until the first result is shown ----
+function renderStart(){const res=$('res');if(!res||res.dataset.start!=='1')return;
+ const simc=!!$('simc').textContent&&$('simc').textContent!=='No simc selected',busy=$('lootdot').classList.contains('busy'),data=!!lootInfo,txt=$('txt').value.trim().length>0;
+ const S=[[simc,'SimulationCraft engine',simc?'Ready.':'Polygnome runs simulations with simc: download it or select your own build in Settings.',simc?'':'<button class="small go2" data-act="set">Open Settings</button>'],
+  [data,'Game data',data?'Loot tables, crafted items, enchants and consumables are ready.':busy?'Downloading now… see the Activity log.':'Needed for Droptimizer, Best in Slot, Catalyst and crafted gear.',data||busy?'':'<button class="small go2" data-act="upd">Update loot data</button>'],
+  [txt,'Your character',txt?($('sm_char').textContent||'Export pasted.'):'In game, type /simc and copy the whole text (bags included), then paste it in Character.',txt?'':'<button class="small go2" data-act="char">Paste export</button>'],
+  [false,'Pick a mode and run',`${MODES[mode][1]} Set the options on the left, then click “${MODES[mode][0]}” (Ctrl+Enter).`,'']];
+ res.innerHTML='<div class="start"><h2>Getting started</h2><div class="it">Hover or click the <i class="hint" data-tip="Like this one: every ⓘ explains the option next to it.">i</i> icons for help on any option.</div>'+
+  S.map(([ok,t,d,b],i)=>`<div class="step ${ok?'done':''}"><span class="ck">${ok?'✓':i+1}</span><div class="tx2"><b>${t}</b><span>${d}</span></div>${b}</div>`).join('')+'</div>'}
+$('res').addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const k=a.dataset.act;
+ if(k==='set')$('setdlg').showModal();else if(k==='upd')updateLoot('');else{$('s_char').open=true;$('txt').focus()}});
+// any shown result replaces the checklist for good
+new MutationObserver(()=>{const r=$('res');if(r.dataset.start==='1'&&!r.querySelector('.start'))delete r.dataset.start}).observe($('res'),{childList:true});
+$('txt').addEventListener('input',()=>setTimeout(renderStart,0));document.querySelectorAll('[name=mode]').forEach(r=>r.addEventListener('change',renderStart));
+renderStart();
 showTab('res');updSum();
 </script></body></html>

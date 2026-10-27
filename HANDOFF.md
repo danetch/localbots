@@ -862,3 +862,27 @@ for minor-patch PTRs like 12.1.7).
 - Still without automated tests (network glue or UI only): tools/season-draft.js and tools/wcl-lust.js main loops (their pure parts are
   tested: lib/season.js, lib/lust.js), lib/updater.js, renderer-only logic (bcmp build compare, Bloodlust card, region sent from the export).
 - START HERE rewritten as a self-contained briefing; outdated 21 Oct sections flagged; runbook updated for the automatic merges.
+
+=== 27 OCT: v0.9.2 / v0.9.3 FIGHT CARD FIXES + UI HINTS / DECLUTTER (branch ui-hints, not released yet) ===
+- v0.9.2 (released): choosing "None" after a boss left Style / Targets hidden and disabled (autoLength returned before bossPreview).
+  Now refreshed, and an automatic boss length goes back to 300 s (a typed length is kept).
+- v0.9.3 (released): the Fight summary line only refreshed on user events, so late values (boss length from IPC, the saved fight
+  restored at startup, the None reset) left it stale ("Patchwerk, 1 target" with Kith'ix Heroic selected). bossPreview and the
+  settings restore now call sumNow() (updSum that never throws). Saved fights carry durAuto (length was automatic) so an automatic
+  boss length still resets to 300 s on None after a restart (fights saved before 0.9.3 have no flag: their length is kept once).
+- Help hints (user choice: ⓘ icons everywhere, no off switch): any element with data-tip shares one tooltip (#tip, role=tooltip):
+  hover after 350 ms, keyboard focus at once, click on an ⓘ pins it (never toggles the checkbox / section it sits in), Escape closes;
+  inside a modal dialog the tooltip moves into the dialog (top layer). .hint elements get tabindex/role/aria-label automatically.
+  All former title= help moved to data-tip (pvsw, crafted slot item lists...).
+- Decluttered: long explanatory paragraphs of Options, Consumables, Loot source, Crafted gear, Enchants & gems, the DR table and the
+  Settings season preview are hints now; #mdesc / #cathint removed (mode text = hint on the mode buttons and Run). Crafted card body
+  (#cr_body) only when "Add crafted items" is ticked; Enchants preview (#en_box) only with an option ticked; Max charges only with
+  Catalyst; consumables to compare show one line without game data; Fight rows: Style + Targets (hidden as a row for a boss),
+  Length + Variance + Bloodlust. BiS setup fully expanded: ~2900 px -> ~1430 px.
+- Header: game data status = dot (ok/busy/bad) + short text (#lootbox, setLoot(kind, short, full)), full text in its hint; the
+  progress strip is hidden until the first run.
+- Empty Results = "Getting started" checklist (renderStart: simc, game data, export, mode) with action buttons; replaced for good by
+  the first result shown (#res data-start).
+- Verified in real Electron under Xvfb (first launch, all modes expanded, Settings) and with test/ui/mock.js in an Electron harness
+  (results, dark mode, 1000 px, crafted/enchant cards, keyboard and click behaviour of hints). npm test 89 pass. Screenshots on Linux
+  use a fallback font (no Segoe UI): Windows text is a bit narrower.
