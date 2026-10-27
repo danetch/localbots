@@ -45,6 +45,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .rhead{display:flex;justify-content:space-between;align-items:center;gap:8px}.rhead h1{margin:0}
 .gain{height:3px;border-radius:2px;background:var(--pos);opacity:.55;margin-top:5px}.gain.neg{background:var(--neg)}
 .hrow{display:flex;gap:8px;justify-content:space-between;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:5px 0;font-size:12px}.hrow:hover{background:var(--hl)}.hrow b{font-weight:600}
+#engst.bad,#ubanner.bad{color:var(--neg)}#ubanner.bad{border-color:var(--neg)}#engst a,#ubtxt a,.step a{color:var(--acc)}
 .st{color:var(--mute)}a.wh{color:inherit;text-decoration:none;border-bottom:1px dotted var(--mute)}a.wh:hover{color:var(--acc)}#ubanner{display:flex;align-items:center;gap:10px;margin:0 12px 8px;padding:7px 12px;border:1px solid var(--acc);border-radius:8px;background:var(--panel);font-size:13px}.go2{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}.rk{display:inline-block;min-width:1.6em;color:var(--mute)}
 table{border-collapse:collapse;width:100%;font-size:13px}td,th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:11px;text-transform:uppercase;color:var(--mute)}
 tr.chg td{background:var(--hl)}
@@ -257,6 +258,7 @@ Speed, leech and avoidance enchants (head, shoulders, feet) are left as they are
  <div id="simc" class="it" style="word-break:break-all"></div>
  <div id="eng" class="it" style="margin-top:4px"></div>
  <div class="row"><button id="eget" class="small" hidden>Download / update simc</button></div>
+ <div id="engst" class="it" hidden></div>
  <div id="engnew" class="it" hidden><span id="engnewtxt"></span> <button id="eforce" class="small"></button></div>
  <h2 class="lt">Season preview<i class="hint" data-tip="The Live / PTR switch in the header turns it on: simc runs with its PTR data, “Update loot data” reads the PTR or beta build, and boss fights prepared for the next season appear (marked PTR). Your live data is kept and comes back when you switch back.
 The switch is available only while an upcoming season is in testing; when that season goes live, Polygnome switches back to Live by itself.">i</i></h2>
@@ -369,25 +371,44 @@ $('bdiff').onchange=bossPreview;$('dur').addEventListener('change',bossPreview);
 // game builds compared part by part ("12.1.5.70391" < "12.1.5.70575" < "12.1.7.100"): item data newer than simc's own build is normal (the simc repository is ahead
 // of the nightly binary), only older data needs "Update loot data"
 const bcmp=(a,b)=>{const A=String(a||'').split('.').map(Number),B=String(b||'').split('.').map(Number);for(let i=0;i<4;i++)if((A[i]||0)!==(B[i]||0))return(A[i]||0)-(B[i]||0);return 0};
-async function refreshEngine(){try{const e=await api.engineInfo();$('simc').textContent=e.path||'No simc selected';$('eget').hidden=!e.canInstall;
+async function refreshEngine(){try{const e=await api.engineInfo();$('simc').textContent=e.path||'No simc selected';engCan=!!e.canInstall;$('eget').hidden=!e.canInstall;
   $('eng').textContent=e.version?`SimulationCraft ${e.version.simc} · WoW ${e.version.wow}${e.version.hotfix?' · hotfix '+e.version.hotfix:''}`+(e.dataBuild&&bcmp(e.dataBuild,e.version.wow)<0?` — item data is for an older game build (${e.dataBuild}): click “Update loot data”`:''):(e.path?'Could not read the simc version (is it a valid simc?).':e.canInstall?'No simc yet: click “Download / update simc”.':'Select your simc build.')}catch(x){$('eng').textContent=msg(x)}}
 $('pick').onclick=async()=>{const p=await api.pickSimc();if(p){$('simc').textContent=p;refreshEngine()}};
 const fmtBuild=l=>`${l.version} · build ${l.hash}${l.date?' · '+l.date.slice(0,10):''}`;
 function showNewer(c){const f=(c&&c.newerFamilies)||[];$('engnew').hidden=!f.length;if(!f.length)return;
  $('engnewtxt').textContent=`A newer version ${f[0]} exists on the download server. It is not offered automatically because it may be a PTR/beta build.`;$('eforce').textContent=`Install ${f[0]} anyway`;$('eforce').dataset.fam=f[0]}
-async function installEngine(opt){try{$('eng').textContent='Downloading… (see the activity log)';await api.engineInstall(opt);$('ubanner').hidden=true;return true}catch(x){$('eng').textContent=msg(x);return false}finally{refreshEngine()}}
-$('eget').onclick=async()=>{$('eget').disabled=true;$('eng').textContent='Checking…';try{const c=await api.engineCheck();showNewer(c);
-  if(!c.latest)$('eng').textContent='No build found for your simc version.';
-  else if(!c.upToDate||confirm('simc is already up to date ('+fmtBuild(c.latest)+'). Download it again?'))await installEngine();else $('eng').textContent='Already up to date.'}catch(x){$('eng').textContent=msg(x)}$('eget').disabled=false;refreshEngine()};
+// simc download: one state shown in Settings (#engst), in the startup banner and in the Getting started checklist. Errors stay until the
+// next attempt (refreshEngine never overwrites them); progress comes from the main process log lines ("   45 %", ">> Extracting…").
+let engCan=false;const eng={busy:false,step:'',err:''};
+const MANUAL='<a href="https://www.simulationcraft.org/download.html" target="_blank" rel="noopener">simulationcraft.org</a>';
+function engShow(){const st=$('engst'),txt=eng.busy?`Downloading SimulationCraft… ${eng.step}`:eng.err?`Download failed: ${eng.err}`:'';
+ st.hidden=!txt;st.classList.toggle('bad',!eng.busy&&!!eng.err);st.innerHTML=esc(txt)+(!eng.busy&&eng.err?`<br>If it keeps failing: download the Windows build from ${MANUAL}, unzip it, then use “Select simc…”.`:'');
+ $('eget').disabled=eng.busy;if(!$('ubanner').hidden&&$('ubanner').dataset.k==='simc'){$('ubanner').classList.toggle('bad',!eng.busy&&!!eng.err);
+  if(eng.busy)$('ubtxt').textContent=`Downloading SimulationCraft… ${eng.step}`;else if(eng.err)$('ubtxt').innerHTML=`SimulationCraft download failed: ${esc(eng.err)} You can also get it from ${MANUAL} and use Settings › Select simc.`;
+  $('ub_go').disabled=eng.busy;$('ub_go').textContent=eng.err?'Retry':$('ub_go').textContent}
+ renderStart()}
+api.onLog(l=>{if(!eng.busy)return;const m=/^\s+(\d+) %$/.exec(l)||/^\s+(\d+) MB$/.exec(l);if(m){eng.step=/%/.test(l)?m[1]+' %':m[1]+' MB';engShow()}else if(/^>> Extracting/.test(l)){eng.step='extracting…';engShow()}});
+async function installEngine(opt){if(eng.busy)return false;eng.busy=true;eng.step='';eng.err='';engShow();
+ try{await api.engineInstall(opt);if($('ubanner').dataset.k==='simc')$('ubanner').hidden=true;return true}
+ catch(x){eng.err=msg(x);return false}finally{eng.busy=false;engShow();refreshEngine()}}
+$('eget').onclick=async()=>{if(eng.busy)return;eng.err='';eng.busy=true;eng.step='checking for the latest build…';engShow();let c;
+ try{c=await api.engineCheck('button')}catch(x){eng.busy=false;eng.err=msg(x);engShow();return}
+ eng.busy=false;engShow();showNewer(c);
+ if(!c.latest){eng.err=`no Windows build of SimulationCraft ${c.family||''} found on the download server.`;engShow();return}
+ if(c.upToDate&&!confirm('simc is already up to date ('+fmtBuild(c.latest)+'). Download it again?'))return;
+ await installEngine()};
 $('eforce').onclick=async()=>{const f=$('eforce').dataset.fam;if(f&&confirm(`Install SimulationCraft ${f}? It may be a PTR/beta build whose data differs from the live game.`))await installEngine({family:f})};
 // Startup: look for a newer simc build (retail line only) and propose it with its version number; dismissed per build.
+// With no simc at all a failed check is shown (with Retry) instead of staying silent.
 const DISMISS='lb_simc_dismissed';
-async function checkEngineAtStart(){let c;try{c=await api.engineCheck()}catch{return}showNewer(c);if(!c.latest||c.upToDate)return;
- let d='';try{d=localStorage.getItem(DISMISS)||''}catch{}if(d===c.latest.hash)return;
+function simcBanner(text,btn,hash){const b=$('ubanner');b.dataset.k='simc';b.classList.remove('bad');$('ubtxt').textContent=text;$('ub_go').textContent=btn;$('ub_go').dataset.h=hash||'';b.hidden=false}
+async function checkEngineAtStart(){let c;const none=$('simc').textContent==='No simc selected';
+ try{c=await api.engineCheck('app start')}catch(x){if(none&&engCan){simcBanner('','Retry');eng.err=msg(x);engShow()}return}
+ showNewer(c);if(!c.latest||c.upToDate)return;
+ let d='';try{d=localStorage.getItem(DISMISS)||''}catch{}if(d===c.latest.hash&&c.hasSimc)return;
  const iv=c.installedVersion,have=iv?`${iv.simc}${iv.git?' · build '+iv.git:''}${iv.hotfix?' · hotfix '+iv.hotfix:''}`:'unknown build';
- $('ubtxt').textContent=c.hasSimc?`SimulationCraft update available: ${fmtBuild(c.latest)}. Installed: ${have}.`:`No simc is selected. Download SimulationCraft ${fmtBuild(c.latest)}?`;
- $('ub_go').textContent=c.hasSimc?'Update now':'Download';$('ubanner').hidden=false;$('ub_go').dataset.h=c.latest.hash}
-$('ub_go').onclick=async()=>{$('ub_go').disabled=true;$('ubtxt').textContent='Downloading SimulationCraft… (see the Activity log tab)';const ok=await installEngine();$('ub_go').disabled=false;if(!ok)$('ubtxt').textContent='The download failed: '+$('eng').textContent};
+ simcBanner(c.hasSimc?`SimulationCraft update available: ${fmtBuild(c.latest)}. Installed: ${have}.`:`No simc is selected. Download SimulationCraft ${fmtBuild(c.latest)}?`,c.hasSimc?'Update now':'Download',c.latest.hash)}
+$('ub_go').onclick=()=>installEngine();
 $('ub_later').onclick=()=>{try{localStorage.setItem(DISMISS,$('ub_go').dataset.h||'')}catch{}$('ubanner').hidden=true};
 $('uchk').onclick=async()=>{$('ust').textContent='Checking…';const r=await api.updateCheck();
   $('ust').textContent={dev:'Updates only work in the installed app.',current:`Up to date (${r.current}).`,available:`Version ${r.version} is available.`,error:r.message||'Update check failed.',idle:''}[r.state]||'';
@@ -669,14 +690,15 @@ $('txt').addEventListener('input',()=>{try{localStorage.setItem('lb_export',$('t
 // ---- Getting started: live checklist on the Results tab until the first result is shown ----
 function renderStart(){const res=$('res');if(!res||res.dataset.start!=='1')return;
  const simc=!!$('simc').textContent&&$('simc').textContent!=='No simc selected',busy=$('lootdot').classList.contains('busy'),data=!!lootInfo,txt=$('txt').value.trim().length>0;
- const S=[[simc,'SimulationCraft engine',simc?'Ready.':'Polygnome runs simulations with simc: download it or select your own build in Settings.',simc?'':'<button class="small go2" data-act="set">Open Settings</button>'],
+ const S=[[simc,'SimulationCraft engine',simc?'Ready.':eng.busy?esc(`Downloading… ${eng.step}`):eng.err?`<span style="color:var(--neg)">Download failed: ${esc(eng.err)}</span> You can also get it from ${MANUAL} and select it in Settings.`:'Polygnome runs simulations with simc'+(engCan?': download it here, or select your own build in Settings.':': select your simc build in Settings.'),
+   simc||eng.busy?'':(engCan?`<button class="small go2" data-act="dl">${eng.err?'Retry':'Download simc'}</button> `:'')+'<button class="small" data-act="set">Settings</button>'],
   [data,'Game data',data?'Loot tables, crafted items, enchants and consumables are ready.':busy?'Downloading now… see the Activity log.':'Needed for Droptimizer, Best in Slot, Catalyst and crafted gear.',data||busy?'':'<button class="small go2" data-act="upd">Update loot data</button>'],
   [txt,'Your character',txt?($('sm_char').textContent||'Export pasted.'):'In game, type /simc and copy the whole text (bags included), then paste it in Character.',txt?'':'<button class="small go2" data-act="char">Paste export</button>'],
   [false,'Pick a mode and run',`${MODES[mode][1]} Set the options on the left, then click “${MODES[mode][0]}” (Ctrl+Enter).`,'']];
  res.innerHTML='<div class="start"><h2>Getting started</h2><div class="it">Hover or click the <i class="hint" data-tip="Like this one: every ⓘ explains the option next to it.">i</i> icons for help on any option.</div>'+
   S.map(([ok,t,d,b],i)=>`<div class="step ${ok?'done':''}"><span class="ck">${ok?'✓':i+1}</span><div class="tx2"><b>${t}</b><span>${d}</span></div>${b}</div>`).join('')+'</div>'}
 $('res').addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const k=a.dataset.act;
- if(k==='set')$('setdlg').showModal();else if(k==='upd')updateLoot('');else{$('s_char').open=true;$('txt').focus()}});
+ if(k==='set')$('setdlg').showModal();else if(k==='dl')installEngine();else if(k==='upd')updateLoot('');else{$('s_char').open=true;$('txt').focus()}});
 // any shown result replaces the checklist for good
 new MutationObserver(()=>{const r=$('res');if(r.dataset.start==='1'&&!r.querySelector('.start'))delete r.dataset.start}).observe($('res'),{childList:true});
 $('txt').addEventListener('input',()=>setTimeout(renderStart,0));document.querySelectorAll('[name=mode]').forEach(r=>r.addEventListener('change',renderStart));

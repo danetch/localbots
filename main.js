@@ -323,6 +323,14 @@ function extract7z(archive, outDir) {
     p.on('close', c => c === 0 ? resolve() : reject(new Error(`Extraction failed (7-Zip code ${c}): ${err.trim().split('\n').slice(-2).join(' ')}`)));
   });
 }
+// simc download errors in plain words (network codes -> what to check), with the raw reason kept in brackets for the logs.
+function engineError(e) {
+  const m = String(e?.message || e), code = (/\b(E(?!PERM|ACCES|BUSY)[A-Z]{3,}|UND_ERR_\w+|CERT_\w+|UNABLE_TO_\w+|SELF_SIGNED_\w+|fetch failed)\b/.exec(m) || [])[1];
+  if (code) return new Error(`Could not reach downloads.simulationcraft.org (${code}): check your internet connection; a firewall, VPN or antivirus may block it.`);
+  if (/timed out/i.test(m)) return new Error(`The download from downloads.simulationcraft.org timed out (${m}). Try again later.`);
+  if (/EPERM|EACCES|EBUSY/.test(m)) return new Error(`Windows refused to write or run the simc files (${m}). An antivirus may be blocking them.`);
+  return e instanceof Error ? e : new Error(m);
+}
 ipcMain.handle('engine:info', async () => {
   const { simcPath } = loadSettings(), meta = readMeta();
   return { platform: process.platform, canInstall: process.platform === 'win32', path: simcPath || '', meta,
@@ -344,11 +352,15 @@ async function pickBuild(forceFamily) {
   return { latest: l, family, installedVersion: inst ? { simc: inst.simc, git: inst.git, hotfix: inst.hotfix, wow: inst.wow } : null, hasSimc: !!simcPath,
     installed: meta?.name || null, upToDate: !!l && engineLib.sameBuild(git, l.hash), newerFamilies };
 }
-ipcMain.handle('engine:check', () => pickBuild());
+ipcMain.handle('engine:check', async (_e, why) => {
+  try { const c = await pickBuild(); dataLog(`simc check (${why || 'button'}): ${c.latest ? `${c.latest.name} available` : 'no build of family ' + c.family}${c.upToDate ? ', up to date' : ''}${c.hasSimc ? '' : ', no simc selected'}`); return c; }
+  catch (e) { const x = engineError(e); dataLog(`simc check (${why || 'button'}) FAILED: ${x.message}`); throw x; }
+});
 let engineBusy = false;
 ipcMain.handle('engine:install', async (_e, opt) => {
   if (engineBusy) throw new Error('An engine download is already running.');
-  engineBusy = true; const log = emitLog;
+  engineBusy = true; const log = l => { emitLog(l); if (!/^\s+\d+ (%|MB)$/.test(l)) dataLog('simc: ' + l.replace(/^>> /, '')); };
+  dataLog(`=== simc download (app ${app.getVersion()}${opt?.family ? ', family ' + opt.family : ''})`);
   try {
     const l = (await pickBuild(opt?.family))?.latest;
     if (!l) throw new Error('No Windows build found in the simc download index for this version.');
@@ -367,7 +379,8 @@ ipcMain.handle('engine:install', async (_e, opt) => {
       log(`>> simc ${v.simc} (WoW ${v.wow}) installed. SHA-256 ${hash.slice(0, 16)}…`);
       return { exe, version: v, name: l.name, sha256: hash };
     } finally { fs.rm(tmp, { recursive: true, force: true }, () => {}); }
-  } finally { engineBusy = false; }
+  } catch (e) { const x = engineError(e); emitLog(`>> simc download failed: ${x.message}`); dataLog(`=== simc download FAILED: ${x.message}`); throw x; }
+  finally { engineBusy = false; }
 });
 
 // ---------- app updates ----------
@@ -1104,7 +1117,7 @@ app.whenReady().then(() => {
   win = new BrowserWindow({ width: 1180, height: 820, title: 'Polygnome', icon: path.join(__dirname, 'renderer', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true } });
   win.setMenuBarVisibility(false);
-  win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\/www\.wowhead\.com\//.test(url)) shell.openExternal(url); return { action: 'deny' }; });
+  win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\/(www\.wowhead\.com|www\.simulationcraft\.org)\//.test(url)) shell.openExternal(url); return { action: 'deny' }; });
   win.webContents.on('will-navigate', e => e.preventDefault());
   win.loadFile('renderer/index.html');
 });

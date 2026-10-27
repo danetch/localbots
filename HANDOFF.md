@@ -1,7 +1,7 @@
 POLYGNOME (formerly LOCALBOTS) - PROJECT HANDOFF
 ================================================
 
-=== START HERE (state on 27 Oct 2026 morning, app v0.10.1, 89 tests; see "27 OCT" at the end for the latest changes) ===
+=== START HERE (state on 27 Oct 2026 morning, app v0.10.2, 89 tests; see "27 OCT" at the end for the latest changes) ===
 New conversation: attach the GitHub repo danetch/localbots, read this START HERE and README.md, then wait for the user's request.
 Everything below START HERE is a chronological log (oldest first, 21 Oct -> 26 Oct); when two notes disagree, the later one wins.
 The old "FILE MAP", "FEATURES IMPLEMENTED", "KNOWN LIMITATIONS" and "ENVIRONMENT NOTES" sections (21 Oct) are outdated (zips, wago-only,
@@ -897,3 +897,17 @@ for minor-patch PTRs like 12.1.7).
   effect, timing source, guessed parts), notes (length source, cleaved bosses, measured Bloodlust, footnote "*" only when something is
   guessed). lib/boss.js build() summary now also carries duration, multiplier, count.
 - Verified in real Electron (Coiled Altar Mythic, Ula'tek Heroic dark, Twin Fangs at 1000 px, None hides the tab, Bloodlust choice redraws).
+
+=== 28 OCT: v0.10.2 — SIMC DOWNLOAD ERRORS VISIBLE ===
+- User's friend: "the simc download button didn't do anything". Cause in the renderer: any failure (check or download) wrote the error to
+  #eng, then refreshEngine() (finally) overwrote it at once with "No simc yet: click Download / update simc"; the startup banner was skipped
+  silently when the check failed. The REAL failure on his PC is still unknown (it was never shown or logged): ask for
+  logs/data-updates.log ("simc check" / "=== simc download" lines) or the message now shown.
+- Renderer: one state `eng` {busy, step, err} shown in Settings (#engst, never overwritten by refreshEngine), the startup banner (#ubanner
+  data-k=simc: Retry on failure) and the Getting started step (Download simc / Retry buttons on Windows); progress from the main log lines
+  ("   45 %", ">> Extracting…"). With no simc, a failed startup check shows the banner with the error. Failure text links the manual
+  download page (simulationcraft.org, now allowed by setWindowOpenHandler).
+- main.js: engineError() turns network codes / fetch failed / timeouts / EPERM into plain messages; engine:check(why) and engine:install
+  write to the game data log; install failures also go to the Activity log.
+- Not testable here: downloads.simulationcraft.org is blocked in the sandbox (403) and the download is Windows-only. Checked with mocked
+  failures / progress in the Electron harness and the real app (Linux path logged).
