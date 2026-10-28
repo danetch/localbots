@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 // Fake simc for tests: DPS = 100000 + bonuses read from each profileset's lines (+500 embellishment, +3000 enchant 7969, +1500 per crit gem
 // 240904) + a small hash; buffed stats per profileset (crit rating grows with crit gems) like profileset_output_data=stats.
-const fs=require('fs');const a=process.argv.slice(2);const inp=fs.readFileSync(a[0],'utf8');
+const fs=require('fs');const a=process.argv.slice(2);
+// Started without arguments: print the version banner and exit, like the real simc (Polygnome's "is simc ready" check reads it).
+if(!a.length){console.log('SimulationCraft 1210-01 for World of Warcraft 12.1.5.70575 Live (hotfix 2026-10-22/70575, git build midnight 73a372b)');process.exit(0)}
+const inp=fs.readFileSync(a[0],'utf8');
 const out=a.find(x=>x.startsWith('json2=')).slice(6);
 fs.appendFileSync(process.env.FAKESIMC_LOG||__dirname+'/inputs.log','=====\n'+inp+'\nARGS '+a.slice(1).join(' ')+'\n');
 const names=[...new Set([...inp.matchAll(/profileset\."(c\d+)"\+=/g)].map(m=>m[1]))];

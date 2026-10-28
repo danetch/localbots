@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld('api', {
   editCrafted: () => ipcRenderer.invoke('craft:edit'),
   bis: o => ipcRenderer.invoke('sim:bis', o),
   talents: text => ipcRenderer.invoke('talents:parse', text),
-  craftPreview: o => ipcRenderer.invoke('craft:preview', o),
+  craftPreview: o => ipcRenderer.invoke('craft:preview', o), foodCheck: why => ipcRenderer.invoke('food:check', why),
   enhPreview: o => ipcRenderer.invoke('enh:preview', o),
   weaponsOf: text => ipcRenderer.invoke('weapons:of', text),
   openReport: file => ipcRenderer.invoke('report:open', file),

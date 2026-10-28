@@ -1,7 +1,7 @@
 POLYGNOME (formerly LOCALBOTS) - PROJECT HANDOFF
 ================================================
 
-=== START HERE (state on 27 Oct 2026 morning, app v0.10.2, 89 tests; see "27 OCT" at the end for the latest changes) ===
+=== START HERE (state on 27 Oct 2026 morning, app v0.10.3, 92 tests; see "27 OCT" at the end for the latest changes) ===
 New conversation: attach the GitHub repo danetch/localbots, read this START HERE and README.md, then wait for the user's request.
 Everything below START HERE is a chronological log (oldest first, 21 Oct -> 26 Oct); when two notes disagree, the later one wins.
 The old "FILE MAP", "FEATURES IMPLEMENTED", "KNOWN LIMITATIONS" and "ENVIRONMENT NOTES" sections (21 Oct) are outdated (zips, wago-only,
@@ -911,3 +911,24 @@ for minor-patch PTRs like 12.1.7).
   write to the game data log; install failures also go to the Activity log.
 - Not testable here: downloads.simulationcraft.org is blocked in the sandbox (403) and the download is Windows-only. Checked with mocked
   failures / progress in the Electron harness and the real app (Linux path logged).
+
+=== 28 OCT: v0.10.3 — SIMC DOWNLOAD FIXED, EVERYTHING WAITS FOR A READY SIMC ===
+- Real cause of "No Windows build found in the simc download index" (friend's PC, then the user's): downloads.simulationcraft.org names
+  Windows archives simc-1210.01.73a372b-win64.7z since late 2022 (read in the user's built-in browser, 28 Oct). lib/engine.js only
+  matched the 2021-22 form simc-910-01-win64-5d7ee8d.7z, so the automatic download NEVER worked for current builds (earlier tests used
+  made-up names). Both forms + hash-less simc-920.01-win64.7z are read now; winarm64 / _qt5 / win32 skipped. Real index excerpt:
+  test/fixtures/simc-nightly-index.html (engine.test.js). The archive's inner layout of the new builds is NOT verified (findFile searches
+  simc.exe recursively): first real download on Windows to confirm.
+- User rules (27-28 Oct): everything that needs simc fails gracefully and waits for a ready simc; the simc check comes first at startup and
+  conditions the rest; a new / updated simc re-runs the setup that depends on it.
+  * main.js simcState(): ready = selected file exists AND prints its version banner (good answer cached per path/size/date). needSimc()
+    for Top Gear / Droptimizer / BiS ("SimulationCraft is not ready: <reason> Open Settings…"). engine:info returns ready + reason.
+  * Food: checkFoods needs a ready simc; loot:info returns foodChecked and NO food until checked (other consumables unchanged);
+    IPC food:check runs the food check alone on the current game data (a few seconds) instead of a full "Update loot data"; the old
+    loot:status rule "food list to check with simc" is gone.
+  * Renderer startup, in order: refreshEngine -> checkEngineAtStart (download / update offer) -> updateAtStart (GitHub data, game data)
+    -> foodCheck. simcChanged() after "Select simc…" or a download: refreshEngine, clear the simc banner, foodCheck. engReady drives the
+    Settings red dot, the checklist step (with the reason when a selected simc does not start) and the food list note.
+  * test/fakesimc.js prints a version banner when started without arguments (needed by the readiness check).
+- Tests: 92 (engine listing on the real index, readiness reasons + refused runs, foods hidden then checked by food:check). Electron
+  harness: call order at startup and after a download.

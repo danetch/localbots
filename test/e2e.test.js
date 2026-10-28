@@ -164,3 +164,35 @@ test('season preview: a switch left on with no upcoming season goes back to Live
     assert.throws(() => H['settings:set']({}, { ptr: true }), /No upcoming season/);   // the switch cannot be turned on
   } finally { fs.writeFileSync(sf, before); }
 });
+
+test('simc readiness: a missing or broken simc stops runs with a clear reason; engine info says why', async () => {
+  const sf = ud + '/settings.json', keep = fs.readFileSync(sf, 'utf8'), text = 'warrior="Bob"\nspec=fury\nlevel=90\nhead=,id=10\n';
+  const broken = path.join(ud, 'not-simc.js'); fs.writeFileSync(broken, '#!/usr/bin/env node\nprocess.exit(0)\n'); fs.chmodSync(broken, 0o755);
+  try {
+    for (const [simcPath, why] of [[path.join(ud, 'nowhere', 'simc.exe'), /was not found/], [broken, /did not start or is not SimulationCraft/], ['', /No simc selected/]]) {
+      fs.writeFileSync(sf, JSON.stringify({ simcPath }));
+      const e = await H['engine:info']({});
+      assert.strictEqual(e.ready, false); assert.match(e.reason, why);
+      await assert.rejects(H['sim:topgear']({}, { text, threads: 1, topN: 2, fight: { fightStyle: 'Patchwerk' }, precision: 'fast' }), /SimulationCraft is not ready/);
+    }
+  } finally { fs.writeFileSync(sf, keep); }
+  const ok = await H['engine:info']({});
+  assert.strictEqual(ok.ready, true); assert.strictEqual(ok.version.simc, '1210-01');
+});
+
+test('foods: hidden until simc has checked them; food:check checks them alone once simc is ready', async () => {
+  const { foodKey } = require('../main.js'), simc = path.join(__dirname, 'fakesimc.js');
+  const food = [{ value: 'roast', label: 'Roast' }, { value: 'tea', label: 'Tea' }], kept = [{ value: 'roast', label: 'Roast — +59 Mastery' }];
+  fs.writeFileSync(ud + '/loot.json', JSON.stringify({ builtAt: new Date().toISOString(), consVer: 2, craftVer: 2, crafted: [], embellishments: [], tierSets: [],
+    consumables: { flask: [{ value: 'flask_a', label: 'Flask A' }], food, potion: [], augmentation: [] }, instances: {}, items: {} }));
+  fs.writeFileSync(path.join(ud, 'food-check.json'), JSON.stringify({ key: foodKey(food, simc), at: '2026-10-28T08:00:00Z', list: kept, dropped: ['Tea'] }));
+  try {
+    const before = H['loot:info']({});
+    assert.strictEqual(before.foodChecked, false); assert.deepStrictEqual(before.consumables.food, [], 'no food before the simc check');
+    assert.strictEqual(before.consumables.flask.length, 1, 'other consumables are not held back');
+    assert.deepStrictEqual(await H['food:check']({}, 'simc ready'), { checked: true });
+    const after = H['loot:info']({});
+    assert.strictEqual(after.foodChecked, true); assert.deepStrictEqual(after.consumables.food.map(f => f.value), ['roast']);
+    assert.deepStrictEqual(await H['food:check']({}, 'again'), { checked: true }, 'nothing to do the second time');
+  } finally { fs.rmSync(ud + '/loot.json', { force: true }); fs.rmSync(path.join(ud, 'food-check.json'), { force: true }); }
+});

@@ -27,3 +27,18 @@ test('engine install: download, extract, version check, settings', { skip: !z &&
     assert.strictEqual((await H['engine:info']()).version.simc, '1210-01');
   } finally { Module._load = orig; global.fetch = realFetch; }
 });
+
+// Real index of downloads.simulationcraft.org (28 Oct 2026): current Windows builds are named simc-1210.01.73a372b-win64.7z. The old pattern
+// (simc-1210-01-win64-<hash>.7z) found none of them -> "No Windows build found in the simc download index" on a user's PC.
+test('engine listing: real nightly index, both archive name formats', () => {
+  const engine = require('../lib/engine');
+  const html = fs.readFileSync(path.join(__dirname, 'fixtures', 'simc-nightly-index.html'), 'utf8');
+  const l = engine.latest(html, 'win32', '1210-01');
+  assert.deepStrictEqual(l, { name: 'simc-1210.01.73a372b-win64.7z', url: engine.BASE_URL + 'simc-1210.01.73a372b-win64.7z', version: '1210-01', hash: '73a372b', date: '2026-10-23 05:13' });
+  assert.strictEqual(engine.latest(html, 'win32').name, 'simc-1210.01.73a372b-win64.7z');               // no family: highest version
+  const names = engine.listing(html, 'win32').map(x => x.name);
+  assert.ok(names.every(n => /-win64[.-]/.test(n) && !/arm64|_qt5/.test(n)), 'only plain win64 archives');
+  assert.ok(names.includes('simc-910-01-win64-5d7ee8d.7z') && names.includes('simc-920.01-win64.7z'), 'old names and hash-less names still read');
+  assert.deepStrictEqual(engine.families(html, 'win32').slice(0, 3), ['1210-01', '1205-01', '1201-01']);
+  assert.ok(engine.sameBuild('73a372b9f', l.hash), 'banner hash vs archive hash');
+});

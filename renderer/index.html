@@ -371,9 +371,17 @@ $('bdiff').onchange=bossPreview;$('dur').addEventListener('change',bossPreview);
 // game builds compared part by part ("12.1.5.70391" < "12.1.5.70575" < "12.1.7.100"): item data newer than simc's own build is normal (the simc repository is ahead
 // of the nightly binary), only older data needs "Update loot data"
 const bcmp=(a,b)=>{const A=String(a||'').split('.').map(Number),B=String(b||'').split('.').map(Number);for(let i=0;i<4;i++)if((A[i]||0)!==(B[i]||0))return(A[i]||0)-(B[i]||0);return 0};
-async function refreshEngine(){try{const e=await api.engineInfo();$('simc').textContent=e.path||'No simc selected';engCan=!!e.canInstall;$('eget').hidden=!e.canInstall;
-  $('eng').textContent=e.version?`SimulationCraft ${e.version.simc} · WoW ${e.version.wow}${e.version.hotfix?' · hotfix '+e.version.hotfix:''}`+(e.dataBuild&&bcmp(e.dataBuild,e.version.wow)<0?` — item data is for an older game build (${e.dataBuild}): click “Update loot data”`:''):(e.path?'Could not read the simc version (is it a valid simc?).':e.canInstall?'No simc yet: click “Download / update simc”.':'Select your simc build.')}catch(x){$('eng').textContent=msg(x)}}
-$('pick').onclick=async()=>{const p=await api.pickSimc();if(p){$('simc').textContent=p;refreshEngine()}};
+let engReady=false,engReason='';
+async function refreshEngine(){try{const e=await api.engineInfo();$('simc').textContent=e.path||'No simc selected';engCan=!!e.canInstall;engReady=!!e.ready;engReason=e.ready?'':e.reason||'';$('eget').hidden=!e.canInstall;
+  $('setdot').hidden=engReady;$('setbtn').dataset.tip=engReady?'simc engine, threads, precision, theme and app updates':`SimulationCraft is not ready: ${e.reason} Open Settings to download or select it.`;renderStart();
+  $('eng').textContent=e.version?`SimulationCraft ${e.version.simc} · WoW ${e.version.wow}${e.version.hotfix?' · hotfix '+e.version.hotfix:''}`+(e.dataBuild&&bcmp(e.dataBuild,e.version.wow)<0?` — item data is for an older game build (${e.dataBuild}): click “Update loot data”`:''):(e.path?e.reason:e.canInstall?'No simc yet: click “Download / update simc”.':'Select your simc build.');return e}catch(x){$('eng').textContent=msg(x);return null}}
+$('pick').onclick=async()=>{const p=await api.pickSimc();if(p){$('simc').textContent=p;simcChanged('simc selected')}};
+// A new simc (selected or downloaded): check it, then redo what depends on it (food check of the game data, setup checklist, Run).
+async function simcChanged(why){const e=await refreshEngine();if(!e?.ready)return;eng.err='';engShow();if($('ubanner').dataset.k==='simc')$('ubanner').hidden=true;await foodCheck(why)}
+// Foods are listed once simc has checked which ones add damage (main: loot:info hides them before that).
+async function foodCheck(why){if(!engReady||!lootInfo||lootInfo.foodChecked||running())return;
+ setLoot('busy','Checking food with simc…','Checking which foods add damage with SimulationCraft (a few seconds)… see the Activity log.');
+ try{await api.foodCheck(why||'simc ready')}catch(x){setLoot('bad','Food check failed',`Food check failed: ${msg(x)}`);return}await loadLoot()}
 const fmtBuild=l=>`${l.version} · build ${l.hash}${l.date?' · '+l.date.slice(0,10):''}`;
 function showNewer(c){const f=(c&&c.newerFamilies)||[];$('engnew').hidden=!f.length;if(!f.length)return;
  $('engnewtxt').textContent=`A newer version ${f[0]} exists on the download server. It is not offered automatically because it may be a PTR/beta build.`;$('eforce').textContent=`Install ${f[0]} anyway`;$('eforce').dataset.fam=f[0]}
@@ -389,7 +397,7 @@ function engShow(){const st=$('engst'),txt=eng.busy?`Downloading SimulationCraft
  renderStart()}
 api.onLog(l=>{if(!eng.busy)return;const m=/^\s+(\d+) %$/.exec(l)||/^\s+(\d+) MB$/.exec(l);if(m){eng.step=/%/.test(l)?m[1]+' %':m[1]+' MB';engShow()}else if(/^>> Extracting/.test(l)){eng.step='extracting…';engShow()}});
 async function installEngine(opt){if(eng.busy)return false;eng.busy=true;eng.step='';eng.err='';engShow();
- try{await api.engineInstall(opt);if($('ubanner').dataset.k==='simc')$('ubanner').hidden=true;return true}
+ try{await api.engineInstall(opt);if($('ubanner').dataset.k==='simc')$('ubanner').hidden=true;setTimeout(()=>simcChanged('simc downloaded'),0);return true}
  catch(x){eng.err=msg(x);return false}finally{eng.busy=false;engShow();refreshEngine()}}
 $('eget').onclick=async()=>{if(eng.busy)return;eng.err='';eng.busy=true;eng.step='checking for the latest build…';engShow();let c;
  try{c=await api.engineCheck('button')}catch(x){eng.busy=false;eng.err=msg(x);engShow();return}
@@ -402,18 +410,18 @@ $('eforce').onclick=async()=>{const f=$('eforce').dataset.fam;if(f&&confirm(`Ins
 // With no simc at all a failed check is shown (with Retry) instead of staying silent.
 const DISMISS='lb_simc_dismissed';
 function simcBanner(text,btn,hash){const b=$('ubanner');b.dataset.k='simc';b.classList.remove('bad');$('ubtxt').textContent=text;$('ub_go').textContent=btn;$('ub_go').dataset.h=hash||'';b.hidden=false}
-async function checkEngineAtStart(){let c;const none=$('simc').textContent==='No simc selected';
+async function checkEngineAtStart(){let c;const none=!engReady;
  try{c=await api.engineCheck('app start')}catch(x){if(none&&engCan){simcBanner('','Retry');eng.err=msg(x);engShow()}return}
  showNewer(c);if(!c.latest||c.upToDate)return;
- let d='';try{d=localStorage.getItem(DISMISS)||''}catch{}if(d===c.latest.hash&&c.hasSimc)return;
+ let d='';try{d=localStorage.getItem(DISMISS)||''}catch{}if(d===c.latest.hash&&engReady)return;
  const iv=c.installedVersion,have=iv?`${iv.simc}${iv.git?' · build '+iv.git:''}${iv.hotfix?' · hotfix '+iv.hotfix:''}`:'unknown build';
- simcBanner(c.hasSimc?`SimulationCraft update available: ${fmtBuild(c.latest)}. Installed: ${have}.`:`No simc is selected. Download SimulationCraft ${fmtBuild(c.latest)}?`,c.hasSimc?'Update now':'Download',c.latest.hash)}
+ simcBanner(c.hasSimc&&engReady?`SimulationCraft update available: ${fmtBuild(c.latest)}. Installed: ${have}.`:`${c.hasSimc?'Your simc does not start.':'No simc is selected.'} Download SimulationCraft ${fmtBuild(c.latest)}?`,c.hasSimc&&engReady?'Update now':'Download',c.latest.hash)}
 $('ub_go').onclick=()=>installEngine();
 $('ub_later').onclick=()=>{try{localStorage.setItem(DISMISS,$('ub_go').dataset.h||'')}catch{}$('ubanner').hidden=true};
 $('uchk').onclick=async()=>{$('ust').textContent='Checking…';const r=await api.updateCheck();
   $('ust').textContent={dev:'Updates only work in the installed app.',current:`Up to date (${r.current}).`,available:`Version ${r.version} is available.`,error:r.message||'Update check failed.',idle:''}[r.state]||'';
   if(r.state==='available'&&confirm(`Install Polygnome ${r.version} and restart?`))api.updateInstall().catch(x=>$('ust').textContent=msg(x))};
-refreshEngine();setTimeout(checkEngineAtStart,1500);
+
 // Startup: new Polygnome release on GitHub (installed app only; silent in development and on network errors). Dismissed per version.
 async function checkAppAtStart(){let r;try{r=await api.updateCheck()}catch{return}if(!r||r.state!=='available')return;
  let d='';try{d=localStorage.getItem('lb_app_dismissed')||''}catch{}if(d===r.version)return;
@@ -434,7 +442,7 @@ async function loadLoot(){lootInfo=await api.lootInfo();
  if(lootInfo){const d=new Date(lootInfo.builtAt);setLoot('ok','Game data '+d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}),`Game data from ${d.toLocaleDateString('en-GB')}. It is refreshed automatically after a game patch, when missing or older than 14 days.`)}
  else setLoot('bad','No game data yet','No game data yet: click “Update loot data”. Droptimizer, Best in Slot, Catalyst, crafted gear and consumable suggestions need it.');
  renderCons();renderCrafted();
- const C=lootInfo?.consumables;$('conshint').dataset.tip='Leave a field empty to use what your export lists; type a name to use another one in every simulation.\n'+(C?'Suggested names come from game data; if simc rejects one, copy the name from your export.':'Suggestions appear after “Update loot data”.');
+ const C=lootInfo?.consumables;$('conshint').dataset.tip='Leave a field empty to use what your export lists; type a name to use another one in every simulation.\n'+(C&&!lootInfo.foodChecked?'Food suggestions appear once SimulationCraft is ready (it checks which foods add damage). ':'')+(C?'Suggested names come from game data; if simc rejects one, copy the name from your export.':'Suggestions appear after “Update loot data”.');
  $('dls').innerHTML=C?Object.entries(C).map(([k,v])=>`<datalist id="dl_${k}">${v.map(o=>`<option value="${esc(o.value)}" label="${esc(o.label)}"></option>`).join('')}</datalist>`).join(''):'';
  const T=lootInfo?.tiers||[];$('tier').innerHTML=T.length?T.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('')+'<option value="">All instances</option>':'<option value="">All instances (update loot data for tiers)</option>';
  renderInst();seasNote()}
@@ -451,7 +459,9 @@ $('upd').onclick=()=>updateLoot('');
 async function updateAtStart(){
  try{const r=await api.dataRefresh();await refreshPreview();if(r&&r.updated&&r.updated.length){api.bossList().then(B=>{bosses=B;const v=$('boss').value;$('boss').innerHTML='<option value="">None (use the style below)</option>'+B.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');$('boss').value=v;bossPreview()});api.prog().then(p=>{prog=p;$('seas').textContent=p.season;renderInst()})}}catch{}
  try{const s=await api.lootStatus('app start');if(s&&!running())await updateLoot(`${s.reason}, started automatically`)}catch{}}
-setTimeout(updateAtStart,2500);
+// Startup, in order: simc (ready? download / update offered), then boss and season data, game data (automatic update when needed),
+// then the food check if the game data was built without a ready simc.
+(async()=>{await refreshEngine();try{await checkEngineAtStart()}catch{}await updateAtStart();await foodCheck('app start')})();
 // Season preview: Live / PTR switch in the header (available only while the repo publishes an upcoming season), beta updates (Settings)
 let preview={available:false};
 const running=()=>$('go').disabled||$('upd').disabled;
@@ -575,7 +585,8 @@ const CATS=[['flask','Flasks','flask'],['food','Food','food'],['potion','Potions
 const consSel={flask:new Set(),food:new Set(),potion:new Set(),augmentation:new Set()},consFilter={};
 function renderCons(){if(!lootInfo?.consumables){$('consBox').innerHTML='<div class="it">Run “Update loot data” to list the flasks, food, potions and runes to compare.</div>';updCount();return}
  $('consBox').innerHTML=CATS.map(([k,t])=>`<div style="margin-bottom:8px"><div style="font-weight:600;font-size:12px">${t} <span class="it" id="cn_${k}"></span></div><input class="cf" data-k="${k}" placeholder="Filter, or type a custom name + Enter" style="width:100%;margin:3px 0"><div id="cl_${k}" style="max-height:110px;overflow:auto"></div></div>`).join('');CATS.forEach(([k])=>renderList(k))}
-function renderList(k){const C=lootInfo?.consumables||{},ck=CATS.find(c=>c[0]===k)[2],f=(consFilter[k]||'').toLowerCase(),known=C[ck]||[];
+function renderList(k){const fi=document.querySelector(`.cf[data-k=${k}]`),pend=k==='food'&&lootInfo&&!lootInfo.foodChecked;if(fi)fi.hidden=pend;if(pend){$('cl_food').innerHTML=`<div class="it">${engReady?'Checking which foods add damage…':'Food appears once SimulationCraft is ready: Polygnome first checks with simc which foods add damage.'}</div>`;return}
+ const C=lootInfo?.consumables||{},ck=CATS.find(c=>c[0]===k)[2],f=(consFilter[k]||'').toLowerCase(),known=C[ck]||[];
  const opts=[{value:'disabled',label:'None (try without)'},...known,...[...consSel[k]].filter(v=>v!=='disabled'&&!known.some(o=>o.value===v)).map(v=>({value:v,label:v+' (custom)'}))];
  $('cl_'+k).innerHTML=opts.filter(o=>consSel[k].has(o.value)||!f||(o.label+o.value+(o.also||[]).join(' ')).toLowerCase().includes(f)).map(o=>`<label class="in"><input type="checkbox" class="cs" data-k="${k}" value="${esc(o.value)}" ${consSel[k].has(o.value)?'checked':''}><span>${esc(o.label)}${o.also?.length?` <span class="it">(same: ${esc(o.also.join(', '))})</span>`:''}</span></label>`).join('');updCount()}
 function updCount(){let n=0;for(const[k]of CATS){const c=consSel[k].size;if($('cn_'+k))$('cn_'+k).textContent=c?`(${c} selected)`:'';n+=c}$('combo').textContent=n?`${n} consumable option${n>1?'s':''} selected`:''}
@@ -621,7 +632,6 @@ const collapseSections=()=>document.querySelectorAll('#setup details.sec').forEa
 $('colall').onclick=collapseSections;$('expall').onclick=()=>document.querySelectorAll('#setup details.sec:not([hidden])').forEach(d=>d.open=true);
 $('setbtn').onclick=()=>$('setdlg').showModal();$('setclose').onclick=()=>$('setdlg').close();
 $('setdlg').addEventListener('click',e=>{if(e.target===$('setdlg'))$('setdlg').close()});
-new MutationObserver(()=>{$('setdot').hidden=!!$('simc').textContent&&$('simc').textContent!=='No simc selected';$('setbtn').dataset.tip=$('setdot').hidden?'simc engine, threads, precision, theme and app updates':'No simc selected yet: open Settings to download or select it.';renderStart()}).observe($('simc'),{childList:true,characterData:true,subtree:true});
 const cap=t=>t?t[0].toUpperCase()+t.slice(1):'';
 // summary refresh from code paths that may run early (restored settings, late IPC replies): never throws
 function sumNow(){try{updSum()}catch{}}
@@ -689,8 +699,8 @@ $('txt').addEventListener('input',()=>{try{localStorage.setItem('lb_export',$('t
 
 // ---- Getting started: live checklist on the Results tab until the first result is shown ----
 function renderStart(){const res=$('res');if(!res||res.dataset.start!=='1')return;
- const simc=!!$('simc').textContent&&$('simc').textContent!=='No simc selected',busy=$('lootdot').classList.contains('busy'),data=!!lootInfo,txt=$('txt').value.trim().length>0;
- const S=[[simc,'SimulationCraft engine',simc?'Ready.':eng.busy?esc(`Downloading… ${eng.step}`):eng.err?`<span style="color:var(--neg)">Download failed: ${esc(eng.err)}</span> You can also get it from ${MANUAL} and select it in Settings.`:'Polygnome runs simulations with simc'+(engCan?': download it here, or select your own build in Settings.':': select your simc build in Settings.'),
+ const simc=engReady,busy=$('lootdot').classList.contains('busy'),data=!!lootInfo,txt=$('txt').value.trim().length>0;
+ const S=[[simc,'SimulationCraft engine',simc?'Ready.':eng.busy?esc(`Downloading… ${eng.step}`):eng.err?`<span style="color:var(--neg)">Download failed: ${esc(eng.err)}</span> You can also get it from ${MANUAL} and select it in Settings.`:engReason&&$('simc').textContent!=='No simc selected'?`<span style="color:var(--neg)">${esc(engReason)}</span> Download it again${engCan?' here':''} or select another simc in Settings.`:'Polygnome runs simulations with simc'+(engCan?': download it here, or select your own build in Settings.':': select your simc build in Settings.'),
    simc||eng.busy?'':(engCan?`<button class="small go2" data-act="dl">${eng.err?'Retry':'Download simc'}</button> `:'')+'<button class="small" data-act="set">Settings</button>'],
   [data,'Game data',data?'Loot tables, crafted items, enchants and consumables are ready.':busy?'Downloading now… see the Activity log.':'Needed for Droptimizer, Best in Slot, Catalyst and crafted gear.',data||busy?'':'<button class="small go2" data-act="upd">Update loot data</button>'],
   [txt,'Your character',txt?($('sm_char').textContent||'Export pasted.'):'In game, type /simc and copy the whole text (bags included), then paste it in Character.',txt?'':'<button class="small go2" data-act="char">Paste export</button>'],

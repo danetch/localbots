@@ -331,10 +331,27 @@ function engineError(e) {
   if (/EPERM|EACCES|EBUSY/.test(m)) return new Error(`Windows refused to write or run the simc files (${m}). An antivirus may be blocking them.`);
   return e instanceof Error ? e : new Error(m);
 }
+// simc is READY when the selected file exists and prints its version banner. Everything that runs simc (simulations, the food check) asks
+// this first; the renderer gates its own setup on it. A good answer is cached per file (path, size, date); a bad one is checked again.
+let simcOk = { key: '', version: null };
+async function simcState() {
+  const { simcPath } = loadSettings();
+  if (!simcPath) return { ready: false, path: '', reason: 'No simc selected yet.' };
+  let st; try { st = fs.statSync(simcPath); } catch { return { ready: false, path: simcPath, reason: `simc was not found at ${simcPath}.` }; }
+  const key = `${simcPath}|${st.size}|${st.mtimeMs}`;
+  if (simcOk.key === key) return { ready: true, path: simcPath, version: simcOk.version };
+  const v = await readVersion(simcPath);
+  if (!v) return { ready: false, path: simcPath, reason: `${path.basename(simcPath)} did not start or is not SimulationCraft (no version banner). An antivirus may be blocking it.` };
+  simcOk = { key, version: v }; return { ready: true, path: simcPath, version: v };
+}
+async function needSimc() {
+  const s = await simcState(); if (s.ready) return s.path;
+  throw new Error(`SimulationCraft is not ready: ${s.reason} Open Settings to download it or select your simc.`);
+}
 ipcMain.handle('engine:info', async () => {
-  const { simcPath } = loadSettings(), meta = readMeta();
-  return { platform: process.platform, canInstall: process.platform === 'win32', path: simcPath || '', meta,
-    version: simcPath ? await readVersion(simcPath) : null, dataBuild: itemsDb().build };
+  const s = await simcState(), meta = readMeta();
+  return { platform: process.platform, canInstall: process.platform === 'win32', path: s.path, meta, ready: s.ready, reason: s.reason || '',
+    version: s.version || null, dataBuild: itemsDb().build };
 });
 // Which build to offer: the newest of the INSTALLED version family (e.g. 1210-01), or, with nothing installed, of the retail line (simc master's
 // version token). Higher families may be PTR/beta builds and are only reported (newerFamilies), never offered automatically.
@@ -518,8 +535,7 @@ const consInExport = (text, k) => (new RegExp(`^\\s*${k}\\s*=\\s*([\\w:.\\-]+)\\
 
 ipcMain.handle('sim:topgear', run(async (o, tmp) => {
   const { text, topN, fight, catalyst, crafted } = o, fine = fineOf(o), threads = o.threads;
-  const { simcPath } = loadSettings();
-  if (!simcPath) throw new Error('Select the simc binary first.');
+  const simcPath = await needSimc();
   const log = emitLog;
   saveSettings({ ...loadSettings(), fight, threads, precision: o.precision });
   const parsed = tg.parse(text), rules = mkRules(text);
@@ -708,8 +724,7 @@ ipcMain.handle('sim:bis', run(async (o, tmp) => {
   const { text, threads, fight, instanceIds, ilvl, armor, includeWeapons, instanceSources, upgrade, consumables, catalyst, crafted, maxRounds = 5 } = o;
   const enh = o.enhance || {};                          // { ench: bool, gems: bool, add: [jewelbinder slots] }
   let consFrom = Math.max(1, Math.floor(+o.consFrom) || 2);   // consumables, enchants and gems join the search from this round (gear first)
-  const { simcPath } = loadSettings();
-  if (!simcPath) throw new Error('Select the simc binary first.');
+  const simcPath = await needSimc();
   saveSettings({ ...loadSettings(), fight, threads, precision: o.precision });
   const log = emitLog;
   const parsed = tg.parse(text), base = tg.baseSlots(parsed.equipped), rules = mkRules(text), dual = isDual(base, rules);
@@ -922,9 +937,11 @@ ipcMain.handle('loot:info', () => {
   const craftedInfo = { items: (l.crafted || []).length + (R.extraItems || []).length, ilvl: R.ilvl, pairs: R.statPairs, old: !l.craftVer,
     groups: Object.entries(groups).map(([g, n]) => ({ group: g, items: [...n].sort() })), pairable: bases.length - fixed, bases: bases.length,
     emb: Object.entries(R.embellishments || {}).filter(([n]) => !(l.embellishments || []).length || key(n)).map(([n, v]) => ({ name: key(n) || n, slots: v.slots, unverified: (R.unverified || []).includes(n) })) };
-  return { crafted: craftedInfo, builtAt: l.builtAt, hasTier: !!l.tierSets?.length, weapons: loot.WEAPONS, tiers, consumables: !l.consumables ? null : Object.fromEntries(Object.entries(l.consumables).map(([k, v]) => [k, loot.combatOnly(l.consVer ? v : v.filter(o => !/guessed/.test(o.label)))]).map(([k, v]) => [k, k === 'food' && !l.foodVer ? foodsLib.preFilter(v) : v])),   // profession phials hidden (also in older loot.json)
+  const info = { crafted: craftedInfo, builtAt: l.builtAt, foodChecked: !!l.foodVer, hasTier: !!l.tierSets?.length, weapons: loot.WEAPONS, tiers, consumables: !l.consumables ? null : Object.fromEntries(Object.entries(l.consumables).map(([k, v]) => [k, loot.combatOnly(l.consVer ? v : v.filter(o => !/guessed/.test(o.label)))]).map(([k, v]) => [k, k === 'food' && !l.foodVer ? foodsLib.preFilter(v) : v])),   // profession phials hidden (also in older loot.json)
     instances: Object.entries(l.instances).map(([id, i]) => ({ id, name: i.name, items: Object.values(i.bosses).reduce((n, b) => n + b.items.length, 0) }))
       .sort((a, b) => b.id - a.id) };
+  if (info.consumables && !l.foodVer) info.consumables.food = [];   // foods are shown once simc has checked which ones add damage
+  return info;
 });
 // Current game build in the player's region (Blizzard's version service, wago.tools as fallback; lib/versions.js), e.g. "12.1.5.70575".
 // Region = the last export's region= line (settings.region). Used to refresh the loot data automatically after a patch.
@@ -943,7 +960,6 @@ ipcMain.handle('loot:status', async (_e, why) => {
 async function lootStatus() {
   const l = loadLoot(); if (!l) return { reason: 'no game data yet' };
   if (!l.craftVer) return { reason: 'new crafted item tables' };
-  if (!l.foodVer && loadSettings().simcPath) return { reason: 'food list to check with simc' };
   let b = null; try { b = ptrMode() ? await previewBuild() : await liveBuild(); } catch { /* offline: only the age rule applies */ }
   const short = v => String(v).split('.').slice(0, 3).join('.');
   if (b && l.gameBuild && short(b) !== short(l.gameBuild)) return { reason: `new game patch ${short(b)}` };
@@ -968,9 +984,10 @@ const foodCacheFile = () => ud('food-check.json');
 const foodKey = (food, simcPath) => { const st = fs.statSync(simcPath);
   return crypto.createHash('sha256').update(JSON.stringify([food.map(o => `${o.value}|${o.label}|${o.id || ''}`).sort(), simcPath, st.size, st.mtimeMs])).digest('hex'); };
 async function checkFoods(built, log, detail = trace) {
-  const { simcPath } = loadSettings(), food = built.consumables?.food || [];
+  const food = built.consumables?.food || [];
   if (!food.length) return;
-  if (!simcPath || !fs.existsSync(simcPath)) { log('>> Food: select the simc binary, then update again, to keep only the foods that add damage.'); return; }
+  const sc = await simcState(), simcPath = sc.path;
+  if (!sc.ready) { log(`>> Food: waiting for SimulationCraft (${sc.reason}) to keep only the foods that add damage.`); return; }
   const key = foodKey(food, simcPath);
   try {
     const c = JSON.parse(fs.readFileSync(foodCacheFile(), 'utf8'));
@@ -993,6 +1010,18 @@ async function checkFoods(built, log, detail = trace) {
   finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch {} }
 }
 let lootBusy = false;   // the Live/PTR switch is refused while game data is written (files follow the mode)
+// Food list of the current game data checked with simc, alone (a few seconds): used when simc becomes ready after the game data was built.
+ipcMain.handle('food:check', async (_e, why) => {
+  const l = loadLoot(); if (!l || l.foodVer || lootBusy) return { checked: !!l?.foodVer };
+  if (!(await simcState()).ready) return { checked: false };
+  lootBusy = true; const log = x => { emitLog(x); dataLog(x); };
+  try {
+    dataLog(`=== Food check (${why || 'button'})`);
+    const built = JSON.parse(JSON.stringify(l)); await checkFoods(built, log, dataLog);
+    if (built.foodVer) writeJson(lootFile(), built);
+    return { checked: !!built.foodVer };
+  } finally { lootBusy = false; }
+});
 ipcMain.handle('loot:update', async (_e, why) => {
   lootBusy = true;
   dataLog(`=== Update loot data (${why || 'button'}) · Polygnome ${app.getVersion()} · ${ptrMode() ? previewState().label + ' data' : 'live data'} · simc ${loadSettings().simcPath || 'not set'}`);
@@ -1059,8 +1088,7 @@ async function lootUpdate() {
 ipcMain.handle('sim:drop', run(async (o, tmp) => {
   const { text, threads, instanceIds, ilvl, armor, includeWeapons, weapons, fight, instanceSources, upgrade, catalyst, crafted } = o, fine = fineOf(o);
   saveSettings({ ...loadSettings(), fight, threads, precision: o.precision });
-  const { simcPath } = loadSettings();
-  if (!simcPath) throw new Error('Select the simc binary first.');
+  const simcPath = await needSimc();
   const L = loadLoot(); if (!L) throw new Error('No loot data: click “Update loot data”.');
   if (!instanceIds?.length) throw new Error('Select at least one instance.');
   const log = emitLog;
