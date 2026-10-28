@@ -940,3 +940,5 @@ for minor-patch PTRs like 12.1.7).
   (automatic, no simc found at start…)"). A selected simc that exists but does not start is only OFFERED (it may be the person's own
   build). One automatic attempt per start. The download runs alongside the GitHub / game data steps; the food check waits for both.
 - Checked in the Electron harness (no clicks: download, progress, ready, food check; broken simc: offer only). Tests 92.
+- VERIFIED by the user on his Windows PC (28 Oct, v0.10.4): simc downloaded and installed automatically at start (new archive name
+  simc-1210.01.<hash>-win64.7z, simc.exe found and started).
