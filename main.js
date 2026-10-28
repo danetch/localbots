@@ -336,8 +336,8 @@ function engineError(e) {
 let simcOk = { key: '', version: null };
 async function simcState() {
   const { simcPath } = loadSettings();
-  if (!simcPath) return { ready: false, path: '', reason: 'No simc selected yet.' };
-  let st; try { st = fs.statSync(simcPath); } catch { return { ready: false, path: simcPath, reason: `simc was not found at ${simcPath}.` }; }
+  if (!simcPath) return { ready: false, missing: true, path: '', reason: 'No simc selected yet.' };
+  let st; try { st = fs.statSync(simcPath); } catch { return { ready: false, missing: true, path: simcPath, reason: `simc was not found at ${simcPath}.` }; }
   const key = `${simcPath}|${st.size}|${st.mtimeMs}`;
   if (simcOk.key === key) return { ready: true, path: simcPath, version: simcOk.version };
   const v = await readVersion(simcPath);
@@ -350,7 +350,7 @@ async function needSimc() {
 }
 ipcMain.handle('engine:info', async () => {
   const s = await simcState(), meta = readMeta();
-  return { platform: process.platform, canInstall: process.platform === 'win32', path: s.path, meta, ready: s.ready, reason: s.reason || '',
+  return { platform: process.platform, canInstall: process.platform === 'win32', path: s.path, meta, ready: s.ready, missing: !!s.missing, reason: s.reason || '',
     version: s.version || null, dataBuild: itemsDb().build };
 });
 // Which build to offer: the newest of the INSTALLED version family (e.g. 1210-01), or, with nothing installed, of the retail line (simc master's
@@ -377,7 +377,7 @@ let engineBusy = false;
 ipcMain.handle('engine:install', async (_e, opt) => {
   if (engineBusy) throw new Error('An engine download is already running.');
   engineBusy = true; const log = l => { emitLog(l); if (!/^\s+\d+ (%|MB)$/.test(l)) dataLog('simc: ' + l.replace(/^>> /, '')); };
-  dataLog(`=== simc download (app ${app.getVersion()}${opt?.family ? ', family ' + opt.family : ''})`);
+  dataLog(`=== simc download (${opt?.why || 'button'}, app ${app.getVersion()}${opt?.family ? ', family ' + opt.family : ''})`);
   try {
     const l = (await pickBuild(opt?.family))?.latest;
     if (!l) throw new Error('No Windows build found in the simc download index for this version.');

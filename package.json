@@ -1,6 +1,6 @@
 {
   "name": "polygnome",
-  "version": "0.10.3",
+  "version": "0.10.4",
   "dataMinApp": "0.5.0",
   "description": "Polygnome: local, unlimited SimulationCraft gear optimizer (Top Gear, Droptimizer, Best in Slot)",
   "main": "main.js",

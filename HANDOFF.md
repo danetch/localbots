@@ -1,7 +1,7 @@
 POLYGNOME (formerly LOCALBOTS) - PROJECT HANDOFF
 ================================================
 
-=== START HERE (state on 27 Oct 2026 morning, app v0.10.3, 92 tests; see "27 OCT" at the end for the latest changes) ===
+=== START HERE (state on 27 Oct 2026 morning, app v0.10.4, 92 tests; see "27 OCT" at the end for the latest changes) ===
 New conversation: attach the GitHub repo danetch/localbots, read this START HERE and README.md, then wait for the user's request.
 Everything below START HERE is a chronological log (oldest first, 21 Oct -> 26 Oct); when two notes disagree, the later one wins.
 The old "FILE MAP", "FEATURES IMPLEMENTED", "KNOWN LIMITATIONS" and "ENVIRONMENT NOTES" sections (21 Oct) are outdated (zips, wago-only,
@@ -932,3 +932,11 @@ for minor-patch PTRs like 12.1.7).
   * test/fakesimc.js prints a version banner when started without arguments (needed by the readiness check).
 - Tests: 92 (engine listing on the real index, readiness reasons + refused runs, foods hidden then checked by food:check). Electron
   harness: call order at startup and after a download.
+
+=== 28 OCT: v0.10.4 — SIMC DOWNLOADED AUTOMATICALLY AT START ===
+- User: Win64 builds only (winarm64 / macOS not handled; a draft ARM path was discarded). Startup must download simc by itself when absent.
+- engine:info `missing` (no simc selected, or the selected file is gone). Windows + missing -> checkEngineAtStart downloads at once (banner
+  "Downloading SimulationCraft (no simc found: started automatically)…" with progress, Retry on failure; data log "=== simc download
+  (automatic, no simc found at start…)"). A selected simc that exists but does not start is only OFFERED (it may be the person's own
+  build). One automatic attempt per start. The download runs alongside the GitHub / game data steps; the food check waits for both.
+- Checked in the Electron harness (no clicks: download, progress, ready, food check; broken simc: offer only). Tests 92.

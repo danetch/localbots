@@ -371,8 +371,8 @@ $('bdiff').onchange=bossPreview;$('dur').addEventListener('change',bossPreview);
 // game builds compared part by part ("12.1.5.70391" < "12.1.5.70575" < "12.1.7.100"): item data newer than simc's own build is normal (the simc repository is ahead
 // of the nightly binary), only older data needs "Update loot data"
 const bcmp=(a,b)=>{const A=String(a||'').split('.').map(Number),B=String(b||'').split('.').map(Number);for(let i=0;i<4;i++)if((A[i]||0)!==(B[i]||0))return(A[i]||0)-(B[i]||0);return 0};
-let engReady=false,engReason='';
-async function refreshEngine(){try{const e=await api.engineInfo();$('simc').textContent=e.path||'No simc selected';engCan=!!e.canInstall;engReady=!!e.ready;engReason=e.ready?'':e.reason||'';$('eget').hidden=!e.canInstall;
+let engReady=false,engReason='',engMissing=false;
+async function refreshEngine(){try{const e=await api.engineInfo();$('simc').textContent=e.path||'No simc selected';engCan=!!e.canInstall;engReady=!!e.ready;engMissing=!!e.missing;engReason=e.ready?'':e.reason||'';$('eget').hidden=!e.canInstall;
   $('setdot').hidden=engReady;$('setbtn').dataset.tip=engReady?'simc engine, threads, precision, theme and app updates':`SimulationCraft is not ready: ${e.reason} Open Settings to download or select it.`;renderStart();
   $('eng').textContent=e.version?`SimulationCraft ${e.version.simc} · WoW ${e.version.wow}${e.version.hotfix?' · hotfix '+e.version.hotfix:''}`+(e.dataBuild&&bcmp(e.dataBuild,e.version.wow)<0?` — item data is for an older game build (${e.dataBuild}): click “Update loot data”`:''):(e.path?e.reason:e.canInstall?'No simc yet: click “Download / update simc”.':'Select your simc build.');return e}catch(x){$('eng').textContent=msg(x);return null}}
 $('pick').onclick=async()=>{const p=await api.pickSimc();if(p){$('simc').textContent=p;simcChanged('simc selected')}};
@@ -410,7 +410,10 @@ $('eforce').onclick=async()=>{const f=$('eforce').dataset.fam;if(f&&confirm(`Ins
 // With no simc at all a failed check is shown (with Retry) instead of staying silent.
 const DISMISS='lb_simc_dismissed';
 function simcBanner(text,btn,hash){const b=$('ubanner');b.dataset.k='simc';b.classList.remove('bad');$('ubtxt').textContent=text;$('ub_go').textContent=btn;$('ub_go').dataset.h=hash||'';b.hidden=false}
+// No simc at all (none selected, or the selected file is gone) on Windows: download it right away. A selected simc that exists but does not
+// start is only offered (downloading would replace a simc the person picked). One automatic attempt per start; failures show Retry.
 async function checkEngineAtStart(){let c;const none=!engReady;
+ if(none&&engCan&&engMissing){simcBanner('Downloading SimulationCraft (no simc found: started automatically)…','Retry');await installEngine({why:'automatic, no simc found at start'});return}
  try{c=await api.engineCheck('app start')}catch(x){if(none&&engCan){simcBanner('','Retry');eng.err=msg(x);engShow()}return}
  showNewer(c);if(!c.latest||c.upToDate)return;
  let d='';try{d=localStorage.getItem(DISMISS)||''}catch{}if(d===c.latest.hash&&engReady)return;
@@ -459,9 +462,9 @@ $('upd').onclick=()=>updateLoot('');
 async function updateAtStart(){
  try{const r=await api.dataRefresh();await refreshPreview();if(r&&r.updated&&r.updated.length){api.bossList().then(B=>{bosses=B;const v=$('boss').value;$('boss').innerHTML='<option value="">None (use the style below)</option>'+B.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');$('boss').value=v;bossPreview()});api.prog().then(p=>{prog=p;$('seas').textContent=p.season;renderInst()})}}catch{}
  try{const s=await api.lootStatus('app start');if(s&&!running())await updateLoot(`${s.reason}, started automatically`)}catch{}}
-// Startup, in order: simc (ready? download / update offered), then boss and season data, game data (automatic update when needed),
-// then the food check if the game data was built without a ready simc.
-(async()=>{await refreshEngine();try{await checkEngineAtStart()}catch{}await updateAtStart();await foodCheck('app start')})();
+// Startup: simc first (ready? missing on Windows -> downloaded automatically; update offered), then boss and season data and game data
+// (alongside a simc download: they do not need simc), then the food check once both are done.
+(async()=>{await refreshEngine();const simc=checkEngineAtStart().catch(()=>{});await updateAtStart();await simc;await foodCheck('app start')})();
 // Season preview: Live / PTR switch in the header (available only while the repo publishes an upcoming season), beta updates (Settings)
 let preview={available:false};
 const running=()=>$('go').disabled||$('upd').disabled;
