@@ -1,7 +1,7 @@
 POLYGNOME (formerly LOCALBOTS) - PROJECT HANDOFF
 ================================================
 
-=== START HERE (state on 27 Oct 2026 morning, app v0.10.4, 92 tests; see "27 OCT" at the end for the latest changes) ===
+=== START HERE (state on 27 Oct 2026 morning, app v0.10.5, 93 tests; see "27 OCT" at the end for the latest changes) ===
 New conversation: attach the GitHub repo danetch/localbots, read this START HERE and README.md, then wait for the user's request.
 Everything below START HERE is a chronological log (oldest first, 21 Oct -> 26 Oct); when two notes disagree, the later one wins.
 The old "FILE MAP", "FEATURES IMPLEMENTED", "KNOWN LIMITATIONS" and "ENVIRONMENT NOTES" sections (21 Oct) are outdated (zips, wago-only,
@@ -942,3 +942,17 @@ for minor-patch PTRs like 12.1.7).
 - Checked in the Electron harness (no clicks: download, progress, ready, food check; broken simc: offer only). Tests 92.
 - VERIFIED by the user on his Windows PC (28 Oct, v0.10.4): simc downloaded and installed automatically at start (new archive name
   simc-1210.01.<hash>-win64.7z, simc.exe found and started).
+
+=== 29 OCT: v0.10.5 — ITEMS EMBELLISHED BY THEMSELVES COUNT TOWARD THE LIMIT OF 2 ===
+- User: a Best in Slot result had 3 embellished items, one a ring with a built-in effect. Cause: only reagent embellishments were counted
+  (simc embellishment_data.inc bonus ids, or embellishment= in the string). Read on the real game tables (user's built-in browser, wago,
+  29 Oct): ItemLimitCategory 512 "Embellished" (2); items get it from ItemSparse.LimitCategory (Murder Row Fleet Feet, Knight-Commander's
+  Palisade, Voidstone Shielding Array) or from bonus list 8960 (ItemBonus type 35, value 512) in their bonus tree (Midnight tree 5287:
+  Loa Worshiper's Band, Signet of Azerothian Blessings, Arcanoweave / Sunfire bracers-cloak-treads-belt, Thalassian Phoenix Torque,
+  Magister's Alchemist Stone, Darkmoon Dominion trinkets, World Tender's / Row Walker's pieces...; 30 Midnight items, 99 in all).
+  simc's item data has no limit category. Which ring the user got was not checked (his data folder cannot be granted to the session).
+- lib/loot.js nativeEmb(t) -> loot.json embItems / embLists (embVer 1); "Update loot data" also downloads ItemLimitCategory (category found
+  by name, 512 assumed otherwise). loot:status asks for an update when embVer is missing (automatic at the next start).
+  mkRules: embItemIds (item ids) + embLists (8960) in embBonusIds -> isEmb() counts them in Top Gear, Droptimizer, Best in Slot.
+  Crafted variants: a base embellished by itself gets NO embellishment reagent, its plain version is labelled "(embellished)" and counts;
+  the Crafted gear card marks those items. Fixture test/fixtures/native-emb (real rows) + units test.

@@ -466,7 +466,8 @@ ipcMain.handle('weapons:of', (_e, text) => { const c = specs.classOf(text), w = 
 const mkRules = text => {
   const db = itemsDb();
   return { tags: {}, maxEmb: 2, maxCat: Infinity, twoHandIds: db.two, kindOf: db.kind, titan: itemsLib.isTitan(text),
-    embBonusIds: new Set([...db.embBonusIds, ...(loadLoot()?.embellishments || []).map(e => String(e.bonusId))]) };
+    embBonusIds: new Set([...db.embBonusIds, ...(loadLoot()?.embellishments || []).map(e => String(e.bonusId)), ...(loadLoot()?.embLists || loot.NATIVE_EMB_LISTS)]),
+    embItemIds: new Set((loadLoot()?.embItems || []).map(String)) };
 };
 
 // Peut-on jouer deux armes (une dans chaque main) ? Fury (Titan's Grip) ou arme à une main déjà en main gauche.
@@ -495,7 +496,7 @@ function craftedVariants(c, text, { base, dual } = {}) {
   // Crafted weapons only matter through weapon embellishments: they are added when one is ticked (types: what the class can wield).
   const wantW = sel.map(keyOf).some(k => (R2.embellishments[k]?.slots || []).some(x => /_hand$/.test(x)));
   const out = craftedLib.variants({ crafted, extra: R.extraItems, rules: R2, emb: sel.map(keyOf), embNames: Object.fromEntries(sel.map(n => [keyOf(n), names[n] || n])),
-    pairs: (c.pairs?.length ? c.pairs : R.statPairs), plain: c.plainSlots ? false : !!c.plain, plainSlots: c.plainSlots, hasPairs: id => itemsDb().craftStats(id) !== false, cls, includeWeapons: wantW, weapons: weaponsFor(text), titan: itemsLib.isTitan(text), dual, primary: specs.primaryOf(text), primOf: itemsDb().prim }, loot.INV);
+    native: new Set((L?.embItems || []).map(Number)), pairs: (c.pairs?.length ? c.pairs : R.statPairs), plain: c.plainSlots ? false : !!c.plain, plainSlots: c.plainSlots, hasPairs: id => itemsDb().craftStats(id) !== false, cls, includeWeapons: wantW, weapons: weaponsFor(text), titan: itemsLib.isTitan(text), dual, primary: specs.primaryOf(text), primOf: itemsDb().prim }, loot.INV);
   if (base) for (const v of out) { const e = (/enchant_id=\d+/.exec(base[v.slot] || '') || [''])[0]; if (e) v.item += ',' + e; }   // l'enchantement équipé suit la pièce
   if (!out.length) throw new Error('Crafted gear: nothing to test with these choices (tick an embellishment, or a slot under “Crafts without embellishment”).');
   return out;
@@ -932,7 +933,8 @@ ipcMain.handle('loot:info', () => {
   if (inSeason.size) for (let i = tiers.length - 1; i > 0; i--) if (tiers[i].instances.length === inSeason.size && tiers[i].instances.every(x => inSeason.has(x))) tiers.splice(i, 1);
   const R = loadCraftRules(), key = n => (l.embellishments || []).find(e => e.name.toLowerCase() === n)?.name;
   const bases = [...(l.crafted || []).flatMap(c => (loot.INV[c.inv] || []).filter(() => c.cls === 4).map(sl => ({ id: c.id, name: c.name, slot: sl }))), ...(R.extraItems || []).filter(x => x.slot)];
-  const groups = {}; for (const b of bases) { const g = craftedLib.groupOf(b.slot); (groups[g] ??= new Set()).add(b.name); }
+  const nat = new Set((l.embItems || []).map(Number));   // embellished by themselves: shown as such in the Crafted gear card
+  const groups = {}; for (const b of bases) { const g = craftedLib.groupOf(b.slot); (groups[g] ??= new Set()).add(b.name + (nat.has(+b.id) ? ' (embellished)' : '')); }
   const fixed = bases.filter(b => itemsDb().craftStats(b.id) === false).length;
   const craftedInfo = { items: (l.crafted || []).length + (R.extraItems || []).length, ilvl: R.ilvl, pairs: R.statPairs, old: !l.craftVer,
     groups: Object.entries(groups).map(([g, n]) => ({ group: g, items: [...n].sort() })), pairable: bases.length - fixed, bases: bases.length,
@@ -960,6 +962,7 @@ ipcMain.handle('loot:status', async (_e, why) => {
 async function lootStatus() {
   const l = loadLoot(); if (!l) return { reason: 'no game data yet' };
   if (!l.craftVer) return { reason: 'new crafted item tables' };
+  if (!l.embVer) return { reason: 'list of items embellished by themselves' };
   let b = null; try { b = ptrMode() ? await previewBuild() : await liveBuild(); } catch { /* offline: only the age rule applies */ }
   const short = v => String(v).split('.').slice(0, 3).join('.');
   if (b && l.gameBuild && short(b) !== short(l.gameBuild)) return { reason: `new game patch ${short(b)}` };
@@ -1055,6 +1058,8 @@ async function lootUpdate() {
   // Bonus trees: tell which season a raid belongs to (its drops' upgrade tracks). Optional: without them "This season" uses the Journal only.
   for (const [k, n] of [['map', 'Map'], ['xTree', 'ItemXBonusTree'], ['treeNode', 'ItemBonusTreeNode'], ['bonus', 'ItemBonus']]) { t[k] = await optional(`${n} (season detection)`, wago(n), '“This season” uses the Adventure Guide only'); if (!t[k]) break; }
   if (!t.map || !t.xTree || !t.treeNode || !t.bonus) { delete t.map; delete t.xTree; delete t.treeNode; delete t.bonus; }
+  t.limitCat = await optional('ItemLimitCategory (embellished items)', wago('ItemLimitCategory'), 'the "Embellished" category is assumed to be 512');
+  if (!t.limitCat) delete t.limitCat;
   // simc's item data first: crafting qualities decide the valid consumable names (_2, _3 suffixes), tier/2H/embellishment data come from it too.
   const itemsTxt = await optional('item data (simc, ~26 MB)', ptrUrl(itemsLib.ITEMS_URL), 'keeping the bundled copy');
   const itemsJ = itemsTxt && itemsLib.parse(itemsTxt, []);
@@ -1081,7 +1086,7 @@ async function lootUpdate() {
     if (j.two.length > 1000) { writeJson(ud('items.json'), j); log(`>> Item data ready (build ${j.build}, ${j.two.length} two-handers).`); }
     else log('>> Item data looked incomplete: keeping the bundled copy.');
   }
-  log(`>> Crafted base items found: ${built.crafted.length} · embellishments in simc table: ${built.embellishments.length}`);
+  log(`>> Crafted base items found: ${built.crafted.length} · embellishments in simc table: ${built.embellishments.length} · items embellished by themselves: ${built.embItems.length}`);
   log('>> Loot database ready.');
   return true;
 }

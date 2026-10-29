@@ -556,3 +556,33 @@ test('wowhead params and simc progress parser', () => {
   p('Profilesets (1/2): 10/20'); assert.ok(Math.abs(sent.at(-1) - (0.04 * 0.5 + 0.96 * 0.5) * 100) < 1e-9);
   p('Generating Baseline: 100/100'); assert.ok(sent.at(-1) >= sent.at(-2), 'never goes back');
 });
+
+// Items embellished by themselves (real game tables, 29 Oct 2026, test/fixtures/native-emb): a user's Best in Slot ended with 3 embellished
+// items because Loa Worshiper's Band (embellished through bonus list 8960 of its bonus tree, not through a reagent) was not counted.
+test('embellished by themselves: read from the game tables, counted toward the limit of 2, no second embellishment', () => {
+  const fs = require('fs'), path = require('path'), loot = require('../lib/loot'), tg = require('../lib/topgear'), crafted = require('../lib/crafted'), fx = n => fs.readFileSync(path.join(__dirname, 'fixtures', 'native-emb', n + '.csv'), 'utf8');
+  const t = { sparse: fx('ItemSparse'), limitCat: fx('ItemLimitCategory'), xTree: fx('ItemXBonusTree'), treeNode: fx('ItemBonusTreeNode'), bonus: fx('ItemBonus') };
+  const ne = loot.nativeEmb(t);
+  assert.strictEqual(ne.cat, 512); assert.deepStrictEqual(ne.lists, ['8960']);
+  for (const id of ['251513', '241140', '239660', '246305', '244463', '244472', '251073', '222458'])
+    assert.ok(ne.items.includes(id), `${id} embellished by itself`);                     // band, signet, Arcanoweave, Darkmoon Dominion, LimitCategory 512
+  assert.ok(ne.items.includes('193462'), 'tree 3902 holds tree 3890 (bonus list 8960): followed recursively');
+  assert.ok(!ne.items.includes('109188') && !ne.items.includes('5042'), 'unrelated items left out');
+  assert.deepStrictEqual(loot.nativeEmb({ sparse: fx('ItemSparse') }).items.sort(), ['222458', '222459', '222463', '244463', '244472', '251073'], 'without bonus trees: LimitCategory only');
+  // counted toward the limit, also as a plain item string, and through bonus list 8960 in an exported item
+  const rules = { tags: {}, embBonusIds: new Set(['12686', ...ne.lists]), embItemIds: new Set(ne.items) };
+  assert.strictEqual(tg.isEmb(',id=251513,ilevel=331', rules), true);
+  assert.strictEqual(tg.isEmb(',id=999999,bonus_id=12345/8960', rules), true);
+  assert.strictEqual(tg.isEmb(',id=999999,bonus_id=12345', rules), false);
+  // a combination never holds 3 embellished items: Loa Worshiper's Band (plain craft) + two reagent-embellished crafts
+  const pools = { finger: [',id=251513,ilevel=331', ',id=1001'], wrist: [',id=2001,embellishment=arcanoweave_lining', ',id=2002'], back: [',id=3001,embellishment=arcanoweave_lining', ',id=3002'] };
+  const all = tg.combos({ pools, equipped: { finger1: ',id=1001', finger2: ',id=1002', wrist: ',id=2002', back: ',id=3002' } }, { ...rules, maxEmb: 2 });
+  assert.ok(all.length > 0 && all.every(c => Object.values(c).filter(v => tg.isEmb(v, rules)).length <= 2), 'every combination within the limit');
+  // crafted pool: a native base gets no embellishment reagent and is labelled
+  const R = { ilvl: 331, embellishments: { blessed_pango_charm: { slots: ['finger'] } } };
+  const v = crafted.variants({ rules: R, crafted: [{ id: 251513, name: "Loa Worshiper's Band", cls: 4, sub: 0, inv: 11 }, { id: 251514, name: 'Plain Band', cls: 4, sub: 0, inv: 11 }],
+    emb: ['blessed_pango_charm'], plainSlots: ['finger'], native: new Set([251513]) }, loot.INV);
+  const loa = v.filter(x => x.base === "Loa Worshiper's Band");
+  assert.ok(loa.length && loa.every(x => !/embellishment=/.test(x.item) && x.emb && /\(embellished\)/.test(x.label)), JSON.stringify(loa));
+  assert.ok(v.some(x => x.base === 'Plain Band' && /embellishment=blessed_pango_charm/.test(x.item)), 'other bases still get the reagent');
+});
