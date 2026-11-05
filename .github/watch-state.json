@@ -2,12 +2,12 @@
  "values": {
   "ptrBuild": {
    "live": "12.1.5.70783",
-   "ptr": "12.1.7.70668",
+   "ptr": "12.1.7.70740",
    "beta": "12.0.1.66220",
    "source": "blizzard"
   },
   "ptrRaids": {
-   "build": "12.1.7.70668",
+   "build": "12.1.7.70740",
    "extra": {}
   },
   "bigwigs": [
@@ -22,7 +22,7 @@
   ],
   "simc": {
    "branch": "midnight",
-   "live": "12.1.5.70688",
+   "live": "12.1.5.70783",
    "ptr": "12.1.7.70493",
    "profiles": [
     "MID1",
