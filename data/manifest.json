@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-26T21:19:11.660Z",
+ "generated": "2026-11-18T14:37:49.549Z",
  "minApp": "0.5.0",
  "files": {
   "season.json": "b61af48f1de355b04ad8c7e7adf7999ea40eafce77ec53ea7d79cbf2ff28d3d3",
@@ -13,7 +13,7 @@
   "fights/sentinels.json": "53b742de4ffe39998476193566a3ada868400d45852a5e35b31551c979a3d3a8",
   "fights/sszorak.json": "bb16ecd8fe2e3c10205f3159c9130c8b459a0c8233e90b59c446aba577187e80",
   "fights/twinfangs.json": "7ed2f21a0007c8aba280cdb5d1807bca2356a0df06c20bf7fca87dcbba329fdc",
-  "fights/ulatek.json": "d2e8edb3bdfe21c94647b7a322c074c6ea1ab70332bdfb0fd02b5f895381550e",
+  "fights/ulatek.json": "b3253df1528b2f5a8a0f1b81e4b8015a07b51c5f5d7eaa7e9d18a61637b94d9e",
   "fights/vashnik.json": "d7a2bc4cf63314cac0dcf5f6d1445d15cb4db851157249fabda78c4e742fb9fe"
  }
 }
